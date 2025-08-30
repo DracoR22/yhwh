@@ -1,0 +1,524 @@
+use std::cmp::Ordering;
+
+use cgmath::{InnerSpace, VectorSpace};
+use gltf::{animation::{util::ReadOutputs, Reader}, buffer::Data, Buffer};
+
+
+use crate::animation::{keyframes::Keyframes, node::Nodes};
+
+pub fn slerp(left: cgmath::Quaternion<f32>, right: cgmath::Quaternion<f32>, amount: f32) -> cgmath::Quaternion<f32> {
+    let num2;
+    let num3;
+    let num = amount;
+    let mut num4 = (((left.v.x * right.v.x) + (left.v.y * right.v.y)) + (left.v.z * right.v.z))
+        + (left.s * right.s);
+    let mut flag = false;
+    if num4 < 0.0 {
+        flag = true;
+        num4 = -num4;
+    }
+    if num4 > 0.999_999 {
+        num3 = 1.0 - num;
+        num2 = if flag { -num } else { num };
+    } else {
+        let num5 = num4.acos();
+        let num6 = 1.0 / num5.sin();
+        num3 = ((1.0 - num) * num5).sin() * num6;
+        num2 = if flag {
+            -(num * num5).sin() * num6
+        } else {
+            (num * num5).sin() * num6
+        };
+    }
+    cgmath::Quaternion::new(
+        (num3 * left.s) + (num2 * right.s),
+        (num3 * left.v.x) + (num2 * right.v.x),
+        (num3 * left.v.y) + (num2 * right.v.y),
+        (num3 * left.v.z) + (num2 * right.v.z),
+    )
+}
+
+struct NodesKeyFrame(
+    Vec<(usize, cgmath::Vector3<f32>)>,
+    Vec<(usize, cgmath::Quaternion<f32>)>,
+    Vec<(usize, cgmath::Vector3<f32>)>,
+);
+
+#[derive(Debug, Copy, Clone)]
+pub enum PlaybackMode {
+    Loop,
+    Once,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct PlaybackState {
+    pub current: usize,
+    pub time: f32,
+    pub total_time: f32,
+    pub paused: bool,
+    pub playback_mode: PlaybackMode,
+}
+
+impl PlaybackState {
+     fn advance(&mut self, delta_time: f32) {
+        self.time = match self.playback_mode {
+            PlaybackMode::Loop => (self.time + delta_time) % self.total_time,
+            PlaybackMode::Once => f32::min(self.time + delta_time, self.total_time),
+        };
+    }
+
+    fn set_current(&mut self, index: usize, animation: &Animation) {
+        if self.current != index {
+            self.time = 0.0;
+            self.total_time = animation.total_time;
+            self.current = index;
+        }
+    }
+}
+
+pub struct Animations {
+    animations: Vec<Animation>,
+    playback_state: PlaybackState,
+}
+
+impl Animations {
+    pub fn update(&mut self, nodes: &mut Nodes, delta_time: f32) -> bool {
+         if self.playback_state.paused {
+            return false;
+        }
+
+        match self.animations.get_mut(self.playback_state.current) {
+            Some(animation) => {
+                self.playback_state.advance(delta_time);
+                animation.animate(nodes, self.playback_state.time)
+            }
+            _ => false,
+        }
+    }
+
+    pub fn get_playback_state(&self) -> &PlaybackState {
+        &self.playback_state
+    }
+
+    pub fn set_current(&mut self, index: usize) {
+        if index < self.animations.len() {
+            if let Some(animation) = self.animations.get(index) {
+                self.playback_state.set_current(index, animation);
+            }
+        }
+    }
+
+    pub fn set_playback_mode(&mut self, playback_mode: PlaybackMode) {
+        self.playback_state.playback_mode = playback_mode;
+    }
+
+    pub fn toggle(&mut self) {
+        self.playback_state.paused = !self.playback_state.paused;
+    }
+
+    pub fn stop(&mut self) {
+        self.playback_state.paused = true;
+        self.reset();
+    }
+
+    pub fn reset(&mut self) {
+        self.playback_state.time = 0.0;
+    }
+
+    pub fn animations(&self) -> &[Animation] {
+        &self.animations
+    }
+}
+
+trait Interpolate: Copy {
+    fn linear(self, other: Self, amount: f32) -> Self;
+
+    fn cubic_spline(
+        source: [Self; 3],
+        source_time: f32,
+        target: [Self; 3],
+        target_time: f32,
+        current_time: f32,
+    ) -> Self;
+}
+
+impl Interpolate for cgmath::Vector3<f32> {
+    fn linear(self, other: Self, amount: f32) -> Self {
+        self.lerp(other, amount)
+    }
+
+    fn cubic_spline(
+        source: [Self; 3],
+        source_time: f32,
+        target: [Self; 3],
+        target_time: f32,
+        amount: f32,
+    ) -> Self {
+        let t = amount;
+        let p0 = source[1];
+        let m0 = (target_time - source_time) * source[2];
+        let p1 = target[1];
+        let m1 = (target_time - source_time) * target[0];
+
+        (2.0 * t * t * t - 3.0 * t * t + 1.0) * p0
+            + (t * t * t - 2.0 * t * t + t) * m0
+            + (-2.0 * t * t * t + 3.0 * t * t) * p1
+            + (t * t * t - t * t) * m1
+    }
+}
+
+impl Interpolate for cgmath::Quaternion<f32> {
+    fn linear(self, other: Self, amount: f32) -> Self {
+        slerp(self, other, amount)
+    }
+
+    fn cubic_spline(
+        source: [Self; 3],
+        source_time: f32,
+        target: [Self; 3],
+        target_time: f32,
+        amount: f32,
+    ) -> Self {
+        let t = amount;
+        let p0 = source[1];
+        let m0 = (target_time - source_time) * source[2];
+        let p1 = target[1];
+        let m1 = (target_time - source_time) * target[0];
+
+        let result = (2.0 * t * t * t - 3.0 * t * t + 1.0) * p0
+            + (t * t * t - 2.0 * t * t + t) * m0
+            + (-2.0 * t * t * t + 3.0 * t * t) * p1
+            + (t * t * t - t * t) * m1;
+
+        result.normalize()
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+enum Interpolation {
+    Linear,
+    Step,
+    CubicSpline,
+}
+
+struct Sampler<T> {
+    interpolation: Interpolation,
+    times: Vec<f32>,
+    values: Vec<T>,
+}
+
+impl<T> Sampler<T> {
+    fn get_max_time(&self) -> f32 {
+        self.times.last().copied().unwrap_or(0.0)
+    }
+}
+
+impl<T: Interpolate> Sampler<T> {
+    fn sample(&self, t: f32) -> Option<T> {
+        let index = {
+            let mut index = None;
+            for i in 0..(self.times.len() - 1) {
+                let previous = self.times[i];
+                let next = self.times[i + 1];
+                if t >= previous && t < next {
+                    index = Some(i);
+                    break;
+                }
+            }
+            index
+        };
+
+        index.map(|i| {
+            let previous_time = self.times[i];
+            let next_time = self.times[i + 1];
+            let delta = next_time - previous_time;
+            let from_start = t - previous_time;
+            let factor = from_start / delta;
+
+            match self.interpolation {
+                Interpolation::Step => self.values[i],
+                Interpolation::Linear => {
+                    let previous_value = self.values[i];
+                    let next_value = self.values[i + 1];
+
+                    previous_value.linear(next_value, factor)
+                }
+                Interpolation::CubicSpline => {
+                    let previous_values = [
+                        self.values[i * 3],
+                        self.values[i * 3 + 1],
+                        self.values[i * 3 + 2],
+                    ];
+                    let next_values = [
+                        self.values[i * 3 + 3],
+                        self.values[i * 3 + 4],
+                        self.values[i * 3 + 5],
+                    ];
+                    Interpolate::cubic_spline(
+                        previous_values,
+                        previous_time,
+                        next_values,
+                        next_time,
+                        factor,
+                    )
+                }
+            }
+        })
+    }
+}
+
+struct Channel<T> {
+    sampler: Sampler<T>,
+    node_index: usize,
+}
+
+impl<T> Channel<T> {
+    fn get_max_time(&self) -> f32 {
+        self.sampler.get_max_time()
+    }
+}
+
+impl<T: Interpolate> Channel<T> {
+    fn sample(&self, t: f32) -> Option<(usize, T)> {
+        self.sampler.sample(t).map(|s| (self.node_index, s))
+    }
+}
+
+pub struct Animation {
+    total_time: f32,
+    translation_channels: Vec<Channel<cgmath::Vector3<f32>>>,
+    rotation_channels: Vec<Channel<cgmath::Quaternion<f32>>>,
+    scale_channels: Vec<Channel<cgmath::Vector3<f32>>>,
+}
+
+impl Animation {
+     pub fn animate(&mut self, nodes: &mut Nodes, time: f32) -> bool {
+        let NodesKeyFrame(translations, rotations, scale) = self.sample(time);
+
+        translations.iter().for_each(|(node_index, translation)| {
+            nodes.nodes_mut()[*node_index].set_translation(*translation);
+        });
+        rotations.iter().for_each(|(node_index, rotation)| {
+            nodes.nodes_mut()[*node_index].set_rotation(*rotation);
+        });
+        scale.iter().for_each(|(node_index, scale)| {
+            nodes.nodes_mut()[*node_index].set_scale(*scale);
+        });
+
+        !translations.is_empty() || !rotations.is_empty() || !scale.is_empty()
+    }
+
+     fn sample(&self, t: f32) -> NodesKeyFrame {
+        NodesKeyFrame(
+            self.translation_channels
+                .iter()
+                .filter_map(|tc| tc.sample(t))
+                .collect::<Vec<_>>(),
+            self.rotation_channels
+                .iter()
+                .filter_map(|tc| tc.sample(t))
+                .collect::<Vec<_>>(),
+            self.scale_channels
+                .iter()
+                .filter_map(|tc| tc.sample(t))
+                .collect::<Vec<_>>(),
+        )
+    }
+}
+
+ pub fn load_animations(gltf_animations: gltf::iter::Animations, data: &[Data]) -> Option<Animations> {
+    if gltf_animations.len() == 0 {
+        return None;
+    }
+
+    let animations = gltf_animations.map(|a| map_animation(&a, data)).collect::<Vec<_>>();
+    let total_time = animations.first().map_or(0.0, |a| a.total_time);
+
+    Some(Animations {
+        animations,
+        playback_state: PlaybackState {
+            current: 0,
+            time: 0.0,
+            total_time,
+            paused: false,
+            playback_mode: PlaybackMode::Loop,
+        },
+    })
+  }
+  fn map_animation(gltf_animation: &gltf::Animation, data: &[Data]) -> Animation {
+    let translation_channels = map_translation_channels(gltf_animation.channels(), data);
+    let rotation_channels = map_rotation_channels(gltf_animation.channels(), data);
+    let scale_channels = map_scale_channels(gltf_animation.channels(), data);
+
+    let max_translation_time = translation_channels
+        .iter()
+        .map(Channel::get_max_time)
+        .max_by(|c0, c1| c0.partial_cmp(c1).unwrap_or(Ordering::Equal))
+        .unwrap_or(0.0);
+    let max_rotation_time = rotation_channels
+        .iter()
+        .map(Channel::get_max_time)
+        .max_by(|c0, c1| c0.partial_cmp(c1).unwrap_or(Ordering::Equal))
+        .unwrap_or(0.0);
+    let max_scale_time = scale_channels
+        .iter()
+        .map(Channel::get_max_time)
+        .max_by(|c0, c1| c0.partial_cmp(c1).unwrap_or(Ordering::Equal))
+        .unwrap_or(0.0);
+
+    let total_time = *[max_translation_time, max_rotation_time, max_scale_time]
+        .iter()
+        .max_by(|c0, c1| c0.partial_cmp(c1).unwrap_or(Ordering::Equal))
+        .unwrap_or(&0.0);
+
+    Animation {
+        total_time,
+        translation_channels,
+        rotation_channels,
+        scale_channels,
+    }
+}
+
+fn map_translation_channels(gltf_channels: gltf::animation::iter::Channels, data: &[Data]) -> Vec<Channel<cgmath::Vector3<f32>>> {
+    gltf_channels
+        .filter(|c| c.target().property() == gltf::animation::Property::Translation)
+        .filter_map(|c| map_translation_channel(&c, data))
+        .collect::<Vec<_>>()
+}
+
+fn map_translation_channel(
+    gltf_channel: &gltf::animation::Channel,
+    data: &[Data],
+) -> Option<Channel<cgmath::Vector3<f32>>> {
+    let gltf_sampler = gltf_channel.sampler();
+    if let gltf::animation::Property::Translation = gltf_channel.target().property() {
+        map_interpolation(gltf_sampler.interpolation()).map(|i| {
+            let reader = gltf_channel.reader(|buffer| Some(&data[buffer.index()]));
+            let times = read_times(&reader);
+            let output = read_translations(&reader);
+            Channel {
+                sampler: Sampler {
+                    interpolation: i,
+                    times,
+                    values: output,
+                },
+                node_index: gltf_channel.target().node().index(),
+            }
+        })
+    } else {
+        None
+    }
+}
+
+fn map_rotation_channels(gltf_channels: gltf::animation::iter::Channels, data: &[Data]) -> Vec<Channel<cgmath::Quaternion<f32>>> {
+    gltf_channels
+        .filter(|c| c.target().property() == gltf::animation::Property::Rotation)
+        .filter_map(|c| map_rotation_channel(&c, data))
+        .collect::<Vec<_>>()
+}
+
+fn map_rotation_channel(
+    gltf_channel: &gltf::animation::Channel,
+    data: &[Data],
+) -> Option<Channel<cgmath::Quaternion<f32>>> {
+    let gltf_sampler = gltf_channel.sampler();
+    if let gltf::animation::Property::Rotation = gltf_channel.target().property() {
+        map_interpolation(gltf_sampler.interpolation()).map(|interpolation| {
+            let reader = gltf_channel.reader(|buffer| Some(&data[buffer.index()]));
+            let times = read_times(&reader);
+            let output = read_rotations(&reader);
+            Channel {
+                sampler: Sampler {
+                    interpolation,
+                    times,
+                    values: output,
+                },
+                node_index: gltf_channel.target().node().index(),
+            }
+        })
+    } else {
+        None
+    }
+}
+
+fn map_scale_channels(gltf_channels: gltf::animation::iter::Channels, data: &[Data]) -> Vec<Channel<cgmath::Vector3<f32>>> {
+    gltf_channels
+        .filter(|c| c.target().property() == gltf::animation::Property::Scale)
+        .filter_map(|c| map_scale_channel(&c, data))
+        .collect::<Vec<_>>()
+}
+
+fn map_scale_channel(gltf_channel: &gltf::animation::Channel, data: &[Data]) -> Option<Channel<cgmath::Vector3<f32>>> {
+    let gltf_sampler = gltf_channel.sampler();
+    if let gltf::animation::Property::Scale = gltf_channel.target().property() {
+        map_interpolation(gltf_sampler.interpolation()).map(|i| {
+            let reader = gltf_channel.reader(|buffer| Some(&data[buffer.index()]));
+            let times = read_times(&reader);
+            let output = read_scales(&reader);
+            Channel {
+                sampler: Sampler {
+                    interpolation: i,
+                    times,
+                    values: output,
+                },
+                node_index: gltf_channel.target().node().index(),
+            }
+        })
+    } else {
+        None
+    }
+}
+
+fn map_interpolation(gltf_interpolation: gltf::animation::Interpolation) -> Option<Interpolation> {
+    match gltf_interpolation {
+        gltf::animation::Interpolation::Linear => Some(Interpolation::Linear),
+        gltf::animation::Interpolation::Step => Some(Interpolation::Step),
+        gltf::animation::Interpolation::CubicSpline => Some(Interpolation::CubicSpline),
+    }
+}
+
+fn read_times<'a, 's, F>(reader: &Reader<'a, 's, F>) -> Vec<f32>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    reader.read_inputs().map_or(vec![], |times| times.collect())
+}
+
+fn read_translations<'a, 's, F>(reader: &Reader<'a, 's, F>) -> Vec<cgmath::Vector3<f32>>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    reader
+        .read_outputs()
+        .map_or(vec![], |outputs| match outputs {
+            ReadOutputs::Translations(translations) => translations.map(cgmath::Vector3::from).collect(),
+            _ => vec![],
+        })
+}
+
+fn read_scales<'a, 's, F>(reader: &Reader<'a, 's, F>) -> Vec<cgmath::Vector3<f32>>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    reader
+        .read_outputs()
+        .map_or(vec![], |outputs| match outputs {
+            ReadOutputs::Scales(scales) => scales.map(cgmath::Vector3::from).collect(),
+            _ => vec![],
+        })
+}
+
+fn read_rotations<'a, 's, F>(reader: &Reader<'a, 's, F>) -> Vec<cgmath::Quaternion<f32>>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    reader
+        .read_outputs()
+        .map_or(vec![], |outputs| match outputs {
+            ReadOutputs::Rotations(scales) => scales
+                .into_f32()
+                .map(|r| cgmath::Quaternion::new(r[3], r[0], r[1], r[2]))
+                .collect(),
+            _ => vec![],
+        })
+}

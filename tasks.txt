@@ -1,0 +1,11 @@
+- Add .gltf and .glb files loading
+- Add skeletal animation
+- Add PBR
+- Add shadow maps
+- Add audio system
+- Create a basic rapier physics collition plane
+- Create a character controller
+- Create a basic panel with egui
+- Add bloom
+- Read and create a .json file
+- Implement game objects system

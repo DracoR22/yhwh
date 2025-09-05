@@ -9,8 +9,7 @@ use gltf::iter;
 use gltf::mesh::Bounds;
 use wgpu::util::DeviceExt;
 
-use crate::animation::animation::{load_animations, Animations};
-use crate::animation::keyframes::Keyframes;
+use crate::animation::animation::{load_animations, Animations, PlaybackMode, PlaybackState};
 use crate::animation::node::Nodes;
 use crate::animation::skin::{create_skins_from_gltf, Skin};
 use crate::math::aabb::Aabb;
@@ -19,17 +18,6 @@ use crate::{
     utils::file::load_file_string_from_env,
     vertex::Vertex,
 };
-
-pub struct Channel {
-    pub node_index: usize,    
-    pub keyframes: Keyframes, 
-    pub timestamps: Vec<f32>, 
-}
-
-pub struct AnimationCip {
-    pub name: String,
-    pub channels: Vec<Channel>
-}
 
 pub struct Mesh {
     pub name: String,
@@ -237,14 +225,10 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
 }
 
 pub fn load_glb_model(device: &wgpu::Device) -> anyhow::Result<Model> {
-    let path = "res/models/cat.glb";
+    let path = "res/models/ak74.glb";
     let file_name = Path::new(path).file_name().and_then(|f| f.to_str()).unwrap();
 
-   
-     let (gltf, buffers, _images) = gltf::import(path).expect("Failed to import glTF/GLB file");
-
-    // For .glb, the binary chunk is in the first buffer
-    //let blob = gltf.blob.as_ref().expect("Missing binary blob");
+    let (gltf, buffers, _images) = gltf::import(path).expect("Failed to import glTF/GLB file");
 
     let mut meshes: Vec<Mesh> = Vec::new();
 
@@ -257,6 +241,10 @@ pub fn load_glb_model(device: &wgpu::Device) -> anyhow::Result<Model> {
 
     // load animations
     let animations = load_animations(gltf.animations(), &buffers);
+
+    for (i, anim ) in animations.as_ref().unwrap().animations().iter().enumerate() {
+        println!("LOADED ANIMATION: {}", anim.get_name())
+    }
 
     // load skins
     let mut skins = create_skins_from_gltf(gltf.skins(), &buffers);
@@ -398,75 +386,6 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
         }
 }
 
-fn visit_animations(gltf: &gltf::Gltf, blob: &[u8]) -> Vec<AnimationCip> {
-   let mut animation_clips_out: Vec<AnimationCip> = Vec::new();
-
-    for (i, animation) in gltf.animations().enumerate() {
-      let mut channels_out: Vec<Channel> = Vec::new();
-
-      for channel in animation.channels() {
-        let reader = channel.reader(|_buffer| Some(&blob));
-        let node_index = channel.target().node().index();
-
-        let timestamps = if let Some(inputs) = reader.read_inputs() {
-            match inputs {
-                gltf::accessor::Iter::Standard(times) => {
-                     let times: Vec<f32> = times.collect();
-                     times
-                }
-                gltf::accessor::Iter::Sparse(_) => {
-                     let times: Vec<f32> = Vec::new();
-                     times
-                }
-            }
-        } else {
-             println!("We got problems");
-             let times: Vec<f32> = Vec::new();
-             times
-        };
-        
-        let keyframes = if let Some(outputs) = reader.read_outputs() {
-            match outputs {
-                gltf::animation::util::ReadOutputs::Translations(translations) => {
-                   let translation_vec: Vec<[f32; 3]> = translations.collect();
-                   Keyframes::Translation(translation_vec)
-                }
-                gltf::animation::util::ReadOutputs::Rotations(rotations) => {
-                    let rotation_vec: Vec<[f32; 4]> = rotations.into_f32().collect();
-                    Keyframes::Rotation(rotation_vec)
-                }
-                gltf::animation::util::ReadOutputs::Scales(scales) => {
-                    let scale_vec: Vec<[f32; 3]> = scales.collect();
-                    Keyframes::Scale(scale_vec)
-                }
-                gltf::animation::util::ReadOutputs::MorphTargetWeights(weights) => {
-                    let weights_vec: Vec<f32> = weights.into_f32().collect();
-                    
-                    Keyframes::Weights(weights_vec)
-                }
-            }
-        } else {
-            Keyframes::Empty
-        };
-
-        channels_out.push(Channel { 
-            node_index,
-            keyframes,
-            timestamps
-        });
-      }
-
-      animation_clips_out.push(AnimationCip {
-        name: animation.name().unwrap_or("Unnamed").to_string(),
-        channels: channels_out
-      });
-
-      println!("Loaded animation: {}", animation_clips_out[i].name);
-    }
-
-    return animation_clips_out
-}
-
 impl Model {
     pub fn update(&mut self, delta_time: f32) -> bool {
         let updated = if let Some(animations) = self.animations.as_mut() {
@@ -487,6 +406,46 @@ impl Model {
         }
 
         updated
+    }
+}
+
+// animations stuff
+impl Model {
+    pub fn get_animation_playback_state(&self) -> Option<PlaybackState> {
+        self.animations
+            .as_ref()
+            .map(Animations::get_playback_state)
+            .copied()
+    }
+
+    pub fn set_current_animation(&mut self, animation_index: usize) {
+        if let Some(animations) = self.animations.as_mut() {
+            animations.set_current(animation_index);
+        }
+    }
+
+    pub fn set_animation_playback_mode(&mut self, playback_mode: PlaybackMode) {
+        if let Some(animations) = self.animations.as_mut() {
+            animations.set_playback_mode(playback_mode);
+        }
+    }
+
+    pub fn toggle_animation(&mut self) {
+        if let Some(animations) = self.animations.as_mut() {
+            animations.toggle();
+        }
+    }
+
+    pub fn stop_animation(&mut self) {
+        if let Some(animations) = self.animations.as_mut() {
+            animations.stop();
+        }
+    }
+
+    pub fn reset_animation(&mut self) {
+        if let Some(animations) = self.animations.as_mut() {
+            animations.reset();
+        }
     }
 }
 

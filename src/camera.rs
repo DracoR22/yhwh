@@ -117,31 +117,6 @@ impl Projection {
 //     }
 // }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct CameraUniform {
-    pub view: [[f32; 4]; 4],
-    pub projection: [[f32; 4]; 4],
-    pub view_position: [f32; 4],
-}
-
-impl CameraUniform {
-    pub fn new() -> Self {
-        use cgmath::SquareMatrix;
-        Self {
-            view_position: [0.0; 4],
-            view: cgmath::Matrix4::identity().into(),
-            projection: cgmath::Matrix4::identity().into(),
-        }
-    }
-
-    pub fn update_view_projection(&mut self, camera: &Camera, projection: &Projection) {
-        self.view_position = camera.position.to_homogeneous().into();
-        self.view = camera.calc_matrix().into();
-        self.projection = projection.calc_matrix().into();
-    }
-}
-
 
 // todo: move to player
 pub struct CameraController {

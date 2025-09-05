@@ -4,7 +4,7 @@ use cgmath::{InnerSpace, VectorSpace};
 use gltf::{animation::{util::ReadOutputs, Reader}, buffer::Data, Buffer};
 
 
-use crate::animation::{keyframes::Keyframes, node::Nodes};
+use crate::animation::{node::Nodes};
 
 pub fn slerp(left: cgmath::Quaternion<f32>, right: cgmath::Quaternion<f32>, amount: f32) -> cgmath::Quaternion<f32> {
     let num2;
@@ -285,6 +285,7 @@ impl<T: Interpolate> Channel<T> {
 }
 
 pub struct Animation {
+    name: String,
     total_time: f32,
     translation_channels: Vec<Channel<cgmath::Vector3<f32>>>,
     rotation_channels: Vec<Channel<cgmath::Quaternion<f32>>>,
@@ -323,6 +324,10 @@ impl Animation {
                 .filter_map(|tc| tc.sample(t))
                 .collect::<Vec<_>>(),
         )
+    }
+
+    pub fn get_name(&self) -> &String {
+      return &self.name;
     }
 }
 
@@ -371,11 +376,14 @@ impl Animation {
         .max_by(|c0, c1| c0.partial_cmp(c1).unwrap_or(Ordering::Equal))
         .unwrap_or(&0.0);
 
+    let animation_name = gltf_animation.name().unwrap_or("Unnamed");
+
     Animation {
         total_time,
         translation_channels,
         rotation_channels,
         scale_channels,
+        name: animation_name.to_string()
     }
 }
 

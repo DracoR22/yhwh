@@ -1,4 +1,4 @@
-use cgmath::prelude::*;
+use cgmath::{prelude::*, Rad};
 
 use std::{path::PathBuf, sync::{mpsc, Arc}, thread, time::Instant};
 
@@ -12,33 +12,15 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{CursorGrabMode, Window},
 };
-use yhwh::{animation::{keyframes::{interpolate_position, interpolate_rotation, interpolate_scale}, skin::MAX_JOINTS_PER_MESH}, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, light_uniform::{self, LightUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_groups::postprocess_group::{self, PostProcessGroup}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture}, utils::file, wgpu_context::WgpuContext};
+use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
 use yhwh::{
-    camera::{Camera, CameraUniform},
+    camera::Camera,
     vertex::Vertex,
 };
 
 pub struct GameObject {
     pub model_name: String,
     pub name: String
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct SkinUniform {
-    pub joint_matrices: [[[f32; 4]; 4]; MAX_JOINTS_PER_MESH],
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ModelUniform {
-    pub model_matrix: [[f32; 4]; 4]
-}
-
-impl ModelUniform {
-    pub fn update_model_matrix(&mut self, matrix: &cgmath::Matrix4<f32>) {
-       self.model_matrix = (*matrix).into();
-    }
 }
 
 pub struct State {
@@ -48,15 +30,6 @@ pub struct State {
     projection: Projection,
     camera: Camera,
     camera_controller: CameraController,
-    camera_uniform: CameraUniform,
-    camera_buffer: wgpu::Buffer,
-    camera_bind_group: wgpu::BindGroup,
-    model_buffers: Vec<wgpu::Buffer>,
-    model_bind_groups: Vec<wgpu::BindGroup>,
-    model_uniform: ModelUniform,
-    skin_uniform: SkinUniform,
-    skin_buffer: wgpu::Buffer,
-    skin_bind_group: wgpu::BindGroup,
     animation_pipeline: wgpu::RenderPipeline,
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
@@ -67,18 +40,15 @@ pub struct State {
     plane_model: Model,
     glb_model: Model,
     game_objects: Vec<GameObject>,
-    light_uniform: LightUniform,
-    light_buffer: wgpu::Buffer,
-    light_bind_group: wgpu::BindGroup,
     debug_render_pipeline: wgpu::RenderPipeline,
     barrel_texture_bind_group: wgpu::BindGroup,
     cubemap_bind_group: wgpu::BindGroup,
     cubemap_render_pipeline: wgpu::RenderPipeline,
     cubemap_vertex_buffer: wgpu::Buffer,
 
-    postprocess_group: PostProcessGroup,
-
-    time: Instant
+    postprocess_pass: PostProcessPass,
+    animation_pass: AnimationPass,
+    wgpu_uniforms: WgpuUniforms,
 }
 
 impl State {
@@ -93,11 +63,26 @@ impl State {
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
         let projection = Projection::new(config.width, config.height, cgmath::Deg(45.0), 0.1, 100.0);
         let camera_controller = CameraController::new(4.0, 0.4);
-        let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_projection(&camera, &projection);
+
+        let game_objects_size = 2;
+
+        let mut model_uniforms: Vec<Uniform<ModelUniform>> = Vec::new();
+        for _g in 0..game_objects_size {
+            let model_uniform = Uniform::new(ModelUniform::new(), &device);
+
+            model_uniforms.push(model_uniform);
+        }
+        // load uniforms
+        let wgpu_uniforms = WgpuUniforms { 
+            camera: Uniform::new(CameraUniform::new(), &device),
+            models: model_uniforms,
+            animation: Uniform::new(AnimationUniform::new(), &device),
+            light: Uniform::new(LightUniform::new(), &device)
+        };
 
         // render groups
-        let postprocess_group = postprocess_group::PostProcessGroup::new(&device, &config);
+        let postprocess_pass = PostProcessPass::new(&device, &config);
+        let animation_pass = AnimationPass::new(&device, &wgpu_uniforms);
 
         // load textures
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -196,58 +181,6 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/animation.wgsl").into()),
         });
 
-        let light_uniform = LightUniform {
-          position: [2.0, 2.0, 2.0],
-           _padding: 0,
-          color: [1.0, 1.0, 1.0],
-          _padding2: 0,
-        };
-
-        let model_uniform = ModelUniform {
-            model_matrix: cgmath::Matrix4::identity().into()
-        };
-
-        let skin_uniform = SkinUniform {
-            joint_matrices: [cgmath::Matrix4::<f32>::identity().into(); MAX_JOINTS_PER_MESH]
-        };
-
-        // create buffers
-        // let model_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Model_Buffer"),
-        //     contents: bytemuck::cast_slice(&[model_uniform]),
-        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        // });
-
-        let skin_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Skin_Buffer"),
-            contents: bytemuck::cast_slice(&[skin_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera_Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Light_Stuff"),
-            contents: bytemuck::cast_slice(&[light_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        // let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Vertex_Buffer"),
-        //     contents: bytemuck::cast_slice(CUBE_VERTICES),
-        //     usage: wgpu::BufferUsages::VERTEX,
-        // });
-
-        // let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Index_Buffer"),
-        //     contents: bytemuck::cast_slice(CUBE_INDICES),
-        //     usage: wgpu::BufferUsages::INDEX,
-        // });
-
         let cubemap_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Cube_Vertex_Buffer"),
             contents: bytemuck::cast_slice(SKYBOX_VERTICES),
@@ -263,37 +196,8 @@ impl State {
          usage: wgpu::BufferUsages::VERTEX,
         });
 
-        // create bind group layouts
-        let skin_bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(&device, wgpu::ShaderStages::VERTEX_FRAGMENT, Some("skin_bind_group_layout")).unwrap();
-        let model_bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(&device, wgpu::ShaderStages::VERTEX_FRAGMENT, Some("model_bind_group_layout")).unwrap();
-        let camera_bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(&device, wgpu::ShaderStages::VERTEX_FRAGMENT, Some("camera_bind_group_layout")).unwrap();
-        let light_bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(&device, wgpu::ShaderStages::VERTEX_FRAGMENT, Some("light_bind_group_layout")).unwrap();
-
         let texture_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float, TL::Float]).unwrap();
         let cubemap_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
-
-         let game_objects_size = 2;
-
-        let mut model_buffers: Vec<wgpu::Buffer> = Vec::new();
-        let mut model_bind_groups: Vec<wgpu::BindGroup> = Vec::new();
-        for _g in 0..game_objects_size {
-           let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Model_Buffer"),
-            contents: bytemuck::cast_slice(&[model_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-          });
-
-          let bind_group = BindGroupManager::create_uniform_bind_group(&device, &model_bind_group_layout, &buffer, Some("Model_Bind_Group")).unwrap();
-
-          model_buffers.push(buffer);
-          model_bind_groups.push(bind_group);
-        }
-
-        // create bind groups
-        // let model_bind_group = BindGroupManager::create_uniform_bind_group(&device, &model_bind_group_layout, &model_buffer, Some("Model_Bind_Group")).unwrap();
-        let camera_bind_group = BindGroupManager::create_uniform_bind_group(&device, &camera_bind_group_layout, &camera_buffer, Some("Camera_Bind_Group")).unwrap();
-        let light_bind_group = BindGroupManager::create_uniform_bind_group(&device, &light_bind_group_layout, &light_buffer, Some("Light_Bind_Group")).unwrap();
-        let skin_bind_group = BindGroupManager::create_uniform_bind_group(&device, &skin_bind_group_layout, &skin_buffer, Some("Skin_Bind_Group")).unwrap();
         
         let diffuse_bind_group = BindGroupManager::create_multi_texture_bind_group(&device, &texture_bind_group_layout, &[&diffuse_texture, &barrel_nrm_texture]).unwrap();
         let dude_bind_group = BindGroupManager::create_multi_texture_bind_group(&device, &texture_bind_group_layout, &[&dude_texture, &barrel_nrm_texture]).unwrap();
@@ -305,40 +209,40 @@ impl State {
         // pipeline layouts
         let animation_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Animation_Pipeline_Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout, &model_bind_group_layout, &skin_bind_group_layout],
+                bind_group_layouts: &[&wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.models[0].bind_group_layout, &wgpu_uniforms.animation.bind_group_layout],
                 push_constant_ranges: &[],
         });
 
         let cubemap_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Cube_Map_Pipeline_Layout"),
-                bind_group_layouts: &[&cubemap_bind_group_layout, &camera_bind_group_layout],
+                bind_group_layouts: &[&cubemap_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout],
                 push_constant_ranges: &[],
         });
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render_Pipeline_Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout, &model_bind_group_layout, &light_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.models[0].bind_group_layout, &wgpu_uniforms.light.bind_group_layout],
                 push_constant_ranges: &[],
         });
 
         let instance_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render_Pipeline_Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout, &light_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.light.bind_group_layout],
                 push_constant_ranges: &[],
         });
 
         let debug_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Debug_Pipeline_Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout, &light_bind_group_layout],
+                bind_group_layouts: &[&wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.light.bind_group_layout],
                 push_constant_ranges: &[],
         });
 
         // render pipelines
-        let cubemap_render_pipeline = PipelineManager::create_cubemap_pipeline(&device, &cubemap_pipeline_layout, postprocess_group.get_format(), &cubemap_shader_module).unwrap();
-        let animation_pipeline = PipelineManager::create_pipeline(&device, &animation_pipeline_layout, postprocess_group.get_format(), Some(wgpu::TextureFormat::Depth32Float), &animation_shader_module, &[Vertex::desc()], Some("animation pipeline")).unwrap();
-        let render_pipeline = PipelineManager::create_pipeline(&device, &render_pipeline_layout, postprocess_group.get_format(), Some(wgpu::TextureFormat::Depth32Float), &default_shader_module, &[Vertex::desc()], Some("1")).unwrap();
-        let debug_render_pipeline = PipelineManager::create_pipeline(&device, &debug_pipeline_layout, postprocess_group.get_format(), Some(wgpu::TextureFormat::Depth32Float), &debug_shader_module, &[Vertex::desc()], Some("2")).unwrap();
-        let instance_render_pipeline = PipelineManager::create_pipeline(&device, &instance_pipeline_layout, postprocess_group.get_format(), Some(wgpu::TextureFormat::Depth32Float), &instance_shader_module, &[Vertex::desc(), InstanceUniform::desc()], Some("3")).unwrap();
+        let cubemap_render_pipeline = PipelineManager::create_cubemap_pipeline(&device, &cubemap_pipeline_layout, postprocess_pass.get_format(), &cubemap_shader_module).unwrap();
+        let animation_pipeline = PipelineManager::create_pipeline(&device, &animation_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &animation_shader_module, &[Vertex::desc()], Some("animation pipeline")).unwrap();
+        let render_pipeline = PipelineManager::create_pipeline(&device, &render_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &default_shader_module, &[Vertex::desc()], Some("1")).unwrap();
+        let debug_render_pipeline = PipelineManager::create_pipeline(&device, &debug_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &debug_shader_module, &[Vertex::desc()], Some("2")).unwrap();
+        let instance_render_pipeline = PipelineManager::create_pipeline(&device, &instance_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &instance_shader_module, &[Vertex::desc(), InstanceUniform::desc()], Some("3")).unwrap();
 
         let obj_model = model::load_obj_model("Barrel.obj", &device, "Barrel").await.unwrap();
         let cube_model = model::load_cube(&device, "Cube").unwrap();
@@ -361,16 +265,7 @@ impl State {
             camera,
             projection,
             camera_controller,
-            camera_buffer,
-            camera_uniform,
-            camera_bind_group,
-            model_bind_groups,
-            model_buffers,
-            model_uniform,
             animation_pipeline,
-            skin_bind_group,
-            skin_buffer, 
-            skin_uniform,
             instance_buffer,
             instances,
             instance_render_pipeline,
@@ -380,16 +275,14 @@ impl State {
             glb_model,
             game_objects,
             plane_model,
-            light_uniform,
-            light_buffer,
-            light_bind_group,
             debug_render_pipeline,
             barrel_texture_bind_group,
             cubemap_bind_group,
             cubemap_render_pipeline,
             cubemap_vertex_buffer,
-            postprocess_group,
-            time
+            postprocess_pass,
+            animation_pass,
+            wgpu_uniforms,
         };
     }
 
@@ -399,38 +292,35 @@ impl State {
 
       // camera uniform
       self.camera_controller.update_camera(&mut self.camera, dt);
-      self.camera_uniform.update_view_projection(&self.camera, &self.projection);
+      let mut updated_camera = CameraUniform::new();
+      updated_camera.update(&self.camera, &self.projection);
 
-      queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
+      self.wgpu_uniforms.camera.update_direct(&queue, &updated_camera);
 
       // model uniform (0)
-      let translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(10.0, 0.0, 0.0));
-      let rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
-      let scale = cgmath::Matrix4::from_scale(0.5);
-      let model_matrix = translation * rotation * scale;
-
-      self.model_uniform.update_model_matrix(&model_matrix);
-
-      queue.write_buffer(&self.model_buffers[0], 0, bytemuck::cast_slice(&[self.model_uniform]));
-
       self.glb_model.update(delta_time);
-
-      let mut skin_data = SkinUniform {
-        joint_matrices: [[[0.0; 4]; 4]; MAX_JOINTS_PER_MESH],
-      };
-
+      let skin_uniform = self.wgpu_uniforms.animation.value_mut();
       if let Some(skin) = self.glb_model.skins.get(0) {
         for (i, joint) in skin.joints().iter().enumerate() {
          if i >= MAX_JOINTS_PER_MESH {
-            break; // Don't overflow the GPU uniform
+            break; 
          }
 
-        // Convert cgmath::Matrix4 to [[f32; 4]; 4]
-        skin_data.joint_matrices[i] = joint.matrix().into();
+         // Convert cgmath::Matrix4 to [[f32; 4]; 4]
+         skin_uniform.joint_matrices[i] = joint.matrix().into();
         }
       }
 
-     queue.write_buffer(&self.skin_buffer, 0, bytemuck::cast_slice(&[skin_data]));
+      self.wgpu_uniforms.animation.update(&queue);
+
+      let translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(10.0, 2.0, 0.0));
+      let rotation = cgmath::Matrix4::from_angle_x(cgmath::Rad(0.0));
+      let scale = cgmath::Matrix4::from_scale(1.5);
+      let model_matrix = translation * rotation * scale;
+
+      let model_uniform = self.wgpu_uniforms.models[0].value_mut();
+      model_uniform.update(&model_matrix);
+      self.wgpu_uniforms.models[0].update(&queue); 
 
       // model uniform (1)
       let p_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, 0.0));
@@ -438,59 +328,17 @@ impl State {
       let p_scale = cgmath::Matrix4::from_scale(100.0);
       let p_model_matrix = p_translation * p_rotation * p_scale;
 
-      self.model_uniform.update_model_matrix(&p_model_matrix);
+    //   self.model_uniform.update_model_matrix(&p_model_matrix);
+    let mut updated_model2 = ModelUniform::new();
+    updated_model2.update(&p_model_matrix);
 
-      queue.write_buffer(&self.model_buffers[1], 0, bytemuck::cast_slice(&[self.model_uniform]));
+    self.wgpu_uniforms.models[1].update_direct(&queue, &updated_model2);
 
       // update light position
-      let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
-      self.light_uniform.position = (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(60.0 * dt.as_secs_f32())) * old_position).into();
-      queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
-
-      // update animations
-    //   let mut translation = cgmath::Vector3::new(0.0, 5.0, 0.0);
-    //   let mut rotation = cgmath::Quaternion::from_angle_y(cgmath::Rad(0.0));
-    //   let mut scale = cgmath::Vector3::new(0.5, 0.5, 0.5);
-
-      //let current_time = &self.time.elapsed().as_secs_f32();
-    //   if self.glb_model.animation_clips.len() > 0 {
-    //     let clip = &self.glb_model.animation_clips[0];
-
-    //     let duration = clip.channels.iter().filter_map(|c| c.timestamps.last()).copied().fold(0.0_f32, |a, b| a.max(b)); 
-
-    //     let mut current_time = self.time.elapsed().as_secs_f32();
-
-    //     // loop time
-    //     if duration > 0.0 {
-    //        current_time = current_time % duration;
-    //     }
-
-
-    //     for channel in &clip.channels {
-    //        let node_index = channel.node_index;
-
-    //       // sample translation
-    //       if let Some(t) = interpolate_position(channel, current_time) {
-    //          translation = cgmath::Vector3::from(t);
-    //       }
-
-    //       // sample rotation
-    //       if let Some(r) = interpolate_rotation(channel, current_time) {
-    //          rotation = cgmath::Quaternion::from(r);
-    //       }
-
-    //       // sample scale
-    //       if let Some(s) = interpolate_scale(channel, current_time) {
-    //         // scale = cgmath::Vector3::from(s);
-    //       }
-    //     } 
-    //   }
-
-    //   let model_matrix = cgmath::Matrix4::from_translation(translation) * cgmath::Matrix4::from(rotation) * cgmath::Matrix4::from_nonuniform_scale(scale.x, scale.y, scale.z);
-
-    //   // write to GPU
-    //   self.model_uniform.update_model_matrix(&model_matrix);
-    //   queue.write_buffer(&self.model_buffers[0], 0, bytemuck::cast_slice(&[self.model_uniform]));
+      let light_uniform = self.wgpu_uniforms.light.value_mut();
+      let old_position: cgmath::Vector3<_> = light_uniform.position.into();
+      light_uniform.position = (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(60.0 * dt.as_secs_f32())) * old_position).into();
+      self.wgpu_uniforms.light.update(&queue);
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -516,7 +364,7 @@ impl State {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("First_Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: self.postprocess_group.get_view(),
+                view: self.postprocess_pass.get_view(),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -557,9 +405,9 @@ impl State {
 
          // uniforms
         render_pass.set_bind_group(0, &self.barrel_texture_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-        render_pass.set_bind_group(2, &self.model_bind_groups[1], &[]);
-        render_pass.set_bind_group(3, &self.light_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
+        render_pass.set_bind_group(2, &self.wgpu_uniforms.models[1].bind_group, &[]);
+        render_pass.set_bind_group(3, &self.wgpu_uniforms.light.bind_group, &[]);
 
        for mesh in &self.plane_model.meshes {
          render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
@@ -568,24 +416,14 @@ impl State {
        }
 
         // animation
-        render_pass.set_pipeline(&self.animation_pipeline);
-
-        render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.model_bind_groups[0], &[]);
-        render_pass.set_bind_group(2, &self.skin_bind_group, &[]);
-
-       for mesh in &self.glb_model.meshes {
-         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-       }
+       self.animation_pass.render(&self.wgpu_uniforms, &mut render_pass, &self.glb_model);
 
         // instance pass
         render_pass.set_pipeline(&self.instance_render_pipeline);
 
         render_pass.set_bind_group(0, &self.barrel_texture_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-        render_pass.set_bind_group(2, &self.light_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
+        render_pass.set_bind_group(2, &self.wgpu_uniforms.light.bind_group, &[]);
 
        for mesh in &self.obj_model.meshes {
         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
@@ -597,8 +435,8 @@ impl State {
        // debug pass
        render_pass.set_pipeline(&self.debug_render_pipeline);
 
-       render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-       render_pass.set_bind_group(1, &self.light_bind_group, &[]);
+       render_pass.set_bind_group(0, &self.wgpu_uniforms.camera.bind_group, &[]);
+       render_pass.set_bind_group(1, &self.wgpu_uniforms.light.bind_group, &[]);
        
        for mesh in &self.cube_model.meshes {
          render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
@@ -610,7 +448,7 @@ impl State {
        render_pass.set_pipeline(&self.cubemap_render_pipeline);
 
        render_pass.set_bind_group(0, &self.cubemap_bind_group, &[]);
-       render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+       render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
 
        render_pass.set_vertex_buffer(0, self.cubemap_vertex_buffer.slice(..));
        render_pass.draw(0..(SKYBOX_VERTICES.len() / 3) as u32, 0..1);
@@ -618,7 +456,7 @@ impl State {
        drop(render_pass);
 
        // post process
-       self.postprocess_group.render(&mut encoder, &view);
+       self.postprocess_pass.render(&mut encoder, &view);
 
         // submit will accept anything that implements IntoIter
         queue.submit(std::iter::once(encoder.finish()));
@@ -630,7 +468,7 @@ impl State {
     pub fn resize(&mut self, width: u32, height: u32) {
         self.projection.resize(width, height);
         self.depth_texture = texture::Texture::create_depth_texture(&self.wgpu_context.get_device(), &self.wgpu_context.get_surface_config(), "depth_texture");
-        self.postprocess_group.resize(&self.wgpu_context.get_device(), width, height);
+        self.postprocess_pass.resize(&self.wgpu_context.get_device(), width, height);
     }
 }
 
@@ -727,6 +565,20 @@ impl ApplicationHandler<State> for App {
                       let _res = state.window.set_cursor_grab(CursorGrabMode::Confined).or_else(|_e| state.window.set_cursor_grab(CursorGrabMode::Locked));
                     }
                 }
+
+                let anim_len = state.glb_model.animations.as_ref().unwrap().animations().len();
+                 if self.keyboard.key_just_pressed(KeyCode::KeyR) {
+                   let play_back_state = state.glb_model.get_animation_playback_state().unwrap();
+                   let mut current_anim = play_back_state.current;
+
+                  if current_anim + 1 < anim_len {
+                   current_anim += 1;
+                  } else {
+                   current_anim = 0;
+                  }
+
+                  state.glb_model.set_current_animation(current_anim);
+                 }
 
                 let now = std::time::Instant::now();
                 let dt = now - self.last_redraw;

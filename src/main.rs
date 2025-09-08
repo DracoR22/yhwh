@@ -12,7 +12,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{CursorGrabMode, Window},
 };
-use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
+use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
 use yhwh::{
     camera::Camera,
     vertex::Vertex,
@@ -41,12 +41,10 @@ pub struct State {
     glb_model: Model,
     game_objects: Vec<GameObject>,
     debug_render_pipeline: wgpu::RenderPipeline,
-    cubemap_bind_group: wgpu::BindGroup,
-    cubemap_render_pipeline: wgpu::RenderPipeline,
-    cubemap_vertex_buffer: wgpu::Buffer,
 
     postprocess_pass: PostProcessPass,
     animation_pass: AnimationPass,
+    skybox_pass: SkyboxPass,
     wgpu_uniforms: WgpuUniforms,
 }
 
@@ -79,26 +77,17 @@ impl State {
             light: Uniform::new(LightUniform::new(), &device)
         };
 
-        // render groups
-        let postprocess_pass = PostProcessPass::new(&device, &config);
-        let animation_pass = AnimationPass::new(&device, &wgpu_uniforms);
-
         // load fbos
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
-        // loa textures
-        let mut asset_manager = AssetManager::new(&device, &queue);
+        // load textures
+        let mut asset_manager = AssetManager::new(&context);
         asset_manager.build_materials(&device);
 
-        let flipped_right = asset_manager.get_texture_by_name("SkyRight.jpg").unwrap().flip_horizontal();
-        let cubemap_texture = CubeMap::new(&device, &queue, asset_manager.get_texture_by_name("SkyRight.jpg").unwrap().dimensions, [
-            &flipped_right.pixel_data,
-            &asset_manager.get_texture_by_name("SkyLeft.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyTop.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyBottom.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyFront.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyBack.jpg").unwrap().pixel_data,
-        ]);
+        // render groups
+        let postprocess_pass = PostProcessPass::new(&device, &config);
+        let animation_pass = AnimationPass::new(&device, &wgpu_uniforms);
+        let skybox_pass = SkyboxPass::new(&context, &asset_manager, &wgpu_uniforms);
  
         // load shaders
         let default_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -121,12 +110,6 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/cube_map.wgsl").into()),
         });
 
-        let cubemap_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Cube_Vertex_Buffer"),
-            contents: bytemuck::cast_slice(SKYBOX_VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
         let instances = Instance::get_instances();
         let instance_data = Instance::get_instance_data();
 
@@ -137,24 +120,8 @@ impl State {
         });
 
         let texture_bind_group_layout = &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group_layout;
-        let cubemap_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
-
-        let cube_tex = texture::Texture { 
-            sampler: cubemap_texture.sampler,
-            view: cubemap_texture.view,
-            texture: cubemap_texture.texture,
-            dimensions: Default::default(),
-            pixel_data: Default::default()
-        };
-        let cubemap_bind_group = BindGroupManager::create_texture_bind_group(&device, &cubemap_bind_group_layout, &cube_tex).unwrap();
  
         // pipeline layouts
-        let cubemap_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Cube_Map_Pipeline_Layout"),
-                bind_group_layouts: &[&cubemap_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout],
-                push_constant_ranges: &[],
-        });
-
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render_Pipeline_Layout"),
                 bind_group_layouts: &[&texture_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.models[0].bind_group_layout, &wgpu_uniforms.light.bind_group_layout],
@@ -174,7 +141,6 @@ impl State {
         });
 
         // render pipelines
-        let cubemap_render_pipeline = PipelineManager::create_cubemap_pipeline(&device, &cubemap_pipeline_layout, postprocess_pass.get_format(), &cubemap_shader_module).unwrap();
         let render_pipeline = PipelineManager::create_pipeline(&device, &render_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &default_shader_module, &[Vertex::desc()], Some("1")).unwrap();
         let debug_render_pipeline = PipelineManager::create_pipeline(&device, &debug_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &debug_shader_module, &[Vertex::desc()], Some("2")).unwrap();
         let instance_render_pipeline = PipelineManager::create_pipeline(&device, &instance_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &instance_shader_module, &[Vertex::desc(), InstanceUniform::desc()], Some("3")).unwrap();
@@ -209,11 +175,9 @@ impl State {
             game_objects,
             plane_model,
             debug_render_pipeline,
-            cubemap_bind_group,
-            cubemap_render_pipeline,
-            cubemap_vertex_buffer,
             postprocess_pass,
             animation_pass,
+            skybox_pass,
             wgpu_uniforms,
         };
     }
@@ -364,13 +328,7 @@ impl State {
        }
 
        // skybox
-       render_pass.set_pipeline(&self.cubemap_render_pipeline);
-
-       render_pass.set_bind_group(0, &self.cubemap_bind_group, &[]);
-       render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
-
-       render_pass.set_vertex_buffer(0, self.cubemap_vertex_buffer.slice(..));
-       render_pass.draw(0..(SKYBOX_VERTICES.len() / 3) as u32, 0..1);
+       self.skybox_pass.render(&mut render_pass, &self.wgpu_uniforms);
 
        drop(render_pass);
 
@@ -483,6 +441,10 @@ impl ApplicationHandler<State> for App {
                     } else {
                       let _res = state.window.set_cursor_grab(CursorGrabMode::Confined).or_else(|_e| state.window.set_cursor_grab(CursorGrabMode::Locked));
                     }
+                }
+
+                if self.keyboard.key_just_pressed(KeyCode::F2) {
+                    state.postprocess_pass.hotload_shader(&state.wgpu_context);
                 }
 
                 let anim_len = state.glb_model.animations.as_ref().unwrap().animations().len();

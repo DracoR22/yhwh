@@ -5,11 +5,11 @@ use image::imageops::resize;
 use winit::window::Window;
 
 pub struct WgpuContext {
-    surface: wgpu::Surface<'static>,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    config: wgpu::SurfaceConfiguration,
-    is_surface_configured: bool,
+    pub surface: wgpu::Surface<'static>,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub config: wgpu::SurfaceConfiguration,
+    pub is_surface_configured: bool,
 }
 
 impl WgpuContext {

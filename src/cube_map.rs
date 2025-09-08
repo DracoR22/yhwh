@@ -1,13 +1,14 @@
 use image::GenericImageView;
-
-use crate::{bind_group_manager::{BindGroupManager, TL}, texture::Texture};
+use wgpu::util::DeviceExt;
+use crate::{bind_group_manager::{BindGroupManager, TL}, renderer_common::SKYBOX_VERTICES, texture::Texture};
 
 pub struct CubeMap {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
     pub texture_bind_group: wgpu::BindGroup,
-    pub texture_bind_group_layout: wgpu::BindGroupLayout
+    pub texture_bind_group_layout: wgpu::BindGroupLayout,
+    pub vertex_buffer: wgpu::Buffer
 }
 
 impl CubeMap {
@@ -83,12 +84,19 @@ impl CubeMap {
         let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
         let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &cube_tex).unwrap();
 
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Cube_Vertex_Buffer"),
+            contents: bytemuck::cast_slice(SKYBOX_VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
         Self { 
             texture,
             view: texture_view,
             sampler: texture_sampler,
             texture_bind_group: bind_group,
-            texture_bind_group_layout: bind_group_layout
+            texture_bind_group_layout: bind_group_layout,
+            vertex_buffer
         }
     }
 
@@ -162,12 +170,19 @@ impl CubeMap {
         let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
         let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &cube_tex).unwrap();
 
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Cube_Vertex_Buffer"),
+            contents: bytemuck::cast_slice(SKYBOX_VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
         Self { 
             texture,
             view: texture_view,
             sampler: texture_sampler,
             texture_bind_group: bind_group,
-            texture_bind_group_layout: bind_group_layout
+            texture_bind_group_layout: bind_group_layout,
+            vertex_buffer
          }
     }
 

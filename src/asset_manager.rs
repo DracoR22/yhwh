@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::Path, sync::mpsc, thread};
 
-use crate::{cube_map::CubeMap, material::Material, texture::{Texture, TextureData}};
+use crate::{cube_map::CubeMap, material::Material, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
     textures: HashMap<String, Texture>,
@@ -8,7 +8,7 @@ pub struct AssetManager {
 }
 
 impl AssetManager {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
+    pub fn new(ctx: &WgpuContext) -> Self {
         let now = std::time::SystemTime::now();
 
         let (sender, receiver) = mpsc::channel::<TextureData>();
@@ -34,7 +34,7 @@ impl AssetManager {
         let mut texture_map: HashMap<String, Texture> = HashMap::new();
         for data in receiver {
              let is_normal_map = data.name.contains("_NRM");
-               let texture = Texture::allocate_gpu_from_image(&device, &queue, &data.image, is_normal_map);
+               let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
                texture_map.insert(data.name, texture);
         }
 

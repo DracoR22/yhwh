@@ -1,13 +1,14 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, pipeline_manager::PipelineManager, texture};
+use crate::{bind_group_manager::{BindGroupManager, TL}, pipeline_manager::PipelineManager, texture, wgpu_context::WgpuContext};
 
 pub struct PostProcessPass {
+    pipeline_layout: wgpu::PipelineLayout,
     pipeline: wgpu::RenderPipeline,
+    bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     texture: texture::Texture,
     width: u32,
     height: u32,
     format: wgpu::TextureFormat,
-    layout: wgpu::BindGroupLayout,
 }
 
 impl PostProcessPass {
@@ -19,8 +20,8 @@ impl PostProcessPass {
 
        let texture = texture::Texture::create_fbo(&device, (width, height), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-       let layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float]).unwrap();
-       let bind_group = BindGroupManager::create_texture_bind_group(&device, &layout, &texture).unwrap();
+       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float]).unwrap();
+       let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &texture).unwrap();
 
         let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Default_Shader"),
@@ -29,7 +30,7 @@ impl PostProcessPass {
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Post_Process_Pipeline_Layout"),
-                bind_group_layouts: &[&layout],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
         });
 
@@ -39,17 +40,18 @@ impl PostProcessPass {
             bind_group,
             format,
             height, 
-            layout, 
+            bind_group_layout, 
             pipeline,
             texture,
-            width
+            width,
+            pipeline_layout
         }
     }
 
     pub fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
        self.texture = texture::Texture::create_fbo(&device, (width, height),  wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-       match BindGroupManager::create_texture_bind_group(&device, &self.layout, &self.texture) {
+       match BindGroupManager::create_texture_bind_group(&device, &self.bind_group_layout, &self.texture) {
         Ok(result) => self.bind_group = result,
         Err(e) => {
             println!("PostProcessGroup::resize() error: failed to resize texture bind group!! {e}")
@@ -66,6 +68,21 @@ impl PostProcessPass {
 
     pub fn get_format(&self) -> wgpu::TextureFormat {
         return self.format
+    }
+
+    pub fn hotload_shader(&mut self, ctx: &WgpuContext) {
+      let shader_code = std::fs::read_to_string("res/shaders/postprocess.wgsl").unwrap();
+      let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Default_Shader"),
+            source: wgpu::ShaderSource::Wgsl(shader_code.into()),
+       });
+
+      let new_pipeline = PipelineManager::create_pipeline(&ctx.device, &self.pipeline_layout, ctx.config.format.add_srgb_suffix(), None, &shader_module, &[], Some("4"));
+
+      match new_pipeline {
+          Ok(res) => self.pipeline = res,
+          Err(err) => println!("PostProcessPass::hotload_shader() error: {err}")
+      }
     }
 
     pub fn render(&self, encoder: &mut wgpu::CommandEncoder, output: &wgpu::TextureView) {

@@ -1,12 +1,15 @@
-use std::path::PathBuf;
+use std::{default, path::PathBuf};
 
 use image::{DynamicImage, GenericImageView};
 
+#[derive(Clone)]
 pub struct Texture {
     #[allow(unused)]
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
+    pub dimensions: (u32, u32),
+    pub pixel_data: Vec<u8>
 }
 
 impl Texture {
@@ -23,12 +26,12 @@ impl Texture {
         return image
     }
 
-    pub fn new_from_bytes(device: &wgpu::Device, queue: &wgpu::Queue, bytes: &[u8], is_normal_map: bool) -> Self {
+    pub fn allocate_gpu_from_bytes(device: &wgpu::Device, queue: &wgpu::Queue, bytes: &[u8], is_normal_map: bool) -> Self {
         let image = image::load_from_memory(bytes).unwrap();
-        return Self::new_from_image(device, queue, &image, is_normal_map);
+        return Self::allocate_gpu_from_image(device, queue, &image, is_normal_map);
     }
 
-    pub fn new_from_image(device: &wgpu::Device, queue: &wgpu::Queue, img: &image::DynamicImage, is_normal_map: bool) -> Self {
+    pub fn allocate_gpu_from_image(device: &wgpu::Device, queue: &wgpu::Queue, img: &image::DynamicImage, is_normal_map: bool) -> Self {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
 
@@ -82,7 +85,13 @@ impl Texture {
             ..Default::default()
         });
 
-        Self { texture, view: texture_view, sampler: texture_sampler }
+        Self { 
+            texture,
+            view: texture_view,
+            sampler: texture_sampler,
+            dimensions: img.dimensions(),
+            pixel_data: rgba.into_raw()
+            }
     }
 
     pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; 
@@ -122,7 +131,13 @@ impl Texture {
             }
         );
 
-        Self { texture, view, sampler }
+        Self { 
+            texture,
+            view,
+            sampler,
+            dimensions: Default::default(),
+            pixel_data: Default::default()
+         }
     }
 
     pub fn create_fbo(device: &wgpu::Device, (width, height): (u32, u32), format: wgpu::TextureFormat, usage: wgpu::TextureUsages) -> Self {
@@ -157,7 +172,45 @@ impl Texture {
         Self {
             sampler,
             texture, 
-            view
+            view,
+            dimensions: Default::default(),
+            pixel_data: Default::default()
         }
     }
+}
+
+// helpers
+pub trait TextureHelpers {
+    fn flip_horizontal(&self) -> Self;
+}
+
+impl TextureHelpers for Texture {
+    fn flip_horizontal(&self) -> Self {
+        let mut new = self.clone();
+        let bpp = 4; // RGBA8
+        let width = new.dimensions.0 as usize;
+        let height = new.dimensions.1 as usize;
+        let row_stride = (width * bpp) as usize;
+
+        for y in 0..height {
+            let row_start = y as usize * row_stride;
+            let row = &mut new.pixel_data[row_start..row_start + row_stride];
+
+            for x in 0..(width / 2) {
+                let left = (x as usize) * bpp;
+                let right = ((width - 1 - x) as usize) * bpp;
+
+                for i in 0..bpp {
+                    row.swap(left + i, right + i);
+                }
+            }
+        }
+
+        new
+    }
+}
+
+pub struct TextureData {
+    pub image: DynamicImage,
+    pub name: String
 }

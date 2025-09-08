@@ -225,7 +225,7 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
 }
 
 pub fn load_glb_model(device: &wgpu::Device) -> anyhow::Result<Model> {
-    let path = "res/models/ak74.glb";
+    let path = "res/models/glock.glb";
     let file_name = Path::new(path).file_name().and_then(|f| f.to_str()).unwrap();
 
     let (gltf, buffers, _images) = gltf::import(path).expect("Failed to import glTF/GLB file");

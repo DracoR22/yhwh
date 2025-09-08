@@ -12,7 +12,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{CursorGrabMode, Window},
 };
-use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
+use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
 use yhwh::{
     camera::Camera,
     vertex::Vertex,
@@ -26,11 +26,11 @@ pub struct GameObject {
 pub struct State {
     window: Arc<Window>,
     wgpu_context: WgpuContext,
+    asset_manager: AssetManager,
     render_pipeline: wgpu::RenderPipeline,
     projection: Projection,
     camera: Camera,
     camera_controller: CameraController,
-    animation_pipeline: wgpu::RenderPipeline,
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
     instance_render_pipeline: wgpu::RenderPipeline,
@@ -41,7 +41,6 @@ pub struct State {
     glb_model: Model,
     game_objects: Vec<GameObject>,
     debug_render_pipeline: wgpu::RenderPipeline,
-    barrel_texture_bind_group: wgpu::BindGroup,
     cubemap_bind_group: wgpu::BindGroup,
     cubemap_render_pipeline: wgpu::RenderPipeline,
     cubemap_vertex_buffer: wgpu::Buffer,
@@ -84,76 +83,22 @@ impl State {
         let postprocess_pass = PostProcessPass::new(&device, &config);
         let animation_pass = AnimationPass::new(&device, &wgpu_uniforms);
 
-        // load textures
+        // load fbos
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
-        let diffuse_bytes = include_bytes!("../res/textures/phantom.png");
-        let diffuse_texture = Texture::new_from_bytes(&device, &queue, diffuse_bytes, false);
+        // loa textures
+        let mut asset_manager = AssetManager::new(&device, &queue);
+        asset_manager.build_materials(&device);
 
-        let dude_bytes = include_bytes!("../res/textures/dude.jpg");
-        let dude_texture = Texture::new_from_bytes(&device, &queue, dude_bytes, false);
-
-        let barrel_bytes = include_bytes!("../res/textures/barrel_BLUE_Albedo.png");
-        let barrel_texture = Texture::new_from_bytes(&device, &queue, barrel_bytes, false);
-
-        let barrel_nrm_bytes = include_bytes!("../res/textures/barrel_BLUE_Normal.png");
-        let barrel_nrm_texture = Texture::new_from_bytes(&device, &queue, barrel_nrm_bytes, true);
-
-        // MULTITHREAD TEXTURE LOADING!!!
-        let now = std::time::SystemTime::now();
-
-        // let (sender, receiver) = mpsc::channel::<image::DynamicImage>();
-
-        // for entry in std::fs::read_dir("res/textures").unwrap() {
-        //     let entry = entry.unwrap();
-
-        //     println!("LOADING TEXTURE: {}", entry.path().to_str().unwrap());
-
-        //     let sender = sender.clone();
-        //     thread::spawn(move || {
-        //         let data = Texture::decode_texture_from_path(&entry.path().to_str().unwrap());
-        //         sender.send(data).unwrap();
-        //     });
-        // }
-
-        // drop(sender);
-
-        // let mut skybox_textures: Vec<image::DynamicImage> = Vec::new();
-        // for data in receiver {
-        //   // let tex = Texture::new_from_bytes(&device, &queue, &data.pixels, false);
-        //   //println!("loaded texture: {}", data.name);
-
-        //   skybox_textures.push(data);
-        // }
-
-        
-        // let cubemap_texture = CubeMap::new_from_image(&device, &queue, [
-        //    &skybox_textures[4].fliph(),
-        //    &skybox_textures[5],
-        //    &skybox_textures[6],
-        //    &skybox_textures[7],
-        //    &skybox_textures[8],
-        //    &skybox_textures[9]
-        // ]);
-
-        let sky_right_texture = Texture::decode_texture_from_path("res/textures/SkyRight.jpg");
-        let sky_left_texture = Texture::decode_texture_from_path("res/textures/SkyLeft.jpg");
-        let sky_bottom_texture = Texture::decode_texture_from_path("res/textures/SkyBottom.jpg");
-        let sky_top_texture = Texture::decode_texture_from_path("res/textures/SkyTop.jpg");
-        let sky_front_texture = Texture::decode_texture_from_path("res/textures/SkyFront.jpg");
-        let sky_back_texture = Texture::decode_texture_from_path("res/textures/SkyBack.jpg");
-
-        let cubemap_texture = CubeMap::new_from_image(&device, &queue, [
-           &sky_right_texture.fliph(),
-           &sky_left_texture,
-           &sky_top_texture,
-           &sky_bottom_texture,
-           &sky_front_texture,
-           &sky_back_texture
+        let flipped_right = asset_manager.get_texture_by_name("SkyRight.jpg").unwrap().flip_horizontal();
+        let cubemap_texture = CubeMap::new(&device, &queue, asset_manager.get_texture_by_name("SkyRight.jpg").unwrap().dimensions, [
+            &flipped_right.pixel_data,
+            &asset_manager.get_texture_by_name("SkyLeft.jpg").unwrap().pixel_data,
+            &asset_manager.get_texture_by_name("SkyTop.jpg").unwrap().pixel_data,
+            &asset_manager.get_texture_by_name("SkyBottom.jpg").unwrap().pixel_data,
+            &asset_manager.get_texture_by_name("SkyFront.jpg").unwrap().pixel_data,
+            &asset_manager.get_texture_by_name("SkyBack.jpg").unwrap().pixel_data,
         ]);
-
-        let duration = now.elapsed();
-        println!("Loded all textures in: {:.3?}", duration.unwrap());
  
         // load shaders
         let default_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -176,11 +121,6 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/cube_map.wgsl").into()),
         });
 
-        let animation_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Instance_Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/animation.wgsl").into()),
-        });
-
         let cubemap_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Cube_Vertex_Buffer"),
             contents: bytemuck::cast_slice(SKYBOX_VERTICES),
@@ -196,23 +136,19 @@ impl State {
          usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let texture_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float, TL::Float]).unwrap();
+        let texture_bind_group_layout = &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group_layout;
         let cubemap_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
-        
-        let diffuse_bind_group = BindGroupManager::create_multi_texture_bind_group(&device, &texture_bind_group_layout, &[&diffuse_texture, &barrel_nrm_texture]).unwrap();
-        let dude_bind_group = BindGroupManager::create_multi_texture_bind_group(&device, &texture_bind_group_layout, &[&dude_texture, &barrel_nrm_texture]).unwrap();
-        let barrel_texture_bind_group = BindGroupManager::create_multi_texture_bind_group(&device, &texture_bind_group_layout, &[&barrel_texture, &barrel_nrm_texture]).unwrap();
 
-        let cube_tex = texture::Texture { sampler: cubemap_texture.sampler, view: cubemap_texture.view, texture: cubemap_texture.texture };
+        let cube_tex = texture::Texture { 
+            sampler: cubemap_texture.sampler,
+            view: cubemap_texture.view,
+            texture: cubemap_texture.texture,
+            dimensions: Default::default(),
+            pixel_data: Default::default()
+        };
         let cubemap_bind_group = BindGroupManager::create_texture_bind_group(&device, &cubemap_bind_group_layout, &cube_tex).unwrap();
  
         // pipeline layouts
-        let animation_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Animation_Pipeline_Layout"),
-                bind_group_layouts: &[&wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.models[0].bind_group_layout, &wgpu_uniforms.animation.bind_group_layout],
-                push_constant_ranges: &[],
-        });
-
         let cubemap_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Cube_Map_Pipeline_Layout"),
                 bind_group_layouts: &[&cubemap_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout],
@@ -239,7 +175,6 @@ impl State {
 
         // render pipelines
         let cubemap_render_pipeline = PipelineManager::create_cubemap_pipeline(&device, &cubemap_pipeline_layout, postprocess_pass.get_format(), &cubemap_shader_module).unwrap();
-        let animation_pipeline = PipelineManager::create_pipeline(&device, &animation_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &animation_shader_module, &[Vertex::desc()], Some("animation pipeline")).unwrap();
         let render_pipeline = PipelineManager::create_pipeline(&device, &render_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &default_shader_module, &[Vertex::desc()], Some("1")).unwrap();
         let debug_render_pipeline = PipelineManager::create_pipeline(&device, &debug_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &debug_shader_module, &[Vertex::desc()], Some("2")).unwrap();
         let instance_render_pipeline = PipelineManager::create_pipeline(&device, &instance_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &instance_shader_module, &[Vertex::desc(), InstanceUniform::desc()], Some("3")).unwrap();
@@ -256,16 +191,14 @@ impl State {
         game_objects.push(game_object1);
         game_objects.push(game_object2);
 
-        let time = Instant::now();
-
         return Self {
             window,
             wgpu_context: context,
+            asset_manager,
             render_pipeline,
             camera,
             projection,
             camera_controller,
-            animation_pipeline,
             instance_buffer,
             instances,
             instance_render_pipeline,
@@ -276,7 +209,6 @@ impl State {
             game_objects,
             plane_model,
             debug_render_pipeline,
-            barrel_texture_bind_group,
             cubemap_bind_group,
             cubemap_render_pipeline,
             cubemap_vertex_buffer,
@@ -328,7 +260,6 @@ impl State {
       let p_scale = cgmath::Matrix4::from_scale(100.0);
       let p_model_matrix = p_translation * p_rotation * p_scale;
 
-    //   self.model_uniform.update_model_matrix(&p_model_matrix);
     let mut updated_model2 = ModelUniform::new();
     updated_model2.update(&p_model_matrix);
 
@@ -391,20 +322,8 @@ impl State {
         // default pass
         render_pass.set_pipeline(&self.render_pipeline);
 
-    //     // uniforms
-    //     render_pass.set_bind_group(0, &self.barrel_texture_bind_group, &[]);
-    //     render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-    //     render_pass.set_bind_group(2, &self.model_bind_groups[0], &[]);
-    //     render_pass.set_bind_group(3, &self.light_bind_group, &[]);
-
-    //    for mesh in &self.glb_model.meshes {
-    //      render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-    //      render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-    //      render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-    //    }
-
          // uniforms
-        render_pass.set_bind_group(0, &self.barrel_texture_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
         render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
         render_pass.set_bind_group(2, &self.wgpu_uniforms.models[1].bind_group, &[]);
         render_pass.set_bind_group(3, &self.wgpu_uniforms.light.bind_group, &[]);
@@ -421,7 +340,7 @@ impl State {
         // instance pass
         render_pass.set_pipeline(&self.instance_render_pipeline);
 
-        render_pass.set_bind_group(0, &self.barrel_texture_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
         render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
         render_pass.set_bind_group(2, &self.wgpu_uniforms.light.bind_group, &[]);
 

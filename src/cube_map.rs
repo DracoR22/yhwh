@@ -1,14 +1,18 @@
 use image::GenericImageView;
 
+use crate::{bind_group_manager::{BindGroupManager, TL}, texture::Texture};
+
 pub struct CubeMap {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
+    pub texture_bind_group: wgpu::BindGroup,
+    pub texture_bind_group_layout: wgpu::BindGroupLayout
 }
 
 impl CubeMap {
     pub fn new_from_image(device: &wgpu::Device, queue: &wgpu::Queue, image_faces: [&image::DynamicImage; 6]) -> Self {
-      let dimensions = image_faces[0].dimensions();
+       let dimensions = image_faces[0].dimensions();
 
        let texture_size = wgpu::Extent3d {
             width: dimensions.0,
@@ -53,7 +57,7 @@ impl CubeMap {
           );
         }
 
-         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             dimension: Some(wgpu::TextureViewDimension::Cube),
             array_layer_count: Some(6),
             ..Default::default()
@@ -68,13 +72,27 @@ impl CubeMap {
             ..Default::default()
         });
 
-         Self { texture, view: texture_view, sampler: texture_sampler }
+        let cube_tex = Texture { 
+            sampler: texture_sampler.clone(),
+            view: texture_view.clone(),
+            texture: texture.clone(),
+            dimensions: Default::default(),
+            pixel_data: Default::default()
+        };
+
+        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
+        let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &cube_tex).unwrap();
+
+        Self { 
+            texture,
+            view: texture_view,
+            sampler: texture_sampler,
+            texture_bind_group: bind_group,
+            texture_bind_group_layout: bind_group_layout
+        }
     }
 
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, face_bytes: [&[u8]; 6]) -> Self {
-        let first_image = image::load_from_memory(face_bytes[0]).unwrap();
-        let dimensions = first_image.dimensions();
-
+    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, dimensions: (u32, u32), face_bytes: [&[u8]; 6]) -> Self {
          let texture_size = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
@@ -93,8 +111,6 @@ impl CubeMap {
         });
 
         for (layer, data) in face_bytes.iter().enumerate() {
-            let img = if layer == 0 { first_image.clone() } else { image::load_from_memory(data).unwrap() };
-            //let flipped_img = img.flipv().to_rgba8();
             queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -106,7 +122,7 @@ impl CubeMap {
                 },
                 aspect: wgpu::TextureAspect::All,
             },
-            &img.to_rgba8(),
+            *data,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * dimensions.0),
@@ -135,6 +151,24 @@ impl CubeMap {
             ..Default::default()
         });
 
-        Self { texture, view: texture_view, sampler: texture_sampler }
+         let cube_tex = Texture { 
+            sampler: texture_sampler.clone(),
+            view: texture_view.clone(),
+            texture: texture.clone(),
+            dimensions: Default::default(),
+            pixel_data: Default::default()
+        };
+
+        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
+        let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &cube_tex).unwrap();
+
+        Self { 
+            texture,
+            view: texture_view,
+            sampler: texture_sampler,
+            texture_bind_group: bind_group,
+            texture_bind_group_layout: bind_group_layout
+         }
     }
+
 }

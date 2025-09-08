@@ -15,3 +15,5 @@ pub mod animation;
 pub mod math;
 pub mod uniform;
 pub mod uniform_types;
+pub mod asset_manager;
+pub mod material;

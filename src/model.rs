@@ -1,18 +1,17 @@
-use std::default;
 use std::path::Path;
 use std::{
     io::{BufReader, Cursor},
 };
 use cgmath::{SquareMatrix, Zero};
 use gltf::buffer::Data;
-use gltf::iter;
 use gltf::mesh::Bounds;
+use math::aabb::Aabb;
 use wgpu::util::DeviceExt;
 
 use crate::animation::animation::{load_animations, Animations, PlaybackMode, PlaybackState};
 use crate::animation::node::Nodes;
 use crate::animation::skin::{create_skins_from_gltf, Skin};
-use crate::math::aabb::Aabb;
+
 use crate::{
     renderer_common::{CUBE_INDICES, CUBE_VERTICES, PLANE_INDICES, PLANE_VERTICES},
     utils::file::load_file_string_from_env,

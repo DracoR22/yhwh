@@ -12,7 +12,6 @@ pub mod render_passes;
 pub mod renderer_common;
 pub mod utils;
 pub mod animation;
-pub mod math;
 pub mod uniform;
 pub mod uniform_types;
 pub mod asset_manager;

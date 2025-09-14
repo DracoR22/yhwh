@@ -17,3 +17,4 @@ pub mod uniform;
 pub mod uniform_types;
 pub mod asset_manager;
 pub mod material;
+pub mod egui_renderer;

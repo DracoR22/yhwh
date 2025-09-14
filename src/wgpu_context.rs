@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::Ok;
-use image::imageops::resize;
 use winit::window::Window;
 
 pub struct WgpuContext {
@@ -12,8 +10,14 @@ pub struct WgpuContext {
     pub is_surface_configured: bool,
 }
 
+#[derive(Debug)]
+pub enum ContextError {
+    RequestDeviceError(wgpu::RequestDeviceError),
+    NoAdapterFound
+}
+
 impl WgpuContext {
-    pub async fn new(window: &Arc<Window>) -> anyhow::Result<Self> {
+    pub async fn new(window: &Arc<Window>) -> Result<Self, ContextError> {
        let size = window.inner_size();
 
        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -30,7 +34,7 @@ impl WgpuContext {
                 force_fallback_adapter: false,
             })
             .await
-            .unwrap();
+            .ok_or(ContextError::NoAdapterFound)?;
 
         let info = adapter.get_info();
         println!("Using Backend: {:?}", info.backend); 
@@ -46,7 +50,7 @@ impl WgpuContext {
                 None,
             )
             .await
-            .unwrap();
+            .map_err(ContextError::RequestDeviceError)?;
 
         let surface_caps = surface.get_capabilities(&adapter);
 
@@ -69,9 +73,6 @@ impl WgpuContext {
         };
 
         surface.configure(&device, &config);
-
-        println!("SURFACE WIDTH, {}", config.width);
-        println!("SURFACE HEIGHT, {}", config.height);
 
         Ok(Self { 
             config,

@@ -12,7 +12,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{CursorGrabMode, Window},
 };
-use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
+use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, egui_renderer::egui_renderer::EguiRenderer, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
 use yhwh::{
     camera::Camera,
     vertex::Vertex,
@@ -41,6 +41,7 @@ pub struct State {
     glb_model: Model,
     game_objects: Vec<GameObject>,
     debug_render_pipeline: wgpu::RenderPipeline,
+    egui_renderer: EguiRenderer,
 
     postprocess_pass: PostProcessPass,
     animation_pass: AnimationPass,
@@ -55,6 +56,8 @@ impl State {
         let config = context.get_surface_config();
         let device = context.get_device();
         let queue = context.get_queue();
+
+        let egui_renderer = EguiRenderer::new(&context, &window);
 
         // load camera
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
@@ -175,6 +178,7 @@ impl State {
             game_objects,
             plane_model,
             debug_render_pipeline,
+            egui_renderer,
             postprocess_pass,
             animation_pass,
             skybox_pass,
@@ -250,7 +254,7 @@ impl State {
 
         // get the texture to render to
         let output = surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let surface_view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
@@ -333,13 +337,29 @@ impl State {
        drop(render_pass);
 
        // post process
-       self.postprocess_pass.render(&mut encoder, &view);
+       self.postprocess_pass.render(&mut encoder, &surface_view);
 
-        // submit will accept anything that implements IntoIter
-        queue.submit(std::iter::once(encoder.finish()));
-        output.present();
+       self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &self.window, surface_view, |ui| {
+                        egui::Window::new("Settings")
+                            .resizable(true)
+                            .vscroll(true)
+                            .default_open(true)
+                            .show(&ui, |mut ui| {
+                                ui.label("Window!");
+                                ui.button("SOME BUTTON");
+                                ui.label("Window!");
+                                ui.label("Window!");
+                                ui.label("Window!");
 
-        Ok(())
+                                //proto_scene.egui(ui);
+                            });
+        });
+
+       // submit will accept anything that implements IntoIter
+       queue.submit(std::iter::once(encoder.finish()));
+       output.present();
+
+       Ok(())
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
@@ -404,7 +424,9 @@ impl ApplicationHandler<State> for App {
         let state = self.state.as_mut().unwrap();
         match event {
             DeviceEvent::MouseMotion { delta } => {
-                state.camera_controller.handle_mouse(delta.0, delta.1);
+               if !self.cursor_visible {
+                 state.camera_controller.handle_mouse(delta.0, delta.1);
+               }
             }
 
             _ => {}
@@ -421,6 +443,7 @@ impl ApplicationHandler<State> for App {
 
         state.camera_controller.handle_keyboard(&event);
         self.keyboard.handle_event(&event);
+        state.egui_renderer.handle_input(&state.window, &event);
         match event {
             
             WindowEvent::CloseRequested => event_loop.exit(),
@@ -474,6 +497,8 @@ impl ApplicationHandler<State> for App {
 
                 let avg_fps = self.fps_accum.iter().sum::<f64>() / self.fps_accum.len() as f64;
                 state.window.set_title(&format!("FPS: {:.1}", avg_fps));
+
+                state.egui_renderer.set_cursor_visible(self.cursor_visible);
 
                 state.update(dt);
                 match state.render() {

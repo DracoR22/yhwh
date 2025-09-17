@@ -23,6 +23,8 @@ pub async fn load_file_binary_from_env(directory: &str, file_name: &str) -> anyh
     Ok(data)
 }
 
-// pub fn load_file_string_from_dir(directory: &str) {
-//     let file = std::fs::read("").unwrap();
-// }
+pub fn load_file_string_from_dir(full_path: &str) -> anyhow::Result<String> {
+    let path = std::path::Path::new(full_path);
+    let txt = std::fs::read_to_string(path)?;
+    Ok(txt)
+}

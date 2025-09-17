@@ -12,6 +12,7 @@ use crate::animation::animation::{load_animations, Animations, PlaybackMode, Pla
 use crate::animation::node::Nodes;
 use crate::animation::skin::{create_skins_from_gltf, Skin};
 
+use crate::utils::file::load_file_string_from_dir;
 use crate::{
     renderer_common::{CUBE_INDICES, CUBE_VERTICES, PLANE_INDICES, PLANE_VERTICES},
     utils::file::load_file_string_from_env,
@@ -35,28 +36,30 @@ pub struct Model {
     pub skins: Vec<Skin>
 }
 
-pub async fn load_obj_model(
-    file_name: &str,
+pub fn load_obj_model_sync(
     device: &wgpu::Device,
-    name: &str,
+    path: &str,
 ) -> anyhow::Result<Model> {
-    let obj_text = load_file_string_from_env("models", file_name).await?;
+    let obj_text = load_file_string_from_dir(path)?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
 
-    let (models, _obj_materials) = tobj::load_obj_buf_async(
+    let file_name = Path::new(path).file_name().and_then(|f| f.to_str()).unwrap();
+    let file_stem = Path::new(path).file_stem().and_then(|f| f.to_str()).unwrap();
+
+    let (models, _obj_materials) = tobj::load_obj_buf(
         &mut obj_reader,
         &tobj::LoadOptions {
             triangulate: true,
             single_index: true,
             ..Default::default()
         },
-        |p| async move {
-            let mat_text = load_file_string_from_env("models", &p).await.unwrap();
-            tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
+        |p| {
+            let mtl_path = Path::new(path).parent().unwrap().join(p);
+            let mtl_text = std::fs::read_to_string(&mtl_path).map_err(|_e| tobj::LoadError::ReadError)?;
+            Ok(tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mtl_text)))?)
         },
-    )
-    .await?;
+    )?;
 
     let meshes = models
         .into_iter()
@@ -134,14 +137,13 @@ pub async fn load_obj_model(
 
     Ok(Model {
         meshes,
-        name: name.to_string(),
+        name: file_stem.to_string(),
         animations: Default::default(),
         nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
         skins: Vec::new()
     })
 }
-
 
 pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
     let mut meshes = Vec::new();
@@ -223,9 +225,9 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
     })
 }
 
-pub fn load_glb_model(device: &wgpu::Device) -> anyhow::Result<Model> {
-    let path = "res/models/glock.glb";
+pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model> {
     let file_name = Path::new(path).file_name().and_then(|f| f.to_str()).unwrap();
+    let file_stem = Path::new(path).file_stem().and_then(|f| f.to_str()).unwrap();
 
     let (gltf, buffers, _images) = gltf::import(path).expect("Failed to import glTF/GLB file");
 
@@ -267,7 +269,7 @@ pub fn load_glb_model(device: &wgpu::Device) -> anyhow::Result<Model> {
     
 
     Ok(Model {
-        name: file_name.to_string(),
+        name: file_stem.to_string(),
         meshes,
         animations,
         nodes,

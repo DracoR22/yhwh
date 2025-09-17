@@ -1,0 +1,1 @@
+pub const HDR_TEX_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;

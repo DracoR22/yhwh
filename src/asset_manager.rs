@@ -1,14 +1,26 @@
 use std::{collections::HashMap, path::Path, sync::mpsc, thread};
 
-use crate::{cube_map::CubeMap, material::Material, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
+use crate::{material::Material, model::{self, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
     textures: HashMap<String, Texture>,
-    materials: HashMap<String, Material>
+    materials: HashMap<String, Material>,
+    models: HashMap<String, Model>
 }
 
 impl AssetManager {
     pub fn new(ctx: &WgpuContext) -> Self {
+        let textures = Self::load_all_textures(&ctx);
+        let models = Self::load_models(&ctx);
+
+        Self {
+            textures,
+            models,
+            materials: Default::default()
+        }
+    }
+
+    pub fn load_all_textures(ctx: &WgpuContext) -> HashMap<String, Texture> {
         let now = std::time::SystemTime::now();
 
         let (sender, receiver) = mpsc::channel::<TextureData>();
@@ -41,10 +53,7 @@ impl AssetManager {
         let duration = now.elapsed();
         println!("Loded all textures in: {:.3?}", duration.unwrap());
 
-        Self {
-            textures: texture_map,
-            materials: Default::default()
-        }
+        texture_map
     }
 
     pub fn get_texture_by_name(&self, name: &str) -> Option<&Texture> {
@@ -93,5 +102,66 @@ impl AssetManager {
         }
 
         material_name
+    }
+}
+
+// models
+impl AssetManager {
+     pub fn load_models(ctx: &WgpuContext) -> HashMap<String, Model> {
+        let mut models: HashMap<String, Model> = HashMap::new();
+        for entry in std::fs::read_dir("res/models").unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+
+            if let Some(extension) = path.extension().and_then(|e| e.to_str()) {
+                if extension.eq_ignore_ascii_case("glb") {
+                    match model::load_glb_model(&ctx.device, &entry.path().to_str().unwrap()) {
+                        Ok(res) => { 
+                            models.insert(res.name.clone(), res);
+                         },
+                        Err(err) => {
+                            println!("AssetManager::load_models() error with file {:?} {}", path.file_name().unwrap(), err);
+                        }
+                    }
+                }
+
+                if extension.eq_ignore_ascii_case("obj") {
+                    match model::load_obj_model_sync(&ctx.device, &entry.path().to_str().unwrap()) {
+                        Ok(res) => {
+                            models.insert(res.name.clone(), res);
+                        },
+                        Err(err) => {
+                            println!("AssetManager::load_models() error with file {:?} {}", path.file_name().unwrap(), err)
+                        }
+                    }
+                }
+            }
+        }
+
+        let cube_model = model::load_cube(&ctx.device, "Cube").unwrap();
+        models.insert(cube_model.name.clone(), cube_model);
+
+        let plane_model = model::load_plane(&ctx.device, "Plane").unwrap();
+        models.insert(plane_model.name.clone(), plane_model);
+
+        models
+    }
+
+     pub fn get_model_by_name(&self, name: &str) -> Option<&Model> {
+        if self.models.contains_key(name) {
+            self.models.get(name)
+        } else {
+            println!("AssetManager::get_model_by_name() error: model {name} not found!");
+            None
+        }
+    }
+
+     pub fn get_model_by_name_mut(&mut self, name: &str) -> Option<&mut Model> {
+        if self.models.contains_key(name) {
+            self.models.get_mut(name)
+        } else {
+            println!("AssetManager::get_model_by_name() error: model {name} not found!");
+            None
+        }
     }
 }

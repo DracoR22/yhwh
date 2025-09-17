@@ -12,7 +12,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{CursorGrabMode, Window},
 };
-use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, egui_renderer::egui_renderer::EguiRenderer, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
+use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, egui_renderer::egui_renderer::EguiRenderer, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, lighting_pass::LightingPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
 use yhwh::{
     camera::Camera,
     vertex::Vertex,
@@ -27,7 +27,6 @@ pub struct State {
     window: Arc<Window>,
     wgpu_context: WgpuContext,
     asset_manager: AssetManager,
-    render_pipeline: wgpu::RenderPipeline,
     projection: Projection,
     camera: Camera,
     camera_controller: CameraController,
@@ -35,15 +34,11 @@ pub struct State {
     instance_buffer: wgpu::Buffer,
     instance_render_pipeline: wgpu::RenderPipeline,
     depth_texture: Texture,
-    obj_model: Model,
-    cube_model: Model,
-    plane_model: Model,
-    glb_model: Model,
-    game_objects: Vec<GameObject>,
     debug_render_pipeline: wgpu::RenderPipeline,
     egui_renderer: EguiRenderer,
 
     postprocess_pass: PostProcessPass,
+    lighting_pass: LightingPass,
     animation_pass: AnimationPass,
     skybox_pass: SkyboxPass,
     wgpu_uniforms: WgpuUniforms,
@@ -64,7 +59,7 @@ impl State {
         let projection = Projection::new(config.width, config.height, cgmath::Deg(45.0), 0.1, 100.0);
         let camera_controller = CameraController::new(4.0, 0.4);
 
-        let game_objects_size = 2;
+        let game_objects_size = 3;
 
         let mut model_uniforms: Vec<Uniform<ModelUniform>> = Vec::new();
         for _g in 0..game_objects_size {
@@ -88,17 +83,13 @@ impl State {
         asset_manager.build_materials(&device);
 
         // render groups
+        let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &asset_manager);
         let postprocess_pass = PostProcessPass::new(&device, &config);
         let animation_pass = AnimationPass::new(&device, &wgpu_uniforms);
         let skybox_pass = SkyboxPass::new(&context, &asset_manager, &wgpu_uniforms);
  
         // load shaders
-        let default_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Default_Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/simple.wgsl").into()),
-        });
-
-         let debug_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let debug_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Debug_Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/debug.wgsl").into()),
         });
@@ -106,11 +97,6 @@ impl State {
         let instance_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Instance_Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/instance.wgsl").into()),
-        });
-
-        let cubemap_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Instance_Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/cube_map.wgsl").into()),
         });
 
         let instances = Instance::get_instances();
@@ -125,11 +111,6 @@ impl State {
         let texture_bind_group_layout = &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group_layout;
  
         // pipeline layouts
-        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render_Pipeline_Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.models[0].bind_group_layout, &wgpu_uniforms.light.bind_group_layout],
-                push_constant_ranges: &[],
-        });
 
         let instance_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render_Pipeline_Layout"),
@@ -144,27 +125,13 @@ impl State {
         });
 
         // render pipelines
-        let render_pipeline = PipelineManager::create_pipeline(&device, &render_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &default_shader_module, &[Vertex::desc()], Some("1")).unwrap();
         let debug_render_pipeline = PipelineManager::create_pipeline(&device, &debug_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &debug_shader_module, &[Vertex::desc()], Some("2")).unwrap();
         let instance_render_pipeline = PipelineManager::create_pipeline(&device, &instance_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32Float), &instance_shader_module, &[Vertex::desc(), InstanceUniform::desc()], Some("3")).unwrap();
-
-        let obj_model = model::load_obj_model("Barrel.obj", &device, "Barrel").await.unwrap();
-        let cube_model = model::load_cube(&device, "Cube").unwrap();
-        let plane_model = model::load_plane(&device, "Plane").unwrap();
-        let glb_model = model::load_glb_model(&device).unwrap();
-
-        let game_object1 = GameObject { name: "Cube1".to_string(), model_name: cube_model.name.clone() };
-        let game_object2 = GameObject { name: "Plane1".to_string(), model_name: plane_model.name.clone() };
-
-        let mut game_objects: Vec<GameObject> = Vec::new();
-        game_objects.push(game_object1);
-        game_objects.push(game_object2);
 
         return Self {
             window,
             wgpu_context: context,
             asset_manager,
-            render_pipeline,
             camera,
             projection,
             camera_controller,
@@ -172,13 +139,9 @@ impl State {
             instances,
             instance_render_pipeline,
             depth_texture,
-            obj_model,
-            cube_model,
-            glb_model,
-            game_objects,
-            plane_model,
             debug_render_pipeline,
             egui_renderer,
+            lighting_pass,
             postprocess_pass,
             animation_pass,
             skybox_pass,
@@ -197,18 +160,21 @@ impl State {
 
       self.wgpu_uniforms.camera.update_direct(&queue, &updated_camera);
 
-      // model uniform (0)
-      self.glb_model.update(delta_time);
-      let skin_uniform = self.wgpu_uniforms.animation.value_mut();
-      if let Some(skin) = self.glb_model.skins.get(0) {
-        for (i, joint) in skin.joints().iter().enumerate() {
-         if i >= MAX_JOINTS_PER_MESH {
-            break; 
-         }
+      // model uniform (0) glb model
+      if let Some(glb_model) = self.asset_manager.get_model_by_name_mut("glock") {
+          glb_model.update(delta_time);
+          let skin_uniform = self.wgpu_uniforms.animation.value_mut();
 
-         // Convert cgmath::Matrix4 to [[f32; 4]; 4]
-         skin_uniform.joint_matrices[i] = joint.matrix().into();
-        }
+          if let Some(skin) = glb_model.skins.get(0) {
+           for (i, joint) in skin.joints().iter().enumerate() {
+            if i >= MAX_JOINTS_PER_MESH {
+             break; 
+            }
+
+           // Convert cgmath::Matrix4 to [[f32; 4]; 4]
+           skin_uniform.joint_matrices[i] = joint.matrix().into();
+         }
+       }
       }
 
       self.wgpu_uniforms.animation.update(&queue);
@@ -222,16 +188,27 @@ impl State {
       model_uniform.update(&model_matrix);
       self.wgpu_uniforms.models[0].update(&queue); 
 
-      // model uniform (1)
+      // model uniform (1) plane model
       let p_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, 0.0));
       let p_rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
       let p_scale = cgmath::Matrix4::from_scale(100.0);
       let p_model_matrix = p_translation * p_rotation * p_scale;
 
-    let mut updated_model2 = ModelUniform::new();
-    updated_model2.update(&p_model_matrix);
+      let mut updated_model2 = ModelUniform::new();
+      updated_model2.update(&p_model_matrix);
 
-    self.wgpu_uniforms.models[1].update_direct(&queue, &updated_model2);
+      self.wgpu_uniforms.models[1].update_direct(&queue, &updated_model2);
+
+       // model uniform (2) barrel model
+      let f_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 2.0, 0.0));
+      let f_rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
+      let f_scale = cgmath::Matrix4::from_scale(5.0);
+      let f_model_matrix = f_translation * f_rotation * f_scale;
+
+      let mut updated_model3 = ModelUniform::new();
+      updated_model3.update(&f_model_matrix);
+
+      self.wgpu_uniforms.models[2].update_direct(&queue, &updated_model3);
 
       // update light position
       let light_uniform = self.wgpu_uniforms.light.value_mut();
@@ -287,37 +264,23 @@ impl State {
             timestamp_writes: None,
         });
 
-        // default pass
-        render_pass.set_pipeline(&self.render_pipeline);
-
-         // uniforms
-        render_pass.set_bind_group(0, &self.asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
-        render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
-        render_pass.set_bind_group(2, &self.wgpu_uniforms.models[1].bind_group, &[]);
-        render_pass.set_bind_group(3, &self.wgpu_uniforms.light.bind_group, &[]);
-
-       for mesh in &self.plane_model.meshes {
-         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-       }
-
-        // animation
-       self.animation_pass.render(&self.wgpu_uniforms, &mut render_pass, &self.glb_model);
+    
+       self.lighting_pass.render(&mut render_pass, &self.wgpu_uniforms, &self.asset_manager);
+       self.animation_pass.render(&mut render_pass, &self.wgpu_uniforms, &self.asset_manager);
 
         // instance pass
-        render_pass.set_pipeline(&self.instance_render_pipeline);
+    //     render_pass.set_pipeline(&self.instance_render_pipeline);
 
-        render_pass.set_bind_group(0, &self.asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
-        render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
-        render_pass.set_bind_group(2, &self.wgpu_uniforms.light.bind_group, &[]);
+    //     render_pass.set_bind_group(0, &self.asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
+    //     render_pass.set_bind_group(1, &self.wgpu_uniforms.camera.bind_group, &[]);
+    //     render_pass.set_bind_group(2, &self.wgpu_uniforms.light.bind_group, &[]);
 
-       for mesh in &self.obj_model.meshes {
-        render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        render_pass.draw_indexed(0..mesh.num_elements, 0, 0..self.instances.len() as _);
-       }
+    //    for mesh in &self.obj_model.meshes {
+    //     render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+    //     render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+    //     render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+    //     render_pass.draw_indexed(0..mesh.num_elements, 0, 0..self.instances.len() as _);
+    //    }
 
        // debug pass
        render_pass.set_pipeline(&self.debug_render_pipeline);
@@ -325,10 +288,12 @@ impl State {
        render_pass.set_bind_group(0, &self.wgpu_uniforms.camera.bind_group, &[]);
        render_pass.set_bind_group(1, &self.wgpu_uniforms.light.bind_group, &[]);
        
-       for mesh in &self.cube_model.meshes {
+       if let Some(debug_cube) = self.asset_manager.get_model_by_name("Cube") {
+        for mesh in &debug_cube.meshes {
          render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
          render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
          render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
        }
 
        // skybox
@@ -470,9 +435,10 @@ impl ApplicationHandler<State> for App {
                     state.postprocess_pass.hotload_shader(&state.wgpu_context);
                 }
 
-                let anim_len = state.glb_model.animations.as_ref().unwrap().animations().len();
-                 if self.keyboard.key_just_pressed(KeyCode::KeyR) {
-                   let play_back_state = state.glb_model.get_animation_playback_state().unwrap();
+                if let Some(glb_model) = state.asset_manager.get_model_by_name_mut("glock") {
+                  let anim_len = glb_model.animations.as_ref().unwrap().animations().len();
+                  if self.keyboard.key_just_pressed(KeyCode::KeyR) {
+                   let play_back_state = glb_model.get_animation_playback_state().unwrap();
                    let mut current_anim = play_back_state.current;
 
                   if current_anim + 1 < anim_len {
@@ -481,8 +447,9 @@ impl ApplicationHandler<State> for App {
                    current_anim = 0;
                   }
 
-                  state.glb_model.set_current_animation(current_anim);
+                  glb_model.set_current_animation(current_anim);
                  }
+                }
 
                 let now = std::time::Instant::now();
                 let dt = now - self.last_redraw;

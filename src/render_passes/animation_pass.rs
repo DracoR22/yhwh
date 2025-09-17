@@ -1,7 +1,7 @@
 use cgmath::SquareMatrix;
 use wgpu::util::DeviceExt;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, bind_group_manager::BindGroupManager, model::Model, pipeline_manager::PipelineManager, uniform_types::WgpuUniforms, vertex::Vertex};
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::HDR_TEX_FORMAT, model::Model, pipeline_manager::PipelineManager, uniform_types::WgpuUniforms, vertex::Vertex};
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
@@ -24,7 +24,7 @@ impl AnimationPass {
         let pipeline = PipelineManager::create_pipeline(
             &device,
             &pipeline_layout,
-            wgpu::TextureFormat::Rgba16Float,
+            HDR_TEX_FORMAT,
             Some(wgpu::TextureFormat::Depth32Float),
             &shader_module,
             &[Vertex::desc()],
@@ -37,17 +37,19 @@ impl AnimationPass {
         }
     }
 
-    pub fn render(&self, wgpu_uniforms: &WgpuUniforms, render_pass: &mut wgpu::RenderPass, model: &Model) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms,  asset_manager: &AssetManager) {
         render_pass.set_pipeline(&self.pipeline);
 
-        render_pass.set_bind_group(0, &wgpu_uniforms.camera.bind_group, &[]);
-        render_pass.set_bind_group(1, &wgpu_uniforms.models[0].bind_group, &[]);
-        render_pass.set_bind_group(2, &wgpu_uniforms.animation.bind_group, &[]);
+        render_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
+        render_pass.set_bind_group(1, &uniforms.models[0].bind_group, &[]);
+        render_pass.set_bind_group(2, &uniforms.animation.bind_group, &[]);
 
-       for mesh in &model.meshes {
+       if let Some(model) = asset_manager.get_model_by_name("glock") {
+        for mesh in &model.meshes {
          render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
          render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
          render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
        }
     }
 }

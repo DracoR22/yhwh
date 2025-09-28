@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cgmath::SquareMatrix;
 
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, uniform::Uniform};
@@ -81,7 +83,8 @@ impl LightUniform {
 
 pub struct WgpuUniforms {
     pub camera: Uniform<CameraUniform>,
-    pub models: Vec<Uniform<ModelUniform>>,
+    pub models: HashMap<usize, Uniform<ModelUniform>>,
+    pub bind_group_layout: wgpu::BindGroupLayout,
     pub animation: Uniform<AnimationUniform>,
     pub light: Uniform<LightUniform>
 }

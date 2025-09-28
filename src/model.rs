@@ -19,6 +19,7 @@ use crate::{
     vertex::Vertex,
 };
 
+#[derive(Clone)]
 pub struct Mesh {
     pub name: String,
     pub vertex_buffer: wgpu::Buffer,
@@ -125,7 +126,7 @@ pub fn load_obj_model_sync(
             });
 
             Mesh {
-                name: file_name.to_string(),
+                name: m.name,
                 vertex_buffer,
                 index_buffer,
                 num_elements: m.mesh.indices.len() as u32,

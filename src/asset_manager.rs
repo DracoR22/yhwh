@@ -1,11 +1,14 @@
 use std::{collections::HashMap, path::Path, sync::mpsc, thread};
 
-use crate::{material::Material, model::{self, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
+use crate::{material::Material, model::{self, Mesh, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
+    models: HashMap<String, Model>,
     textures: HashMap<String, Texture>,
-    materials: HashMap<String, Material>,
-    models: HashMap<String, Model>
+    material_index_map: HashMap<String, usize>,
+    materials: Vec<Material>,
+    mesh_index_map: HashMap<String, usize>,
+    meshes: Vec<Mesh>
 }
 
 impl AssetManager {
@@ -13,10 +16,22 @@ impl AssetManager {
         let textures = Self::load_all_textures(&ctx);
         let models = Self::load_models(&ctx);
 
+        let mut meshes: Vec<Mesh> = Vec::new();
+        let mut mesh_index_map: HashMap<String, usize> = HashMap::new();
+        for (_key, model) in &models {
+            for mesh in &model.meshes {
+                meshes.push(mesh.clone());
+                mesh_index_map.insert(mesh.name.clone(), meshes.len() - 1);
+            }
+        }
+
         Self {
             textures,
             models,
-            materials: Default::default()
+            meshes,
+            mesh_index_map,
+            materials: Default::default(),
+            material_index_map: Default::default()
         }
     }
 
@@ -76,17 +91,36 @@ impl AssetManager {
                     self.get_texture_by_name(&format!("{material_name}_ALB.png")).unwrap()
                 ]);
 
-                self.materials.insert(material_name, material);
+                self.materials.push(material);
+                self.material_index_map.insert(material_name, self.materials.len() - 1);
             }
         }
     }
 
     pub fn get_material_by_name(&self, name: &str) -> Option<&Material> {
-        if self.materials.contains_key(name) {
-            self.materials.get(name)
+        if let Some(&index) = self.material_index_map.get(name) {
+             Some(&self.materials[index])
         } else {
-             println!("AssetManager::get_material_by_name() error: material {name} not found!");
-            None
+            println!("AssetManager::get_material_by_name() error: material {name} not found!");
+             None
+        }
+    }
+
+    pub fn get_material_by_index(&self, index: usize) -> Option<&Material> {
+        if let Some(material) = self.materials.get(index) {
+            Some(material)
+        } else {
+             println!("AssetManager::get_material_by_index() error: material with index {index} not found!");
+             None
+        }
+    }
+
+    pub fn get_material_index_by_name(&self, name: &str) -> usize {
+        if let Some(&index) = self.material_index_map.get(name) {
+            index
+        } else {
+            println!("AssetManager::get_material_index_by_name() error: material {name} not found!");
+            0
         }
     }
 
@@ -162,6 +196,28 @@ impl AssetManager {
         } else {
             println!("AssetManager::get_model_by_name() error: model {name} not found!");
             None
+        }
+    }
+}
+
+// meshes
+impl AssetManager {
+    pub fn get_mesh_by_name(&self, name: &str) -> Option<&Mesh> {
+        for mesh in &self.meshes {
+           if mesh.name == name {
+            return Some(mesh)
+           }
+        }
+
+        return None
+    }
+
+    pub fn get_mesh_index_by_name(&self, name: &str) -> usize {
+          if let Some(&index) = self.mesh_index_map.get(name) {
+            index
+        } else {
+            println!("AssetManager::get_mesh_index_by_name() error: mesh {name} not found!");
+            0
         }
     }
 }

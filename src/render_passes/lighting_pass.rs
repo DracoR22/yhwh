@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, common::constants::HDR_TEX_FORMAT, pipeline_manager::PipelineManager, uniform_types::WgpuUniforms, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, common::constants::HDR_TEX_FORMAT, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_types::WgpuUniforms, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct LightingPass {
     pipeline: wgpu::RenderPipeline
@@ -19,7 +19,7 @@ impl LightingPass {
             bind_group_layouts: &[
                 &texture_bind_group_layout,
                 &uniforms.camera.bind_group_layout,
-                &uniforms.models[0].bind_group_layout,
+                &uniforms.bind_group_layout,
                 &uniforms.light.bind_group_layout
             ],
             push_constant_ranges: &[],
@@ -40,35 +40,59 @@ impl LightingPass {
      }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms, asset_manager: &AssetManager) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms, asset_manager: &AssetManager, game_objects: &Vec<GameObject>) {
         render_pass.set_pipeline(&self.pipeline);
 
-        render_pass.set_bind_group(0, &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
-        render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
-        render_pass.set_bind_group(2, &uniforms.models[2].bind_group, &[]);
-        render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
+        for game_object in game_objects.iter() {
+          let Some(model_uniform) = uniforms.models.get(&game_object.object_id) else {
+            println!("No model bind group for object {:?}, skipping draw", game_object.object_id);
+            continue;
+          };
 
-        if let Some(model) = asset_manager.get_model_by_name("Barrel") {
+          render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
+          render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+          render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
+
+          if let Some(model) = asset_manager.get_model_by_name(&game_object.get_model_name()) {
             for mesh in &model.meshes {
+                let mesh_material_index = game_object.get_mesh_material_index(&mesh.name);
+                let mesh_material = asset_manager.get_material_by_index(mesh_material_index);
+
+                render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+
                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                 render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
             }
+          }
         }
 
-        render_pass.set_pipeline(&self.pipeline);
+        // render_pass.set_bind_group(0, &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
+        // render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
+        // //render_pass.set_bind_group(2, &uniforms.models[2].bind_group, &[]);
+        // render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
 
-        render_pass.set_bind_group(0, &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
-        render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
-        render_pass.set_bind_group(2, &uniforms.models[1].bind_group, &[]);
-        render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
+        // if let Some(model) = asset_manager.get_model_by_name("Barrel") {
+        //     for mesh in &model.meshes {
+        //         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        //         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //     }
+        // }
 
-        if let Some(plane_model) = asset_manager.get_model_by_name("Plane") { 
-           for mesh in &plane_model.meshes {
-             render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-             render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-             render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-            }
-        }
+        // render_pass.set_pipeline(&self.pipeline);
+
+        // render_pass.set_bind_group(0, &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
+        // render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
+        // //render_pass.set_bind_group(2, &uniforms.models[1].bind_group, &[]);
+        // render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
+
+        // if let Some(plane_model) = asset_manager.get_model_by_name("Plane") { 
+        //    for mesh in &plane_model.meshes {
+        //      render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //      render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        //      render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //     }
+        // }
     }
 }

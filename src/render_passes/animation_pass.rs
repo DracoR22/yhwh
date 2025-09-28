@@ -17,7 +17,11 @@ impl AnimationPass {
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("animation_pipeline_layout"),
-            bind_group_layouts: &[&wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.models[0].bind_group_layout, &wgpu_uniforms.animation.bind_group_layout],
+            bind_group_layouts: &[
+                &wgpu_uniforms.camera.bind_group_layout,
+                &wgpu_uniforms.bind_group_layout,
+                &wgpu_uniforms.animation.bind_group_layout
+            ],
             push_constant_ranges: &[],
         });
 
@@ -37,11 +41,16 @@ impl AnimationPass {
         }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms,  asset_manager: &AssetManager) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms,  asset_manager: &AssetManager, object_id: usize) {
+        let Some(model_uniform) = uniforms.models.get(&object_id) else {
+            println!("No model bind group for object {:?}, skipping draw", object_id);
+            return
+        };
+
         render_pass.set_pipeline(&self.pipeline);
 
         render_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
-        render_pass.set_bind_group(1, &uniforms.models[0].bind_group, &[]);
+        render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
         render_pass.set_bind_group(2, &uniforms.animation.bind_group, &[]);
 
        if let Some(model) = asset_manager.get_model_by_name("glock") {

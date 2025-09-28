@@ -1,6 +1,6 @@
-use cgmath::{prelude::*, Rad};
+use cgmath::{prelude::*, Matrix4, Rad};
 
-use std::{path::PathBuf, sync::{mpsc, Arc}, thread, time::Instant};
+use std::{collections::HashMap, path::PathBuf, sync::{mpsc, Arc}, thread, time::Instant};
 
 use image::GenericImageView;
 use wgpu::{core::device, util::DeviceExt};
@@ -12,16 +12,11 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{CursorGrabMode, Window},
 };
-use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, egui_renderer::egui_renderer::EguiRenderer, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, lighting_pass::LightingPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::file, wgpu_context::WgpuContext};
+use yhwh::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, camera::{CameraController, Projection}, cube_map::CubeMap, egui_renderer::egui_renderer::EguiRenderer, input::keyboard::Keyboard, instance::{Instance, InstanceUniform}, model::{self, Mesh, Model}, objects::game_object::{GameObject, GameObjectCreateInfo, MeshReneringCreateInfo}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, lighting_pass::LightingPass, postprocess_pass::{self, PostProcessPass}, skybox_pass::SkyboxPass}, renderer_common::SKYBOX_VERTICES, texture::{self, Texture, TextureHelpers}, uniform::Uniform, uniform_types::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, WgpuUniforms}, utils::{file, unique_id}, wgpu_context::WgpuContext};
 use yhwh::{
     camera::Camera,
     vertex::Vertex,
 };
-
-pub struct GameObject {
-    pub model_name: String,
-    pub name: String
-}
 
 pub struct State {
     window: Arc<Window>,
@@ -36,6 +31,8 @@ pub struct State {
     depth_texture: Texture,
     debug_render_pipeline: wgpu::RenderPipeline,
     egui_renderer: EguiRenderer,
+    game_objects: Vec<GameObject>,
+    animated_game_object_id: usize,
 
     postprocess_pass: PostProcessPass,
     lighting_pass: LightingPass,
@@ -54,33 +51,81 @@ impl State {
 
         let egui_renderer = EguiRenderer::new(&context, &window);
 
+        // load textures
+        let mut asset_manager = AssetManager::new(&context);
+        asset_manager.build_materials(&device);
+
+
+        // init game objects
+        let mut game_objects: Vec<GameObject> = Vec::new();
+
+        let barrel_go_create_info = GameObjectCreateInfo {
+            model_name: "Barrel".to_string(),
+            name: "Barrel1".to_string(),
+            position: cgmath::Vector3::new(0.0, 2.0, 0.0),
+            size: cgmath::Vector3::new(5.0, 5.0, 5.0),
+            rotation: cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0)),
+            mesh_rendering_info: vec![MeshReneringCreateInfo {
+                material_name: "barrel_BLUE".to_string(),
+                mesh_name: "barrel_YELLOW".to_string()
+            }]
+        };
+
+        let barrel_go: GameObject = GameObject::new(&barrel_go_create_info, &asset_manager);
+
+         let plane_go_create_info = GameObjectCreateInfo {
+            model_name: "Plane".to_string(),
+            name: "Plane1".to_string(),
+            position: cgmath::Vector3::new(0.0, 0.0, 0.0),
+            size: cgmath::Vector3::new(100.0, 100.0, 100.0),
+            rotation: cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0)),
+            mesh_rendering_info: vec![]
+        };
+
+        let plane_go: GameObject = GameObject::new(&plane_go_create_info, &asset_manager);
+
+        game_objects.push(barrel_go);
+        game_objects.push(plane_go);
+
         // load camera
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
         let projection = Projection::new(config.width, config.height, cgmath::Deg(45.0), 0.1, 100.0);
         let camera_controller = CameraController::new(4.0, 0.4);
 
-        let game_objects_size = 3;
+        //let game_objects_size = 3;
 
-        let mut model_uniforms: Vec<Uniform<ModelUniform>> = Vec::new();
-        for _g in 0..game_objects_size {
-            let model_uniform = Uniform::new(ModelUniform::new(), &device);
+        // let mut model_uniforms: Vec<Uniform<ModelUniform>> = Vec::new();
+        // for _g in 0..game_objects_size {
+        //     let model_uniform = Uniform::new(ModelUniform::new(), &device);
 
-            model_uniforms.push(model_uniform);
+        //     model_uniforms.push(model_uniform);
+        // }
+
+        let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
+        for game_object in game_objects.iter() {
+            model_uniforms.insert(game_object.object_id, Uniform::new(ModelUniform::new(), &device));
         }
+
+        let animated_game_object_id = unique_id::next_id();
+        model_uniforms.insert(animated_game_object_id, Uniform::new(ModelUniform::new(), &device));
+
         // load uniforms
+        let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
+            &device,
+            wgpu::ShaderStages::VERTEX_FRAGMENT,
+            Some(format!("bind_group_layout for {}", std::any::type_name::<ModelUniform>()).as_ref()))
+        .unwrap();
+
         let wgpu_uniforms = WgpuUniforms { 
             camera: Uniform::new(CameraUniform::new(), &device),
             models: model_uniforms,
             animation: Uniform::new(AnimationUniform::new(), &device),
-            light: Uniform::new(LightUniform::new(), &device)
+            light: Uniform::new(LightUniform::new(), &device),
+            bind_group_layout
         };
 
         // load fbos
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture");
-
-        // load textures
-        let mut asset_manager = AssetManager::new(&context);
-        asset_manager.build_materials(&device);
 
         // render groups
         let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &asset_manager);
@@ -141,6 +186,8 @@ impl State {
             depth_texture,
             debug_render_pipeline,
             egui_renderer,
+            game_objects,
+            animated_game_object_id,
             lighting_pass,
             postprocess_pass,
             animation_pass,
@@ -184,31 +231,43 @@ impl State {
       let scale = cgmath::Matrix4::from_scale(1.5);
       let model_matrix = translation * rotation * scale;
 
-      let model_uniform = self.wgpu_uniforms.models[0].value_mut();
-      model_uniform.update(&model_matrix);
-      self.wgpu_uniforms.models[0].update(&queue); 
+    //   let model_uniform = self.wgpu_uniforms.models[0].value_mut();
+    //   model_uniform.update(&model_matrix);
+    //   self.wgpu_uniforms.models[0].update(&queue); 
 
-      // model uniform (1) plane model
-      let p_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, 0.0));
-      let p_rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
-      let p_scale = cgmath::Matrix4::from_scale(100.0);
-      let p_model_matrix = p_translation * p_rotation * p_scale;
+      if let Some(model_uniform) = self.wgpu_uniforms.models.get_mut(&self.animated_game_object_id) {
+        model_uniform.value_mut().update(&model_matrix);
+        model_uniform.update(&queue);
+      }
 
-      let mut updated_model2 = ModelUniform::new();
-      updated_model2.update(&p_model_matrix);
+    //   // model uniform (1) plane model
+    //   let p_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, 0.0));
+    //   let p_rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
+    //   let p_scale = cgmath::Matrix4::from_scale(100.0);
+    //   let p_model_matrix = p_translation * p_rotation * p_scale;
 
-      self.wgpu_uniforms.models[1].update_direct(&queue, &updated_model2);
+    //   let mut updated_model2 = ModelUniform::new();
+    //   updated_model2.update(&p_model_matrix);
 
-       // model uniform (2) barrel model
-      let f_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 2.0, 0.0));
-      let f_rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
-      let f_scale = cgmath::Matrix4::from_scale(5.0);
-      let f_model_matrix = f_translation * f_rotation * f_scale;
+    //   self.wgpu_uniforms.models[1].update_direct(&queue, &updated_model2);
 
-      let mut updated_model3 = ModelUniform::new();
-      updated_model3.update(&f_model_matrix);
+    //    // model uniform (2) barrel model
+    //   let f_translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 2.0, 0.0));
+    //   let f_rotation = cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0));
+    //   let f_scale = cgmath::Matrix4::from_scale(5.0);
+    //   let f_model_matrix = f_translation * f_rotation * f_scale;
 
-      self.wgpu_uniforms.models[2].update_direct(&queue, &updated_model3);
+    //   let mut updated_model3 = ModelUniform::new();
+    //   updated_model3.update(&f_model_matrix);
+
+    //   self.wgpu_uniforms.models[2].update_direct(&queue, &updated_model3);
+
+    for game_object in &self.game_objects {
+        if let Some(model_uniform) = self.wgpu_uniforms.models.get_mut(&game_object.object_id) {
+            model_uniform.value_mut().update(&game_object.get_model_matrix());
+            model_uniform.update(&queue);
+        }
+    }
 
       // update light position
       let light_uniform = self.wgpu_uniforms.light.value_mut();
@@ -265,8 +324,8 @@ impl State {
         });
 
     
-       self.lighting_pass.render(&mut render_pass, &self.wgpu_uniforms, &self.asset_manager);
-       self.animation_pass.render(&mut render_pass, &self.wgpu_uniforms, &self.asset_manager);
+       self.lighting_pass.render(&mut render_pass, &self.wgpu_uniforms, &self.asset_manager, &self.game_objects);
+       self.animation_pass.render(&mut render_pass, &self.wgpu_uniforms, &self.asset_manager, self.animated_game_object_id);
 
         // instance pass
     //     render_pass.set_pipeline(&self.instance_render_pipeline);

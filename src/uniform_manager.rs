@@ -1,0 +1,146 @@
+use std::collections::HashMap;
+
+use cgmath::SquareMatrix;
+use cgmath::Rotation3;
+
+use crate::asset_manager::AssetManager;
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct AnimationUniform {
+    pub joint_matrices: [[[f32; 4]; 4]; MAX_JOINTS_PER_MESH],
+}
+
+impl AnimationUniform {
+    pub fn new() -> Self {
+      Self {
+        joint_matrices: [cgmath::Matrix4::<f32>::identity().into(); MAX_JOINTS_PER_MESH]
+      }
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ModelUniform {
+    pub model_matrix: [[f32; 4]; 4]
+}
+
+impl ModelUniform {
+    pub fn new() -> Self {
+      Self {
+        model_matrix: cgmath::Matrix4::identity().into()
+      }
+    }
+
+    pub fn update(&mut self, matrix: &cgmath::Matrix4<f32>) {
+       self.model_matrix = (*matrix).into();
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct CameraUniform {
+    pub view: [[f32; 4]; 4],
+    pub projection: [[f32; 4]; 4],
+    pub view_position: [f32; 4],
+}
+
+impl CameraUniform {
+    pub fn new() -> Self {
+        use cgmath::SquareMatrix;
+        Self {
+            view_position: [0.0; 4],
+            view: cgmath::Matrix4::identity().into(),
+            projection: cgmath::Matrix4::identity().into(),
+        }
+    }
+
+    pub fn update(&mut self, camera: &Camera, projection: &Projection) {
+        self.view_position = camera.position.to_homogeneous().into();
+        self.view = camera.calc_matrix().into();
+        self.projection = projection.calc_matrix().into();
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct LightUniform {
+   pub position: [f32; 3],
+   pub _padding: u32,
+   pub color: [f32; 3],
+   pub _padding2: u32,
+}
+
+impl LightUniform {
+    pub fn new() -> Self {
+        Self {
+          position: [2.0, 2.0, 2.0],
+           _padding: 0,
+           color: [1.0, 1.0, 1.0],
+          _padding2: 0,
+        }
+    }
+}
+
+pub struct UniformManager {
+    pub camera: Uniform<CameraUniform>,
+    pub models: HashMap<usize, Uniform<ModelUniform>>,
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    pub animation: Uniform<AnimationUniform>,
+    pub light: Uniform<LightUniform>
+}
+
+impl UniformManager {
+    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_obj_id: usize) {
+      // TODO: DO IT RIGHT WITH A VECTOR LIKE IN GAME OBJECTS
+      let translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(10.0, 2.0, 0.0));
+      let rotation = cgmath::Matrix4::from_angle_x(cgmath::Rad(0.0));
+      let scale = cgmath::Matrix4::from_scale(1.5);
+      let model_matrix = translation * rotation * scale;
+
+      if let Some(model_uniform) = self.models.get_mut(&animated_game_obj_id) {
+        model_uniform.value_mut().update(&model_matrix);
+        model_uniform.update(&ctx.queue);
+      }
+
+      for game_object in game_objects {
+        if let Some(model_uniform) = self.models.get_mut(&game_object.object_id) {
+            model_uniform.value_mut().update(&game_object.get_model_matrix());
+            model_uniform.update(&ctx.queue);
+        }
+      }
+    }
+
+    pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, asset_manager: &mut AssetManager, delta_time: std::time::Duration) {
+         if let Some(glb_model) = asset_manager.get_model_by_name_mut("glock") {
+          glb_model.update(delta_time.as_secs_f32());
+          let skin_uniform = self.animation.value_mut();
+
+          if let Some(skin) = glb_model.skins.get(0) {
+           for (i, joint) in skin.joints().iter().enumerate() {
+            if i >= MAX_JOINTS_PER_MESH {
+             break; 
+            }
+
+           // Convert cgmath::Matrix4 to [[f32; 4]; 4]
+           skin_uniform.joint_matrices[i] = joint.matrix().into();
+         }
+       }
+      }
+
+      self.animation.update(&ctx.queue);
+    }
+
+    pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, dt: std::time::Duration) {
+      let light_uniform = self.light.value_mut();
+      let old_position: cgmath::Vector3<_> = light_uniform.position.into();
+      light_uniform.position = (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(60.0 * dt.as_secs_f32())) * old_position).into();
+      self.light.update(&ctx.queue);
+    }
+
+    pub fn submit_camera_uniforms(&mut self, ctx: &WgpuContext, camera: &Camera, projection: &Projection) {
+      self.camera.value_mut().update(&camera, &projection);
+      self.camera.update(&ctx.queue);
+    }
+}

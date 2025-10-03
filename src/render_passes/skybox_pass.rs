@@ -2,7 +2,7 @@ use crate::bind_group_manager::{BindGroupManager, TL};
 use crate::cube_map::CubeMap;
 use crate::pipeline_manager::PipelineManager;
 use crate::renderer_common::SKYBOX_VERTICES;
-use crate::uniform_types::WgpuUniforms;
+use crate::uniform_manager::UniformManager;
 use crate::{asset_manager::AssetManager, wgpu_context::WgpuContext};
 use crate::texture::{Texture, TextureHelpers};
 
@@ -12,7 +12,7 @@ pub struct SkyboxPass {
 }
 
 impl SkyboxPass {
-    pub fn new(ctx: &WgpuContext, asset_manager: &AssetManager, uniforms: &WgpuUniforms) -> Self {
+    pub fn new(ctx: &WgpuContext, asset_manager: &AssetManager, uniforms: &UniformManager) -> Self {
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Cubemap_Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/cube_map.wgsl").into()),
@@ -47,7 +47,7 @@ impl SkyboxPass {
         }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms, ) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager, ) {
        render_pass.set_pipeline(&self.pipeline);
 
        render_pass.set_bind_group(0, &self.cubemap.texture_bind_group, &[]);

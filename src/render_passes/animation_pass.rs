@@ -1,7 +1,7 @@
 use cgmath::SquareMatrix;
 use wgpu::util::DeviceExt;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::HDR_TEX_FORMAT, model::Model, pipeline_manager::PipelineManager, uniform_types::WgpuUniforms, vertex::Vertex};
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::HDR_TEX_FORMAT, model::Model, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex};
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
@@ -9,7 +9,7 @@ pub struct AnimationPass {
 }
 
 impl AnimationPass {
-    pub fn new(device: &wgpu::Device, wgpu_uniforms: &WgpuUniforms) -> Self {
+    pub fn new(device: &wgpu::Device, wgpu_uniforms: &UniformManager) -> Self {
         let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Instance_Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/animation.wgsl").into()),
@@ -41,7 +41,7 @@ impl AnimationPass {
         }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms,  asset_manager: &AssetManager, object_id: usize) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager,  asset_manager: &AssetManager, object_id: usize) {
         let Some(model_uniform) = uniforms.models.get(&object_id) else {
             println!("No model bind group for object {:?}, skipping draw", object_id);
             return

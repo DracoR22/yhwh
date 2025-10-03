@@ -1,11 +1,11 @@
-use crate::{asset_manager::AssetManager, common::constants::HDR_TEX_FORMAT, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_types::WgpuUniforms, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, common::constants::HDR_TEX_FORMAT, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct LightingPass {
     pipeline: wgpu::RenderPipeline
 }
 
 impl LightingPass {
-    pub fn new(ctx: &WgpuContext, uniforms: &WgpuUniforms, asset_manager: &AssetManager) -> Self {
+    pub fn new(ctx: &WgpuContext, uniforms: &UniformManager, asset_manager: &AssetManager) -> Self {
         let shader_code = std::fs::read_to_string("res/shaders/lighting.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Lighting_Shader"),
@@ -40,7 +40,7 @@ impl LightingPass {
      }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &WgpuUniforms, asset_manager: &AssetManager, game_objects: &Vec<GameObject>) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager, asset_manager: &AssetManager, game_objects: &Vec<GameObject>) {
         render_pass.set_pipeline(&self.pipeline);
 
         for game_object in game_objects.iter() {

@@ -4,6 +4,7 @@ use cgmath::SquareMatrix;
 use cgmath::Rotation3;
 
 use crate::asset_manager::AssetManager;
+use crate::objects::animated_game_object::AnimatedGameObject;
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
 
 #[repr(C)]
@@ -92,16 +93,12 @@ pub struct UniformManager {
 }
 
 impl UniformManager {
-    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_obj_id: usize) {
-      // TODO: DO IT RIGHT WITH A VECTOR LIKE IN GAME OBJECTS
-      let translation = cgmath::Matrix4::from_translation(cgmath::Vector3::new(10.0, 2.0, 0.0));
-      let rotation = cgmath::Matrix4::from_angle_x(cgmath::Rad(0.0));
-      let scale = cgmath::Matrix4::from_scale(1.5);
-      let model_matrix = translation * rotation * scale;
-
-      if let Some(model_uniform) = self.models.get_mut(&animated_game_obj_id) {
-        model_uniform.value_mut().update(&model_matrix);
-        model_uniform.update(&ctx.queue);
+    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) {
+      for animated_game_object in animated_game_objects {
+        if let Some(model_uniform) = self.models.get_mut(&animated_game_object.object_id) {
+          model_uniform.value_mut().update(&animated_game_object.get_model_matrix());
+          model_uniform.update(&ctx.queue);
+        }
       }
 
       for game_object in game_objects {

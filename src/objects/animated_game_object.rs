@@ -2,18 +2,18 @@ use std::collections::HashMap;
 
 use crate::{asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo, types::MeshRenderingInfo}, utils::unique_id};
 
-pub struct GameObject {
+pub struct AnimatedGameObject {
+    pub object_id: usize,
     name: String,
     model_name: String,
     position: cgmath::Vector3<f32>,
     size: cgmath::Vector3<f32>,
     rotation: cgmath::Matrix4<f32>,
-    pub object_id: usize,
     mesh_rendering_info: Vec<MeshRenderingInfo>,
-    mesh_rendering_info_index_map: HashMap<String, usize>
+    mesh_rendering_info_index_map: HashMap<String, usize>,
 }
 
-impl GameObject {
+impl AnimatedGameObject {
     pub fn new(create_info: &GameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
         let model = asset_manager.get_model_by_name(&create_info.model_name).unwrap();
 
@@ -94,5 +94,16 @@ impl GameObject {
           0
         }
     }
-}
 
+    pub fn set_mesh_material(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
+        let mesh_index = asset_manager.get_mesh_index_by_name(mesh_name);
+        let material_index = asset_manager.get_mesh_index_by_name(material_name);
+
+        for info in self.mesh_rendering_info.iter_mut() {
+            if info.mesh_index == mesh_index {
+                info.material_index = material_index;
+                return
+            }
+        }
+    } 
+}

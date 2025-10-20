@@ -9,6 +9,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
+    @location(0) tex_coords: vec2<f32>
 }
 
 struct CameraUniform {
@@ -26,12 +27,22 @@ struct SkinUniform {
 }
 
 @group(0) @binding(0)
-var<uniform> camera: CameraUniform;
+var texture_albedo: texture_2d<f32>;
+@group(0) @binding(1)
+var sampler_albedo: sampler;
+
+@group(0) @binding(2)
+var texture_normal_map: texture_2d<f32>;
+@group(0) @binding(3)
+var sampler_normal_map: sampler;
 
 @group(1) @binding(0)
-var<uniform> model: ModelUniform;
+var<uniform> camera: CameraUniform;
 
 @group(2) @binding(0)
+var<uniform> model: ModelUniform;
+
+@group(3) @binding(0)
 var<uniform> skin: SkinUniform;
 
 @vertex
@@ -48,11 +59,14 @@ fn vs_main(vert_in: VertexInput) -> VertexOutput {
     total_position += weight * (joint_matrix * vec4<f32>(vert_in.position, 1.0));
    }
 
+   out.tex_coords = vert_in.tex_coords;
    out.clip_position = camera.projection * camera.view * model.model_matrix * total_position;
    return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-  return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  let albedo: vec4<f32> = textureSample(texture_albedo, sampler_albedo, in.tex_coords);
+
+  return albedo;
 }

@@ -8,14 +8,13 @@ use gltf::mesh::Bounds;
 use math::aabb::Aabb;
 use wgpu::util::DeviceExt;
 
-use crate::animation::animation::{load_animations, Animations, PlaybackMode, PlaybackState};
+use crate::animation::animation::{load_animations, Animations, PlaybackMode, AnimationState};
 use crate::animation::node::Nodes;
 use crate::animation::skin::{create_skins_from_gltf, Skin};
 
 use crate::utils::file::load_file_string_from_dir;
 use crate::{
     renderer_common::{CUBE_INDICES, CUBE_VERTICES, PLANE_INDICES, PLANE_VERTICES},
-    utils::file::load_file_string_from_env,
     vertex::Vertex,
 };
 
@@ -227,7 +226,6 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
 }
 
 pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model> {
-    let file_name = Path::new(path).file_name().and_then(|f| f.to_str()).unwrap();
     let file_stem = Path::new(path).file_stem().and_then(|f| f.to_str()).unwrap();
 
     let (gltf, buffers, _images) = gltf::import(path).expect("Failed to import glTF/GLB file");
@@ -243,10 +241,6 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model
 
     // load animations
     let animations = load_animations(gltf.animations(), &buffers);
-
-    for (i, anim ) in animations.as_ref().unwrap().animations().iter().enumerate() {
-        println!("LOADED ANIMATION: {}", anim.get_name())
-    }
 
     // load skins
     let mut skins = create_skins_from_gltf(gltf.skins(), &buffers);
@@ -413,7 +407,7 @@ impl Model {
 
 // animations stuff
 impl Model {
-    pub fn get_animation_playback_state(&self) -> Option<PlaybackState> {
+    pub fn get_animation_playback_state(&self) -> Option<AnimationState> {
         self.animations
             .as_ref()
             .map(Animations::get_playback_state)

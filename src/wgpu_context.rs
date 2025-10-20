@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use winit::window::Window;
 
+use crate::common::errors::WgpuContextError;
+
 pub struct WgpuContext {
     pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
@@ -10,14 +12,8 @@ pub struct WgpuContext {
     pub is_surface_configured: bool,
 }
 
-#[derive(Debug)]
-pub enum ContextError {
-    RequestDeviceError(wgpu::RequestDeviceError),
-    NoAdapterFound
-}
-
 impl WgpuContext {
-    pub async fn new(window: &Arc<Window>) -> Result<Self, ContextError> {
+    pub async fn new(window: &Arc<Window>) -> Result<Self, WgpuContextError> {
        let size = window.inner_size();
 
        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -34,7 +30,7 @@ impl WgpuContext {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or(ContextError::NoAdapterFound)?;
+            .ok_or(WgpuContextError::NoAdapterFound)?;
 
         let info = adapter.get_info();
         println!("Using Backend: {:?}", info.backend); 
@@ -50,7 +46,7 @@ impl WgpuContext {
                 None,
             )
             .await
-            .map_err(ContextError::RequestDeviceError)?;
+            .map_err(WgpuContextError::RequestDeviceError)?;
 
         let surface_caps = surface.get_capabilities(&adapter);
 

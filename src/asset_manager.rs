@@ -39,7 +39,6 @@ impl AssetManager {
         let now = std::time::SystemTime::now();
 
         let (sender, receiver) = mpsc::channel::<TextureData>();
-
         for entry in std::fs::read_dir("res/textures").unwrap() {
             let entry = entry.unwrap();
             let file_name = entry.file_name();
@@ -136,6 +135,18 @@ impl AssetManager {
         }
 
         material_name
+    }
+
+    pub fn get_all_materials(&self) -> &Vec<Material> {
+        &self.materials
+    }
+
+     pub fn get_phong_bind_group_layout(&self) -> Option<&wgpu::BindGroupLayout> {
+      if !self.materials.is_empty() {
+        Some(&self.materials[0].bind_group_layout)
+      } else {
+        None
+      }
     }
 }
 

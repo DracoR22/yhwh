@@ -35,6 +35,8 @@ impl Engine {
         let projection = Projection::new(window.inner_size().width, window.inner_size().height, cgmath::Deg(45.0), 0.1, 100.0);
         let camera_controller = CameraController::new(4.0, 0.4);
 
+        // load physics
+
         // load wgpu
         let wgpu_renderer = WgpuRenderer::new(&window).await;
 
@@ -56,6 +58,8 @@ impl Engine {
     }
 
     pub fn update(&mut self) {
+        // update physics
+
         // update game
         self.game_data.update_fps();
         self.game_data.camera_controller.update_camera(&mut self.game_data.camera, self.game_data.delta_time);

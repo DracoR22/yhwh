@@ -1,26 +1,21 @@
 use std::collections::HashMap;
 
-use crate::{asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo, types::MeshRenderingInfo}, utils::unique_id};
+use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo, errors::MeshNodesError, types::MeshRenderingInfo}};
 
-pub struct GameObject {
-    name: String,
+pub struct MeshNodes {
     model_name: String,
-    position: cgmath::Vector3<f32>,
-    size: cgmath::Vector3<f32>,
-    rotation: cgmath::Matrix4<f32>,
-    pub object_id: usize,
     mesh_rendering_info: Vec<MeshRenderingInfo>,
-    mesh_rendering_info_index_map: HashMap<String, usize>
+    mesh_rendering_info_index_map: HashMap<String, usize>,
 }
 
-impl GameObject {
-    pub fn new(create_info: &GameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
-        let model = asset_manager.get_model_by_name(&create_info.model_name).unwrap();
-
+impl MeshNodes {
+    pub fn new(model_name: &str, create_info: &Vec<MeshNodeCreateInfo>, asset_manager: AssetManager) -> Result<Self, MeshNodesError> {
         let mut mesh_rendering_info: Vec<MeshRenderingInfo> = Vec::new();
         let mut mesh_rendering_info_index_map: HashMap<String, usize> = HashMap::new();
 
-        if create_info.mesh_rendering_info.is_empty() {
+        let model = asset_manager.get_model_by_name(model_name).ok_or(MeshNodesError::ModelNotFound)?;
+
+        if create_info.is_empty() {
             for mesh in &model.meshes {
             let mesh_index = asset_manager.get_mesh_index_by_name(&mesh.name);
             let material_index = asset_manager.get_material_index_by_name("Default");
@@ -32,7 +27,7 @@ impl GameObject {
             mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
             }
         } else {
-            for info in &create_info.mesh_rendering_info {
+            for info in create_info.iter() {
             let mesh = asset_manager.get_mesh_by_name(&info.mesh_name).expect("GameObject::new() error: Mesh {info.name} not found in model meshes");
             
             let mesh_index = asset_manager.get_mesh_index_by_name(&info.mesh_name);
@@ -46,44 +41,15 @@ impl GameObject {
            }
         }
 
-        Self { 
-            model_name: create_info.model_name.clone(),
-            name: create_info.name.clone(),
-            position: create_info.position,
-            rotation: create_info.rotation,
-            size: create_info.size,
-            object_id: unique_id::next_id(),
+        Ok(Self {
+            model_name: model_name.to_string(),
             mesh_rendering_info,
             mesh_rendering_info_index_map
-        }
-    }
-
-    pub fn get_name(&self) -> &String {
-        &self.name
+        })
     }
 
     pub fn get_model_name(&self) -> &String {
         &self.model_name
-    }
-
-    pub fn get_position(&self) -> cgmath::Vector3<f32> {
-        self.position
-    }
-
-    pub fn get_rotation_matrix(&self) -> cgmath::Matrix4<f32> {
-        self.rotation
-    }
-
-    pub fn get_size(&self) -> cgmath::Vector3<f32> {
-        self.size
-    }
-
-    pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {
-        let model_matrix = cgmath::Matrix4::from_translation(self.position)
-         * self.rotation 
-         * cgmath::Matrix4::from_nonuniform_scale(self.size.x, self.size.y, self.size.z);
-         
-         model_matrix
     }
 
     pub fn get_mesh_material_index(&self, mesh_name: &str) -> usize {
@@ -94,5 +60,17 @@ impl GameObject {
           0
         }
     }
-}
 
+    pub fn set_material_by_mesh_name(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
+        let mesh_index = asset_manager.get_mesh_index_by_name(mesh_name);
+        let material_index = asset_manager.get_material_index_by_name(material_name);
+
+        let info = MeshRenderingInfo {
+            mesh_index,
+            material_index
+        };
+
+        self.mesh_rendering_info.push(info);
+        self.mesh_rendering_info_index_map.insert(mesh_name.to_string(), self.mesh_rendering_info.len() - 1);
+    }
+}

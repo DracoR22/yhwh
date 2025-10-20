@@ -1,7 +1,7 @@
 use wgpu::rwh::HasDisplayHandle;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::wgpu_context::WgpuContext;
+use crate::{wgpu_context::WgpuContext};
 
 pub struct EguiRenderer {
     pub context: egui::Context,

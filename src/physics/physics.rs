@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use rapier3d::prelude::*;
+
+use crate::common::constants::FIXED_DELTA_TIME;
 
 pub struct Physics {
     gravity: nalgebra::Vector3<f32>,
@@ -10,20 +14,31 @@ pub struct Physics {
     impulse_joint_set: ImpulseJointSet,
     multibody_joint_set: MultibodyJointSet,
     ccd_solver: CCDSolver, 
-    physics_hooks: Box<dyn PhysicsHooks>,
-    event_handler: Box<dyn EventHandler>,
+    accumulated_time: f32,
     rigid_body_set: RigidBodySet,
-    collider_set: ColliderSet 
+    collider_set: ColliderSet,
+    rigid_handles: HashMap<usize, RigidBodyHandle>
 }
 
 impl Physics {
     pub fn new() -> Self {
        let mut rigid_body_set = RigidBodySet::new();
        let mut collider_set = ColliderSet::new();
+       let mut rigid_handles: HashMap<usize, RigidBodyHandle> = HashMap::new();
 
        /* Create the ground. */
        let collider = ColliderBuilder::cuboid(100.0, 0.1, 100.0).build();
        collider_set.insert(collider);
+
+       let rigid_body = RigidBodyBuilder::dynamic()
+        .translation(vector![0.0, 10.0, 0.0])
+        .build();
+       let collider = ColliderBuilder::ball(0.5).restitution(0.7).build();
+       let ball_body_handle = rigid_body_set.insert(rigid_body);
+       collider_set.insert_with_parent(collider, ball_body_handle, &mut rigid_body_set);
+
+       rigid_handles.insert(0, ball_body_handle);
+
 
         Self {
             gravity: vector![0.0, -9.81, 0.0],
@@ -35,15 +50,17 @@ impl Physics {
             impulse_joint_set: ImpulseJointSet::new(),
             multibody_joint_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
-            physics_hooks: Box::new(()),
-            event_handler: Box::new(()),
             rigid_body_set,
-            collider_set
+            collider_set,
+            accumulated_time: 0.0,
+            rigid_handles
         }
     }
 
-    pub fn step_simulation(&mut self) {
-        for _ in 0..200 {
+    pub fn step_simulation(&mut self, delta_time: std::time::Duration) {
+        self.accumulated_time += delta_time.as_secs_f32();
+
+        while self.accumulated_time >= FIXED_DELTA_TIME {
         self.physics_pipeline.step(
             &self.gravity,
             &self.integration_parameters,
@@ -55,9 +72,18 @@ impl Physics {
             &mut self.impulse_joint_set,
             &mut self.multibody_joint_set,
             &mut self.ccd_solver,
-            self.physics_hooks.as_ref(),
-            self.event_handler.as_ref(),
+            &(),
+            &()
         );
+
+        self.accumulated_time -= FIXED_DELTA_TIME;
       }
-    }
+
+      if let Some(ball_rigid_handle) = self.rigid_handles.get(&0) {
+        if let Some(body) = self.rigid_body_set.get(*ball_rigid_handle) {
+        println!("Ball altitude: {}", body.translation().y);
+       }
+      }
+      
+     }
 }

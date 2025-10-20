@@ -51,7 +51,7 @@ pub enum PlaybackMode {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct PlaybackState {
+pub struct AnimationState {
     pub current: usize,
     pub time: f32,
     pub total_time: f32,
@@ -59,7 +59,7 @@ pub struct PlaybackState {
     pub playback_mode: PlaybackMode,
 }
 
-impl PlaybackState {
+impl AnimationState {
      fn advance(&mut self, delta_time: f32) {
         self.time = match self.playback_mode {
             PlaybackMode::Loop => (self.time + delta_time) % self.total_time,
@@ -78,51 +78,51 @@ impl PlaybackState {
 
 pub struct Animations {
     animations: Vec<Animation>,
-    playback_state: PlaybackState,
+    animation_state: AnimationState,
 }
 
 impl Animations {
     pub fn update(&mut self, nodes: &mut Nodes, delta_time: f32) -> bool {
-         if self.playback_state.paused {
+         if self.animation_state.paused {
             return false;
         }
 
-        match self.animations.get_mut(self.playback_state.current) {
+        match self.animations.get_mut(self.animation_state.current) {
             Some(animation) => {
-                self.playback_state.advance(delta_time);
-                animation.animate(nodes, self.playback_state.time)
+                self.animation_state.advance(delta_time);
+                animation.animate(nodes, self.animation_state.time)
             }
             _ => false,
         }
     }
 
-    pub fn get_playback_state(&self) -> &PlaybackState {
-        &self.playback_state
+    pub fn get_playback_state(&self) -> &AnimationState {
+        &self.animation_state
     }
 
     pub fn set_current(&mut self, index: usize) {
         if index < self.animations.len() {
             if let Some(animation) = self.animations.get(index) {
-                self.playback_state.set_current(index, animation);
+                self.animation_state.set_current(index, animation);
             }
         }
     }
 
     pub fn set_playback_mode(&mut self, playback_mode: PlaybackMode) {
-        self.playback_state.playback_mode = playback_mode;
+        self.animation_state.playback_mode = playback_mode;
     }
 
     pub fn toggle(&mut self) {
-        self.playback_state.paused = !self.playback_state.paused;
+        self.animation_state.paused = !self.animation_state.paused;
     }
 
     pub fn stop(&mut self) {
-        self.playback_state.paused = true;
+        self.animation_state.paused = true;
         self.reset();
     }
 
     pub fn reset(&mut self) {
-        self.playback_state.time = 0.0;
+        self.animation_state.time = 0.0;
     }
 
     pub fn animations(&self) -> &[Animation] {
@@ -341,7 +341,7 @@ impl Animation {
 
     Some(Animations {
         animations,
-        playback_state: PlaybackState {
+        animation_state: AnimationState {
             current: 0,
             time: 0.0,
             total_time,
@@ -350,6 +350,7 @@ impl Animation {
         },
     })
   }
+  
   fn map_animation(gltf_animation: &gltf::Animation, data: &[Data]) -> Animation {
     let translation_channels = map_translation_channels(gltf_animation.channels(), data);
     let rotation_channels = map_rotation_channels(gltf_animation.channels(), data);

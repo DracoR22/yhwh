@@ -12,16 +12,21 @@ pub struct PostProcessPass {
 }
 
 impl PostProcessPass {
-    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
+    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, outline_texture: &texture::Texture) -> Self {
        let format = wgpu::TextureFormat::Rgba16Float;
-
+ 
        let width = config.width;
        let height = config.height;
 
-       let texture = texture::Texture::create_fbo(&device, (width, height), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+       let hdr_texture = texture::Texture::create_fbo(&device, (width, height), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float]).unwrap();
-       let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &texture).unwrap();
+       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float, TL::Float]).unwrap();
+       // let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &texture).unwrap();
+        let bind_group = BindGroupManager::create_multi_texture_bind_group(
+         &device,
+         &bind_group_layout,
+         &[&hdr_texture, &outline_texture])
+         .unwrap();
 
         let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Default_Shader"),
@@ -42,24 +47,24 @@ impl PostProcessPass {
             height, 
             bind_group_layout, 
             pipeline,
-            texture,
+            texture: hdr_texture,
             width,
             pipeline_layout
         }
     }
 
     pub fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
-       self.texture = texture::Texture::create_fbo(&device, (width, height),  wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+    //    self.texture = texture::Texture::create_fbo(&device, (width, height),  wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-       match BindGroupManager::create_texture_bind_group(&device, &self.bind_group_layout, &self.texture) {
-        Ok(result) => self.bind_group = result,
-        Err(e) => {
-            println!("PostProcessGroup::resize() error: failed to resize texture bind group!! {e}")
-        }
-       }
+    //    match BindGroupManager::create_texture_bind_group(&device, &self.bind_group_layout, &self.texture) {
+    //     Ok(result) => self.bind_group = result,
+    //     Err(e) => {
+    //         println!("PostProcessGroup::resize() error: failed to resize texture bind group!! {e}")
+    //     }
+    //    }
 
-       self.width = width;
-       self.height = height;
+    //    self.width = width;
+    //    self.height = height;
     }
 
     pub fn get_view(&self) -> &wgpu::TextureView {
@@ -85,11 +90,11 @@ impl PostProcessPass {
       }
     }
 
-    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, output: &wgpu::TextureView) {
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, swapchain_view: &wgpu::TextureView) {
        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Post_Process::render()"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &output,
+                view: &swapchain_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,

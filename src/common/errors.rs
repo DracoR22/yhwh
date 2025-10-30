@@ -1,11 +1,17 @@
+#[derive(Debug)]
+pub enum WgpuContextError {
+    RequestDeviceError(wgpu::RequestDeviceError),
+    NoAdapterFound
+}
+
 pub enum MeshNodesError {
     ModelNotFound,
     MeshNotFound,
     MaterialNotFound
 }
 
-#[derive(Debug)]
-pub enum WgpuContextError {
-    RequestDeviceError(wgpu::RequestDeviceError),
-    NoAdapterFound
+pub enum CharacterControllerError {
+    ControllerNotFound,
+    ControllerHandleNotFound,
+    ControllerBodyNotFound
 }

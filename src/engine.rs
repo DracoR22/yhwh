@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 
-use crate::{camera::{Camera, CameraController, Projection}, common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, input::keyboard::Keyboard, wgpu_renderer::WgpuRenderer};
+use crate::{camera::{Camera, CameraController, Projection}, common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, input::keyboard::Keyboard, physics::physics::Physics, wgpu_renderer::WgpuRenderer};
 
 pub struct GameData {
     pub camera: Camera,
-    pub projection: Projection,
     pub camera_controller: CameraController,
 
     pub delta_time: std::time::Duration,
@@ -18,6 +17,7 @@ pub struct GameData {
 pub struct Engine {
     window: Arc<Window>,
     wgpu_renderer: WgpuRenderer,
+    physics: Physics,
     game_data: GameData,
     keyboard: Keyboard,
     show_cursor: bool
@@ -32,22 +32,21 @@ impl Engine {
 
         // load camera
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
-        let projection = Projection::new(window.inner_size().width, window.inner_size().height, cgmath::Deg(45.0), 0.1, 100.0);
         let camera_controller = CameraController::new(4.0, 0.4);
 
         // load physics
-
+    
         // load wgpu
         let wgpu_renderer = WgpuRenderer::new(&window).await;
 
         Self {
+            physics: Physics::new(),
             wgpu_renderer,
             window,
             keyboard: Keyboard::new(),
             show_cursor,
             game_data: GameData { 
                 camera,
-                projection,
                 camera_controller,
                 avg_fps: 0.0,
                 fps_accum: Default::default(),
@@ -59,6 +58,7 @@ impl Engine {
 
     pub fn update(&mut self) {
         // update physics
+        //self.physics.step_simulation(self.game_data.delta_time);
 
         // update game
         self.game_data.update_fps();
@@ -85,7 +85,7 @@ impl Engine {
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
-        self.game_data.projection.resize(width, height);
+        self.game_data.camera.get_projection_mut().resize(width, height);
         self.wgpu_renderer.resize(width, height);
     }
 

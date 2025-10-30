@@ -2,6 +2,8 @@ use cgmath::*;
 use winit::{dpi::PhysicalPosition, event::{ElementState, KeyEvent, MouseScrollDelta, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use std::{f32::consts::FRAC_PI_2, time::Duration};
 
+use crate::common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH};
+
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::from_cols(
     cgmath::Vector4::new(1.0, 0.0, 0.0, 0.0),
@@ -17,22 +19,16 @@ pub struct Camera {
     pub position: Point3<f32>,
     yaw: Rad<f32>,
     pitch: Rad<f32>,
+    projection: Projection
 }
 
 impl Camera {
-    pub fn new<
-        V: Into<Point3<f32>>,
-        Y: Into<Rad<f32>>,
-        P: Into<Rad<f32>>,
-    >(
-        position: V,
-        yaw: Y,
-        pitch: P,
-    ) -> Self {
+    pub fn new<V: Into<Point3<f32>>, Y: Into<Rad<f32>>, P: Into<Rad<f32>>>(position: V, yaw: Y, pitch: P) -> Self {
         Self {
             position: position.into(),
             yaw: yaw.into(),
             pitch: pitch.into(),
+            projection: Projection::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32, cgmath::Deg(45.0), 0.1, 100.0)
         }
     }
 
@@ -50,8 +46,18 @@ impl Camera {
             Vector3::unit_y(),
         )
     }
+
+    pub fn get_projection(&self) -> &Projection {
+        &self.projection
+    }
+
+    pub fn get_projection_mut(&mut self) -> &mut Projection {
+        &mut self.projection
+    }
 }
  
+ 
+#[derive(Debug)]
 pub struct Projection {
     aspect: f32,
     fovy: Rad<f32>,
@@ -84,41 +90,6 @@ impl Projection {
     }
 }
  
-
-// #[repr(C)]
-// pub struct Camera {
-//    pub eye: cgmath::Point3<f32>,
-//    pub target: cgmath::Point3<f32>,
-//    pub up: cgmath::Vector3<f32>,
-//    pub aspect: f32,
-//    pub fovy: f32,
-//    pub znear: f32,
-//    pub zfar: f32,
-// }
-
-// impl Camera {
-//     pub fn new(viewport_width: f32, viewport_height: f32) -> Self {
-//       return Self { 
-//         eye: (0.0, 1.0, 2.0).into(),
-//         target: (0.0, 0.0, 0.0).into(),
-//         up: cgmath::Vector3::unit_y(),
-//         aspect: viewport_width / viewport_height,
-//         fovy: 45.0,
-//         znear: 0.1,
-//         zfar: 100.0,
-//        }
-//     }
-
-//     pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-//         let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-//         let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
-
-//         return OPENGL_TO_WGPU_MATRIX * proj * view;
-//     }
-// }
-
-
-// todo: move to player
 pub struct CameraController {
     amount_left: f32,
     amount_right: f32,

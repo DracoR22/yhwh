@@ -57,10 +57,10 @@ impl CameraUniform {
         }
     }
 
-    pub fn update(&mut self, camera: &Camera, projection: &Projection) {
+    pub fn update(&mut self, camera: &Camera) {
         self.view_position = camera.position.to_homogeneous().into();
         self.view = camera.calc_matrix().into();
-        self.projection = projection.calc_matrix().into();
+        self.projection = camera.get_projection().calc_matrix().into();
     }
 }
 
@@ -136,8 +136,8 @@ impl UniformManager {
       self.light.update(&ctx.queue);
     }
 
-    pub fn submit_camera_uniforms(&mut self, ctx: &WgpuContext, camera: &Camera, projection: &Projection) {
-      self.camera.value_mut().update(&camera, &projection);
+    pub fn submit_camera_uniforms(&mut self, ctx: &WgpuContext, camera: &Camera) {
+      self.camera.value_mut().update(&camera);
       self.camera.update(&ctx.queue);
     }
 }

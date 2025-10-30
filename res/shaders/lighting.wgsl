@@ -15,7 +15,7 @@ struct VertexOutput {
     @location(2) tangent: vec3<f32>, // tangent
     @location(3) bitangent: vec3<f32>, // bitangent
     @location(4) normal: vec3<f32>, // normal
-};
+}
 
 struct CameraUniform {
     view: mat4x4<f32>,

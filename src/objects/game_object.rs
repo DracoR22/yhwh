@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use crate::{asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo, types::MeshRenderingInfo}, utils::unique_id};
+use crate::{asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo, types::MeshRenderingInfo}, mesh_nodes::MeshNodes, utils::unique_id};
 
 pub struct GameObject {
     name: String,
@@ -9,43 +7,11 @@ pub struct GameObject {
     size: cgmath::Vector3<f32>,
     rotation: cgmath::Matrix4<f32>,
     pub object_id: usize,
-    mesh_rendering_info: Vec<MeshRenderingInfo>,
-    mesh_rendering_info_index_map: HashMap<String, usize>
+    mesh_nodes: MeshNodes,
 }
 
 impl GameObject {
     pub fn new(create_info: &GameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
-        let model = asset_manager.get_model_by_name(&create_info.model_name).unwrap();
-
-        let mut mesh_rendering_info: Vec<MeshRenderingInfo> = Vec::new();
-        let mut mesh_rendering_info_index_map: HashMap<String, usize> = HashMap::new();
-
-        if create_info.mesh_rendering_info.is_empty() {
-            for mesh in &model.meshes {
-            let mesh_index = asset_manager.get_mesh_index_by_name(&mesh.name);
-            let material_index = asset_manager.get_material_index_by_name("Default");
-
-            mesh_rendering_info.push(MeshRenderingInfo {
-                mesh_index,
-                material_index
-            });
-            mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
-            }
-        } else {
-            for info in &create_info.mesh_rendering_info {
-            let mesh = asset_manager.get_mesh_by_name(&info.mesh_name).expect("GameObject::new() error: Mesh {info.name} not found in model meshes");
-            
-            let mesh_index = asset_manager.get_mesh_index_by_name(&info.mesh_name);
-            let material_index = asset_manager.get_material_index_by_name(&info.material_name);
-
-            mesh_rendering_info.push(MeshRenderingInfo {
-                mesh_index,
-                material_index
-            });
-            mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
-           }
-        }
-
         Self { 
             model_name: create_info.model_name.clone(),
             name: create_info.name.clone(),
@@ -53,8 +19,7 @@ impl GameObject {
             rotation: create_info.rotation,
             size: create_info.size,
             object_id: unique_id::next_id(),
-            mesh_rendering_info,
-            mesh_rendering_info_index_map
+            mesh_nodes: MeshNodes::new(&create_info.model_name.clone(), &create_info.mesh_rendering_info, asset_manager),
         }
     }
 
@@ -86,13 +51,12 @@ impl GameObject {
          model_matrix
     }
 
-    pub fn get_mesh_material_index(&self, mesh_name: &str) -> usize {
-        if let Some(&index) = self.mesh_rendering_info_index_map.get(mesh_name) {
-          self.mesh_rendering_info[index].material_index
-        } else {
-          println!("GameObject::get_mesh_material_index() error: mesh {mesh_name} not found!");
-          0
-        }
+    pub fn get_mesh_nodes(&self) -> &MeshNodes {
+        &self.mesh_nodes
+    }
+
+    pub fn get_mesh_nodes_mut(&mut self) -> &mut MeshNodes {
+        &mut self.mesh_nodes
     }
 }
 

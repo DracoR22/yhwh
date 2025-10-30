@@ -23,3 +23,4 @@ pub mod physics;
 pub mod engine;
 pub mod wgpu_renderer;
 pub mod mesh_nodes;
+pub mod player;

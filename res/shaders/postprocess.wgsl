@@ -38,21 +38,26 @@ fn vs_main(
     return out;
 }
 
-@group(0)
-@binding(0)
+@group(0) @binding(0)
 var hdr_image: texture_2d<f32>;
-
-@group(0)
-@binding(1)
+@group(0) @binding(1)
 var hdr_sampler: sampler;
+
+@group(0) @binding(2)
+var outline_image: texture_2d<f32>;
+@group(0) @binding(3)
+var outline_sampler: sampler;
 
 @fragment
 fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
     let hdr = textureSample(hdr_image, hdr_sampler, vs.uv);
     var sdr = aces_tone_map(hdr.rgb);
 
+    let outline = textureSample(outline_image, outline_sampler, vs.uv);
+
+    let final_image: vec3<f32> = sdr + outline.rgb;
     // let gamma: f32 = 2.2;
     // sdr = pow(sdr, vec3<f32>(1.0 / gamma));
         
-    return vec4(sdr, 1.0);
+    return vec4(final_image, 1.0);
 }

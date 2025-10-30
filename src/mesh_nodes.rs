@@ -9,23 +9,23 @@ pub struct MeshNodes {
 }
 
 impl MeshNodes {
-    pub fn new(model_name: &str, create_info: &Vec<MeshNodeCreateInfo>, asset_manager: AssetManager) -> Result<Self, MeshNodesError> {
+    pub fn new(model_name: &str, create_info: &Vec<MeshNodeCreateInfo>, asset_manager: &AssetManager) -> Self {
         let mut mesh_rendering_info: Vec<MeshRenderingInfo> = Vec::new();
         let mut mesh_rendering_info_index_map: HashMap<String, usize> = HashMap::new();
 
-        let model = asset_manager.get_model_by_name(model_name).ok_or(MeshNodesError::ModelNotFound)?;
-
         if create_info.is_empty() {
+            if let Some(model) = asset_manager.get_model_by_name(model_name) {
             for mesh in &model.meshes {
-            let mesh_index = asset_manager.get_mesh_index_by_name(&mesh.name);
-            let material_index = asset_manager.get_material_index_by_name("Default");
+                 let mesh_index = asset_manager.get_mesh_index_by_name(&mesh.name);
+                 let material_index = asset_manager.get_material_index_by_name("Default");
 
-            mesh_rendering_info.push(MeshRenderingInfo {
-                mesh_index,
-                material_index
-            });
-            mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
+                 mesh_rendering_info.push(MeshRenderingInfo {
+                 mesh_index,
+                 material_index
+                });
+                mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
             }
+          }
         } else {
             for info in create_info.iter() {
             let mesh = asset_manager.get_mesh_by_name(&info.mesh_name).expect("GameObject::new() error: Mesh {info.name} not found in model meshes");
@@ -41,11 +41,11 @@ impl MeshNodes {
            }
         }
 
-        Ok(Self {
+        Self {
             model_name: model_name.to_string(),
             mesh_rendering_info,
             mesh_rendering_info_index_map
-        })
+        }
     }
 
     pub fn get_model_name(&self) -> &String {
@@ -61,16 +61,28 @@ impl MeshNodes {
         }
     }
 
-    pub fn set_material_by_mesh_name(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
+    pub fn set_mesh_material_by_mesh_index(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
         let mesh_index = asset_manager.get_mesh_index_by_name(mesh_name);
-        let material_index = asset_manager.get_material_index_by_name(material_name);
+        let material_index = asset_manager.get_mesh_index_by_name(material_name);
 
-        let info = MeshRenderingInfo {
-            mesh_index,
-            material_index
-        };
+        for info in self.mesh_rendering_info.iter_mut() {
+            if info.mesh_index == mesh_index {
+                info.material_index = material_index;
+                return
+            }
+        }
+    } 
 
-        self.mesh_rendering_info.push(info);
-        self.mesh_rendering_info_index_map.insert(mesh_name.to_string(), self.mesh_rendering_info.len() - 1);
-    }
+    // pub fn set_material_by_mesh_name(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
+    //     let mesh_index = asset_manager.get_mesh_index_by_name(mesh_name);
+    //     let material_index = asset_manager.get_material_index_by_name(material_name);
+
+    //     let info = MeshRenderingInfo {
+    //         mesh_index,
+    //         material_index
+    //     };
+
+    //     self.mesh_rendering_info.push(info);
+    //     self.mesh_rendering_info_index_map.insert(mesh_name.to_string(), self.mesh_rendering_info.len() - 1);
+    // }
 }

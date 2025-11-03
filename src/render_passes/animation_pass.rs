@@ -1,7 +1,7 @@
 use cgmath::SquareMatrix;
 use wgpu::util::DeviceExt;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::HDR_TEX_FORMAT, model::Model, objects::animated_game_object::AnimatedGameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex};
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, model::Model, objects::animated_game_object::AnimatedGameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex};
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
@@ -32,7 +32,7 @@ impl AnimationPass {
             &device,
             &pipeline_layout,
             HDR_TEX_FORMAT,
-            Some(wgpu::TextureFormat::Depth32Float),
+            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
             &shader_module,
             &[Vertex::desc()],
             Some("animation_pipeline"))

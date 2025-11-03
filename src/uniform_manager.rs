@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use cgmath::Matrix;
 use cgmath::SquareMatrix;
 use cgmath::Rotation3;
 
 use crate::asset_manager::AssetManager;
+use crate::bind_group_manager::BindGroupManager;
 use crate::objects::animated_game_object::AnimatedGameObject;
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
 
@@ -24,18 +26,40 @@ impl AnimationUniform {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelUniform {
-    pub model_matrix: [[f32; 4]; 4]
+    pub model_matrix: [[f32; 4]; 4],
+    pub normal_matrix: [[f32; 4]; 3]
 }
 
 impl ModelUniform {
     pub fn new() -> Self {
+      let normal = cgmath::Matrix3::identity();
       Self {
-        model_matrix: cgmath::Matrix4::identity().into()
+        model_matrix: cgmath::Matrix4::identity().into(),
+        normal_matrix: [
+              [normal.x.x, normal.x.y, normal.x.z, 0.0],
+              [normal.y.x, normal.y.y, normal.y.z, 0.0],
+              [normal.z.x, normal.z.y, normal.z.z, 0.0],
+          ]
       }
     }
 
     pub fn update(&mut self, matrix: &cgmath::Matrix4<f32>) {
        self.model_matrix = (*matrix).into();
+
+       let upper3x3 = cgmath::Matrix3::from_cols(
+        matrix.x.truncate(),
+        matrix.y.truncate(),
+        matrix.z.truncate(),
+       );
+
+       if let Some(normal) = upper3x3.invert() {
+        let transposed = normal.transpose();
+        self.normal_matrix = [
+            [transposed.x.x, transposed.x.y, transposed.x.z, 0.0],
+            [transposed.y.x, transposed.y.y, transposed.y.z, 0.0],
+            [transposed.z.x, transposed.z.y, transposed.z.z, 0.0],
+        ];
+       }
     }
 }
 
@@ -87,12 +111,41 @@ impl LightUniform {
 pub struct UniformManager {
     pub camera: Uniform<CameraUniform>,
     pub models: HashMap<usize, Uniform<ModelUniform>>,
+    // pub outlined_models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub animation: Uniform<AnimationUniform>,
     pub light: Uniform<LightUniform>
 }
 
 impl UniformManager {
+    pub fn new(ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) -> Self {
+      let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
+      // let mut outlined_model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
+
+      for game_object in game_objects.iter() {
+        model_uniforms.insert(game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
+        // outlined_model_uniforms.insert(game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
+      }
+
+      for animated_game_object in animated_game_objects.iter() {
+        model_uniforms.insert(animated_game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
+      }
+
+      let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
+        &ctx.device,
+        wgpu::ShaderStages::VERTEX_FRAGMENT,
+        Some("Uniform_Bind_Group_Layout"))
+      .unwrap();
+
+      Self {
+        models: model_uniforms,
+        // outlined_models: outlined_model_uniforms,
+        animation: Uniform::new(AnimationUniform::new(), &ctx.device),
+        camera: Uniform::new(CameraUniform::new(), &ctx.device),
+        light: Uniform::new(LightUniform::new(), &ctx.device),
+        bind_group_layout
+      }
+    }
     pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) {
       for animated_game_object in animated_game_objects {
         if let Some(model_uniform) = self.models.get_mut(&animated_game_object.object_id) {
@@ -103,9 +156,14 @@ impl UniformManager {
 
       for game_object in game_objects {
         if let Some(model_uniform) = self.models.get_mut(&game_object.object_id) {
-            model_uniform.value_mut().update(&game_object.get_model_matrix());
-            model_uniform.update(&ctx.queue);
+          model_uniform.value_mut().update(&game_object.get_model_matrix());
+          model_uniform.update(&ctx.queue);  
         }
+
+        // if let Some(outlined_uniform) = self.outlined_models.get_mut(&game_object.object_id) {
+        //   outlined_uniform.value_mut().update(&game_object.get_model_matrix());
+        //   outlined_uniform.update(&ctx.queue);  
+        // }
       }
     }
 

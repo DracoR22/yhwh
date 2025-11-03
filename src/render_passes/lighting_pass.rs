@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, common::constants::HDR_TEX_FORMAT, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct LightingPass {
     pipeline: wgpu::RenderPipeline
@@ -25,14 +25,27 @@ impl LightingPass {
             push_constant_ranges: &[],
         });
 
-          let pipeline = PipelineManager::create_pipeline(
+        // TODO: Use a READ and WRITE pipelines
+        
+        //   let pipeline = PipelineManager::create_pipeline(
+        //     &ctx.device,
+        //     &pipeline_layout,
+        //     HDR_TEX_FORMAT,
+        //     Some(DEPTH_TEXTURE_STENCIL_FORMAT),
+        //     &shader_module,
+        //     &[Vertex::desc()],
+        //     Some("lighting_pipeline"))
+        // .unwrap();
+
+         let pipeline = PipelineManager::create_stencil_pipeline(
             &ctx.device,
             &pipeline_layout,
             HDR_TEX_FORMAT,
-            Some(wgpu::TextureFormat::Depth32Float),
+            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
             &shader_module,
             &[Vertex::desc()],
-            Some("lighting_pipeline"))
+            true
+        )
         .unwrap();
 
      Self {
@@ -62,6 +75,7 @@ impl LightingPass {
 
                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.set_stencil_reference(1);
                 render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
             }
           }

@@ -32,7 +32,7 @@ impl Engine {
 
         // load camera
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
-        let camera_controller = CameraController::new(4.0, 0.4);
+        let camera_controller = CameraController::new(8.0, 0.4);
 
         // load physics
     

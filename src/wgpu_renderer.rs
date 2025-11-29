@@ -52,7 +52,7 @@ impl WgpuRenderer {
         let barrel_go: GameObject = GameObject::new(&barrel_go_create_info, &asset_manager);
 
          let plane_go_create_info = GameObjectCreateInfo {
-            model_name: "Cube".to_string(),
+            model_name: "Plane".to_string(),
             name: "Plane1".to_string(),
             position: cgmath::Vector3::new(0.0, 0.0, 0.0),
             size: cgmath::Vector3::new(10.0, 10.0, 10.0),
@@ -168,7 +168,7 @@ impl WgpuRenderer {
             view: &self.depth_texture.view,
             depth_ops: Some(wgpu::Operations {
               load: wgpu::LoadOp::Clear(1.0),
-              store: wgpu::StoreOp::Discard,
+              store: wgpu::StoreOp::Store,
             }),
             stencil_ops: Some(wgpu::Operations {
                 load: wgpu::LoadOp::Clear(0),
@@ -181,7 +181,6 @@ impl WgpuRenderer {
 
        self.lighting_pass.render(&mut render_pass, &self.uniform_manager, &self.asset_manager, &self.game_objects);
        self.animation_pass.render(&mut render_pass, &self.uniform_manager, &self.asset_manager, &self.animated_game_objects);
-       self.outline_pass.render(&mut render_pass, &self.uniform_manager, &self.game_objects, &self.asset_manager);
 
        // debug pass
        render_pass.set_pipeline(&self.debug_render_pipeline);
@@ -203,10 +202,11 @@ impl WgpuRenderer {
        drop(render_pass);
 
        // post process
+       self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &self.game_objects, &self.asset_manager);
        self.postprocess_pass.render(&mut encoder, &surface_view);
 
        self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, surface_view, |ui| {
-          self.ui_manager.scene_hierarchy_window.draw(ui, &self.animated_game_objects, &self.asset_manager);
+          self.ui_manager.scene_hierarchy_window.draw(ui, &mut self.game_objects, &self.animated_game_objects, &self.asset_manager);
        });
 
        queue.submit(std::iter::once(encoder.finish()));

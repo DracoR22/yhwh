@@ -1,6 +1,7 @@
 use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct LightingPass {
+    stencil_pipeline: wgpu::RenderPipeline,
     pipeline: wgpu::RenderPipeline
 }
 
@@ -25,19 +26,18 @@ impl LightingPass {
             push_constant_ranges: &[],
         });
 
-        // TODO: Use a READ and WRITE pipelines
-        
-        //   let pipeline = PipelineManager::create_pipeline(
-        //     &ctx.device,
-        //     &pipeline_layout,
-        //     HDR_TEX_FORMAT,
-        //     Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-        //     &shader_module,
-        //     &[Vertex::desc()],
-        //     Some("lighting_pipeline"))
-        // .unwrap();
+         let pipeline = PipelineManager::create_pipeline(
+            &ctx.device,
+            &pipeline_layout,
+            HDR_TEX_FORMAT,
+            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
+            &shader_module,
+            &[Vertex::desc()],
+            Some("Lighting_Pipeline")
+        )
+        .unwrap();
 
-         let pipeline = PipelineManager::create_stencil_pipeline(
+        let stencil_pipeline = PipelineManager::create_stencil_pipeline(
             &ctx.device,
             &pipeline_layout,
             HDR_TEX_FORMAT,
@@ -49,18 +49,23 @@ impl LightingPass {
         .unwrap();
 
      Self {
-         pipeline
+        stencil_pipeline,
+        pipeline
      }
     }
 
     pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager, asset_manager: &AssetManager, game_objects: &Vec<GameObject>) {
-        render_pass.set_pipeline(&self.pipeline);
-
         for game_object in game_objects.iter() {
           let Some(model_uniform) = uniforms.models.get(&game_object.object_id) else {
             println!("No model bind group for object {:?}, skipping draw", game_object.object_id);
             continue;
           };
+
+          if game_object.is_selected {
+            render_pass.set_pipeline(&self.stencil_pipeline);
+          } else {
+            render_pass.set_pipeline(&self.pipeline);
+          }
 
           render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
           render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
@@ -80,33 +85,5 @@ impl LightingPass {
             }
           }
         }
-
-        // render_pass.set_bind_group(0, &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
-        // render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
-        // //render_pass.set_bind_group(2, &uniforms.models[2].bind_group, &[]);
-        // render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
-
-        // if let Some(model) = asset_manager.get_model_by_name("Barrel") {
-        //     for mesh in &model.meshes {
-        //         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        //         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        //         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-        //     }
-        // }
-
-        // render_pass.set_pipeline(&self.pipeline);
-
-        // render_pass.set_bind_group(0, &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group, &[]);
-        // render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
-        // //render_pass.set_bind_group(2, &uniforms.models[1].bind_group, &[]);
-        // render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
-
-        // if let Some(plane_model) = asset_manager.get_model_by_name("Plane") { 
-        //    for mesh in &plane_model.meshes {
-        //      render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        //      render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        //      render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-        //     }
-        // }
     }
 }

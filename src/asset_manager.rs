@@ -85,9 +85,9 @@ impl AssetManager {
                 let material_name = Self::get_texture_material_name(key);
 
                 let material = Material::new(&material_name, &device, [
-                    self.get_texture_by_name(&format!("{material_name}_ALB.png")).unwrap(),
-                    self.get_texture_by_name(&format!("{material_name}_NRM.png")).unwrap(),
-                    self.get_texture_by_name(&format!("{material_name}_ALB.png")).unwrap()
+                    self.get_texture_by_name(&format!("{material_name}_ALB.png")).unwrap_or(self.get_texture_by_name("Default_ALB.png").unwrap()),
+                    self.get_texture_by_name(&format!("{material_name}_NRM.png")).unwrap_or(self.get_texture_by_name("Default_NRM.png").unwrap()),
+                    self.get_texture_by_name(&format!("{material_name}_RMA.png")).unwrap_or(self.get_texture_by_name("Default_RMA.png").unwrap())
                 ]);
 
                 self.materials.push(material);

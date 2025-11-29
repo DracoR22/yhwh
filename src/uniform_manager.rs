@@ -111,7 +111,6 @@ impl LightUniform {
 pub struct UniformManager {
     pub camera: Uniform<CameraUniform>,
     pub models: HashMap<usize, Uniform<ModelUniform>>,
-    // pub outlined_models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub animation: Uniform<AnimationUniform>,
     pub light: Uniform<LightUniform>
@@ -120,11 +119,9 @@ pub struct UniformManager {
 impl UniformManager {
     pub fn new(ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) -> Self {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
-      // let mut outlined_model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
 
       for game_object in game_objects.iter() {
         model_uniforms.insert(game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
-        // outlined_model_uniforms.insert(game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
 
       for animated_game_object in animated_game_objects.iter() {
@@ -139,7 +136,6 @@ impl UniformManager {
 
       Self {
         models: model_uniforms,
-        // outlined_models: outlined_model_uniforms,
         animation: Uniform::new(AnimationUniform::new(), &ctx.device),
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
         light: Uniform::new(LightUniform::new(), &ctx.device),

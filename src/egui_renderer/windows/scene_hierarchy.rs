@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{asset_manager::AssetManager, objects::animated_game_object::AnimatedGameObject};
+use crate::{asset_manager::AssetManager, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}};
 
 pub struct SceneHierarchyWindow {
     selected_mesh_index: HashMap<usize, usize>,
@@ -18,6 +18,7 @@ impl SceneHierarchyWindow {
     pub fn draw(
         &mut self,
         ui: &egui::Context,
+        game_objects: &mut Vec<GameObject>,
         animated_game_objects: &Vec<AnimatedGameObject>,
         asset_manager: &AssetManager,
     ) {
@@ -27,6 +28,21 @@ impl SceneHierarchyWindow {
             .default_open(true)
             .show(&ui, |ui| {
                 ui.label("Window!");
+
+                ui.collapsing("Game Objects", |ui| {
+                    for game_object in game_objects.iter_mut() {
+                        let button = ui.button(game_object.get_name());
+                        if button.clicked() {
+                            game_object.set_selected(true);
+
+                            // de-select every other game object
+
+                        }
+                        // if let Some(model) = asset_manager.get_model_by_name(animated_game_object.get_model_name()) {
+                            
+                        // }
+                    }
+                });
 
                 ui.collapsing("Animated Game Objects", |ui| {
                     for animated_game_object in animated_game_objects.iter() {

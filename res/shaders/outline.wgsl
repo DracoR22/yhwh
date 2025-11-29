@@ -29,17 +29,14 @@ var<uniform> model: ModelUniform;
 fn vs_main(vert_in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    let view_pos = (camera.view * model.model_matrix * vec4<f32>(vert_in.position, 1.0)).xyz;
-    let view_normal = normalize(model.normal_matrix * vert_in.normal);
-
-    let inflated_pos = view_pos + view_normal.xyz * 0.04;
-
-    out.clip_position = camera.projection * vec4<f32>(inflated_pos, 1.0);
+    let inflated_local_pos = vert_in.position + normalize(vert_in.normal) * 0.01;
+    let world_pos = model.model_matrix * vec4<f32>(inflated_local_pos, 1.0);
+    out.clip_position = camera.projection * camera.view * world_pos;
 
     return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    return vec4<f32>(0.0, 1.0, 0.0, 1.0);
 }

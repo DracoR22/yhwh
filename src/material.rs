@@ -8,12 +8,12 @@ pub struct Material {
 
 impl Material {
     pub fn new(name: &str, device: &wgpu::Device, textures: [&Texture; 3]) -> Self {
-       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float, TL::Float]).unwrap();
+       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Float, TL::Float, TL::Float]).unwrap();
 
        let bind_group = BindGroupManager::create_multi_texture_bind_group(
         &device,
         &bind_group_layout,
-        &[&textures[0], &textures[1]])
+        &[&textures[0], &textures[1], &textures[2]])
        .unwrap();
 
        Self {

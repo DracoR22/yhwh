@@ -6,6 +6,7 @@ pub struct GameObject {
     position: cgmath::Vector3<f32>,
     size: cgmath::Vector3<f32>,
     rotation: cgmath::Matrix4<f32>,
+    pub is_selected: bool,
     pub object_id: usize,
     mesh_nodes: MeshNodes,
 }
@@ -18,6 +19,7 @@ impl GameObject {
             position: create_info.position,
             rotation: create_info.rotation,
             size: create_info.size,
+            is_selected: false,
             object_id: unique_id::next_id(),
             mesh_nodes: MeshNodes::new(&create_info.model_name.clone(), &create_info.mesh_rendering_info, asset_manager),
         }
@@ -41,6 +43,10 @@ impl GameObject {
 
     pub fn get_size(&self) -> cgmath::Vector3<f32> {
         self.size
+    }
+
+    pub fn set_selected(&mut self, value: bool) {
+        self.is_selected = value;
     }
 
     pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {

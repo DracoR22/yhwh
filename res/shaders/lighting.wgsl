@@ -33,14 +33,19 @@ struct ModelUniform {
 }
 
 @group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
+var t_base_color: texture_2d<f32>;
 @group(0) @binding(1)
-var s_diffuse: sampler;
+var s_base_color: sampler;
 
 @group(0) @binding(2)
-var t_normal: texture_2d<f32>;
+var t_normal_map: texture_2d<f32>;
 @group(0) @binding(3)
-var s_normal: sampler;
+var s_normal_map: sampler;
+
+@group(0) @binding(4)
+var t_rma_map: texture_2d<f32>;
+@group(0) @binding(5)
+var s_rma_map: sampler;
 
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -50,6 +55,68 @@ var<uniform> model: ModelUniform;
 
 @group(3) @binding(0)
 var<uniform> light: LightUniform;
+
+const PI = 3.14159265359;
+
+fn fresnel_schlick(cos_theta: f32, f0: vec3<f32>) -> vec3<f32> {
+    return f0 + (1.0 - f0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
+}
+
+fn distribution_ggx(n: vec3<f32>, h: vec3<f32>, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let ndoth = max(dot(n, h), 0.0);
+    let ndothh2 = ndoth * ndoth;
+
+    let num = a2;
+    var denom = (ndothh2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return num / denom;
+}
+
+fn geometry_schlick_ggx(ndotv: f32, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+
+    let num = ndotv;
+    let denom = ndotv * (1.0 - k) + k;
+
+    return num / denom;
+}
+
+fn geometry_smith(n: vec3<f32>, v: vec3<f32>, l: vec3<f32>, roughness: f32) -> f32 {
+    let ndotv = max(dot(n, v), 0.0);
+    let ndotl = max(dot(n, l), 0.0);
+    let ggx2 = geometry_schlick_ggx(ndotv, roughness);
+    let ggx1 = geometry_schlick_ggx(ndotl, roughness);
+
+    return ggx1 * ggx2;
+}
+
+fn microfacet_brdf(l: vec3<f32>, v: vec3<f32>, n: vec3<f32>, base_color: vec3<f32>, metallic: f32, fresnel_reflect: f32, roughness: f32) -> vec3<f32> {
+    let h = normalize(v + l);
+    let lo = vec3<f32>(0.0);
+
+    var f0 = vec3<f32>(0.04 * fresnel_reflect);
+    f0 = mix(f0, base_color, metallic);
+
+    let f = fresnel_schlick(max(dot(h, v), 0.0), f0);
+    let ndf = distribution_ggx(n, h, roughness);
+    let g = geometry_smith(n, v, l, roughness);
+
+    let numerator = ndf * g * f;
+    let denominator = 4.0 * max(dot(n, v), 0.0) * max(dot(n, l), 0.0) + 0.0001;
+    let specular = numerator / denominator;
+
+    let ks = f;
+    var kd = vec3<f32>(1.0) - ks;
+    kd *= 1.0 - metallic;
+
+    let ndotl = max(dot(n, l), 0.0);
+
+    return (kd * base_color / PI + specular) * ndotl;
+}
 
 @vertex
 fn vs_main(vert_in: VertexInput) -> VertexOutput {
@@ -76,8 +143,8 @@ fn vs_main(vert_in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let diffuse_texture: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    var tangent_normal: vec3<f32> = textureSample(t_normal, s_normal, in.tex_coords).xyz * 2.0 - 1.0;
+    let diffuse_texture: vec4<f32> = textureSample(t_base_color, s_base_color, in.tex_coords);
+    var tangent_normal: vec3<f32> = textureSample(t_normal_map, s_normal_map, in.tex_coords).xyz * 2.0 - 1.0;
 
     let world_normal = normalize(mat3x3<f32>(in.tangent, in.bitangent, in.normal) * tangent_normal);
     let ambient_strength = 0.1;

@@ -85,7 +85,7 @@ impl PipelineManager {
         } else {
             wgpu::CompareFunction::Always
         };
-          
+
          let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Stencil_pipeline"),
             layout: Some(&pipeline_layout),
@@ -116,7 +116,7 @@ impl PipelineManager {
             },
             depth_stencil: depth_format.map(|format| wgpu::DepthStencilState {
             format,
-            depth_write_enabled: true,
+            depth_write_enabled,
             depth_compare,
             stencil: wgpu::StencilState {
                 front: stecil_state,

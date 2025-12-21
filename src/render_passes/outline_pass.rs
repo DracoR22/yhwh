@@ -88,7 +88,7 @@ impl OutlinePass {
     pub fn hotload_shader(&mut self, ctx: &WgpuContext) {
       let shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
       let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Default_Shader"),
+            label: Some("Outline_Shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
        });
 

@@ -27,7 +27,9 @@ impl AnimationUniform {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelUniform {
     pub model_matrix: [[f32; 4]; 4],
-    pub normal_matrix: [[f32; 4]; 3]
+    pub normal_matrix: [[f32; 4]; 3],
+    pub tex_scale: [f32; 2],
+    _padding_0: [f32; 2]
 }
 
 impl ModelUniform {
@@ -39,11 +41,13 @@ impl ModelUniform {
               [normal.x.x, normal.x.y, normal.x.z, 0.0],
               [normal.y.x, normal.y.y, normal.y.z, 0.0],
               [normal.z.x, normal.z.y, normal.z.z, 0.0],
-          ]
+          ],
+        tex_scale: [1.0, 1.0],
+        _padding_0: [0.0, 0.0],
       }
     }
 
-    pub fn update(&mut self, matrix: &cgmath::Matrix4<f32>) {
+    pub fn update(&mut self, matrix: &cgmath::Matrix4<f32>, tex_scale: &cgmath::Vector2<f32>) {
        self.model_matrix = (*matrix).into();
 
        let upper3x3 = cgmath::Matrix3::from_cols(
@@ -60,6 +64,8 @@ impl ModelUniform {
             [transposed.z.x, transposed.z.y, transposed.z.z, 0.0],
         ];
        }
+
+       self.tex_scale = (*tex_scale).into();
     }
 }
 
@@ -145,21 +151,16 @@ impl UniformManager {
     pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) {
       for animated_game_object in animated_game_objects {
         if let Some(model_uniform) = self.models.get_mut(&animated_game_object.object_id) {
-          model_uniform.value_mut().update(&animated_game_object.get_model_matrix());
+          model_uniform.value_mut().update(&animated_game_object.get_model_matrix(), &animated_game_object.tex_scale);
           model_uniform.update(&ctx.queue);
         }
       }
 
       for game_object in game_objects {
         if let Some(model_uniform) = self.models.get_mut(&game_object.object_id) {
-          model_uniform.value_mut().update(&game_object.get_model_matrix());
+          model_uniform.value_mut().update(&game_object.get_model_matrix(), &game_object.tex_scale);
           model_uniform.update(&ctx.queue);  
         }
-
-        // if let Some(outlined_uniform) = self.outlined_models.get_mut(&game_object.object_id) {
-        //   outlined_uniform.value_mut().update(&game_object.get_model_matrix());
-        //   outlined_uniform.update(&ctx.queue);  
-        // }
       }
     }
 

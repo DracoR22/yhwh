@@ -1,6 +1,7 @@
 use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct LightingPass {
+    pipeline_layout: wgpu::PipelineLayout,
     stencil_pipeline: wgpu::RenderPipeline,
     pipeline: wgpu::RenderPipeline
 }
@@ -13,7 +14,7 @@ impl LightingPass {
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 
-        let texture_bind_group_layout = &asset_manager.get_material_by_name("barrel_BLUE").unwrap().bind_group_layout;
+        let texture_bind_group_layout = &asset_manager.get_material_by_name("Barrel_RED").unwrap().bind_group_layout;
 
         let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("lighting_pipeline_layout"),
@@ -49,6 +50,7 @@ impl LightingPass {
         .unwrap();
 
      Self {
+        pipeline_layout,
         stencil_pipeline,
         pipeline
      }
@@ -85,5 +87,44 @@ impl LightingPass {
             }
           }
         }
+    }
+
+    pub fn hotload_shader(&mut self, ctx: &WgpuContext) {
+      let shader_code = std::fs::read_to_string("res/shaders/lighting.wgsl").unwrap();
+      let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Lighting_Shader"),
+            source: wgpu::ShaderSource::Wgsl(shader_code.into()),
+       });
+
+      let pipeline = PipelineManager::create_pipeline(
+            &ctx.device,
+            &self.pipeline_layout,
+            HDR_TEX_FORMAT,
+            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
+            &shader_module,
+            &[Vertex::desc()],
+            Some("Lighting_Pipeline")
+        );
+
+      let stencil_pipeline = PipelineManager::create_stencil_pipeline(
+            &ctx.device,
+            &self.pipeline_layout,
+            HDR_TEX_FORMAT,
+            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
+            &shader_module,
+            &[Vertex::desc()],
+            true
+        );
+
+      match (pipeline, stencil_pipeline) {
+        (Ok(pipeline), Ok(stencil_pipeline)) => {
+          self.pipeline = pipeline;
+          self.stencil_pipeline = stencil_pipeline;
+        },
+
+        (Err(e), _) | (_, Err(e)) => {
+          println!("LightingPass::hotload_shader() error: {e}");
+        }
+      }
     }
 }

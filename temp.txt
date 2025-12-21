@@ -1,0 +1,24 @@
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let diffuse_texture: vec4<f32> = textureSample(t_base_color, s_base_color, in.tex_coords);
+    var tangent_normal: vec3<f32> = textureSample(t_normal_map, s_normal_map, in.tex_coords).xyz * 2.0 - 1.0;
+
+    let world_normal = normalize(mat3x3<f32>(in.tangent, in.bitangent, in.normal) * tangent_normal);
+    let ambient_strength = 0.1;
+    let ambient_color = light.color * ambient_strength;
+
+    let light_dir = normalize(light.position - in.world_position);
+    let diffuse_strength = max(dot(world_normal, light_dir), 0.0);
+    let diffuse_color = light.color * diffuse_strength;
+
+    // specular
+    let view_dir = normalize(camera.view_position.xyz - in.world_position);
+    let half_dir = normalize(view_dir + light_dir);
+
+    let specular_strength = pow(max(dot(world_normal, half_dir), 0.0), 32.0);
+    let specular_color = specular_strength * light.color;
+
+    let result = (ambient_color + diffuse_color + specular_color) * diffuse_texture.xyz;
+
+    return vec4<f32>(result, 1.0);
+}

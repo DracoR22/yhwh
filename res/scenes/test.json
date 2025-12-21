@@ -1,0 +1,63 @@
+{
+  "name": "test",
+  "game_objects": [
+    {
+      "name": "Barrel1",
+      "model_name": "Barrel",
+      "position": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0,
+        5.0
+      ],
+      "rotation": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "barrel_YELLOW",
+          "material_name": "Barrel_RED"
+        }
+      ]
+    },
+    {
+      "name": "Plane1",
+      "model_name": "Plane",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        50.0,
+        50.0,
+        50.0
+      ],
+      "rotation": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Marble_Tile"
+        }
+      ]
+    }
+  ]
+}

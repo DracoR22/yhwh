@@ -73,16 +73,7 @@ impl MeshNodes {
         }
     } 
 
-    // pub fn set_material_by_mesh_name(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
-    //     let mesh_index = asset_manager.get_mesh_index_by_name(mesh_name);
-    //     let material_index = asset_manager.get_material_index_by_name(material_name);
-
-    //     let info = MeshRenderingInfo {
-    //         mesh_index,
-    //         material_index
-    //     };
-
-    //     self.mesh_rendering_info.push(info);
-    //     self.mesh_rendering_info_index_map.insert(mesh_name.to_string(), self.mesh_rendering_info.len() - 1);
-    // }
+    pub fn get_mesh_rendering_info(&self) -> &Vec<MeshRenderingInfo> {
+        &self.mesh_rendering_info
+    }
 }

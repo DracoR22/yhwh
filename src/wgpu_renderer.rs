@@ -1,17 +1,14 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{sync::Arc};
 
 use winit::{window::Window};
 
-use crate::{asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::{constants::DEPTH_TEXTURE_STENCIL_FORMAT, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}}, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager, windows::scene_hierarchy::SceneHierarchyWindow}, engine::GameData, input::keyboard::Keyboard, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, skybox_pass::SkyboxPass}, texture, uniform::Uniform, uniform_manager::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, UniformManager}, utils::unique_id, vertex::Vertex, wgpu_context::{self, WgpuContext}};
+use crate::{common::{constants::DEPTH_TEXTURE_STENCIL_FORMAT, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}}, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager, windows::scene_hierarchy::SceneHierarchyWindow}, engine::GameData, input::keyboard::Keyboard, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, skybox_pass::SkyboxPass}, texture, uniform::Uniform, uniform_manager::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, UniformManager}, utils::unique_id, vertex::Vertex, wgpu_context::{self, WgpuContext}};
 
 pub struct WgpuRenderer {
-    pub asset_manager: AssetManager,
     pub egui_renderer: EguiRenderer,
-    wgpu_context: WgpuContext,
+    pub wgpu_context: WgpuContext,
     depth_texture: texture::Texture,
     debug_render_pipeline: wgpu::RenderPipeline,
-    game_objects: Vec<GameObject>,
-    animated_game_objects: Vec<AnimatedGameObject>,
     postprocess_pass: PostProcessPass,
     lighting_pass: LightingPass,
     animation_pass: AnimationPass,
@@ -22,72 +19,30 @@ pub struct WgpuRenderer {
 }
 
 impl WgpuRenderer {
-    pub async fn new(window: &Arc<Window>) -> Self {
-        // init wgpu
+    pub async fn create_context(window: &Arc<Window>) -> WgpuContext {
         let context = WgpuContext::new(&window).await.unwrap();
+        
+        context
+    }
+
+    pub fn new(window: &Arc<Window>, context: WgpuContext, game_data: &GameData) -> Self {
+        // init wgpu
+        //let context = WgpuContext::new(&window).await.unwrap();
         let config = context.get_surface_config();
         let device = context.get_device();
 
         let egui_renderer = EguiRenderer::new(&context, &window);
 
-        // load textures
-        let mut asset_manager = AssetManager::new(&context);
-        asset_manager.build_materials(&device);
-
-        // init game objects
-        let mut game_objects: Vec<GameObject> = Vec::new();
-
-        let barrel_go_create_info = GameObjectCreateInfo {
-            model_name: "Barrel".to_string(),
-            name: "Barrel1".to_string(),
-            position: cgmath::Vector3::new(0.0, 2.0, 0.0),
-            size: cgmath::Vector3::new(5.0, 5.0, 5.0),
-            rotation: cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0)),
-            mesh_rendering_info: vec![MeshNodeCreateInfo {
-                material_name: "barrel_BLUE".to_string(),
-                mesh_name: "barrel_YELLOW".to_string()
-            }]
-        };
-
-        let barrel_go: GameObject = GameObject::new(&barrel_go_create_info, &asset_manager);
-
-         let plane_go_create_info = GameObjectCreateInfo {
-            model_name: "Plane".to_string(),
-            name: "Plane1".to_string(),
-            position: cgmath::Vector3::new(0.0, 0.0, 0.0),
-            size: cgmath::Vector3::new(10.0, 10.0, 10.0),
-            rotation: cgmath::Matrix4::from_angle_y(cgmath::Rad(0.0)),
-            mesh_rendering_info: vec![]
-        };
-
-        let plane_go: GameObject = GameObject::new(&plane_go_create_info, &asset_manager);
-
-        game_objects.push(barrel_go);
-        game_objects.push(plane_go);
-
-        let mut animated_game_objects: Vec<AnimatedGameObject> = Vec::new();
-
-        let glock_create_info = GameObjectCreateInfo {
-            model_name: "glock".to_string(),
-            name: "Glock".to_string(),
-            position: cgmath::Vector3::new(10.0, 2.0, 0.0),
-            rotation: cgmath::Matrix4::from_angle_x(cgmath::Rad(0.0)),
-            size: cgmath::Vector3::new(1.5, 1.5, 1.5),
-            mesh_rendering_info: vec![]
-        };
-
-        animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
-
         // load uniforms
-        let wgpu_uniforms = UniformManager::new(&context, &game_objects, &animated_game_objects);
+        let wgpu_uniforms = UniformManager::new(&context, &game_data.game_objects, &game_data.animated_game_objects);
 
         // load fbos
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture", DEPTH_TEXTURE_STENCIL_FORMAT);
 
         // render groups
-        let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &asset_manager);
-        let animation_pass = AnimationPass::new(&device, &wgpu_uniforms, &asset_manager);
-        let skybox_pass = SkyboxPass::new(&context, &asset_manager, &wgpu_uniforms);
+        let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
+        let animation_pass = AnimationPass::new(&device, &wgpu_uniforms, &game_data.asset_manager);
+        let skybox_pass = SkyboxPass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
         let outline_pass = OutlinePass::new(&context, &wgpu_uniforms);
         let postprocess_pass = PostProcessPass::new(&device, &config);
  
@@ -109,12 +64,9 @@ impl WgpuRenderer {
 
         return Self {
             wgpu_context: context,
-            asset_manager,
             depth_texture,
             debug_render_pipeline,
             egui_renderer,
-            game_objects,
-            animated_game_objects,
             lighting_pass,
             postprocess_pass,
             animation_pass,
@@ -125,10 +77,10 @@ impl WgpuRenderer {
         };
     }
 
-    pub fn render(&mut self, window: &Window, game_data: &GameData) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, window: &Window, game_data: &mut GameData) -> Result<(), wgpu::SurfaceError> {
         // submit uniforms
-        self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut self.asset_manager, game_data.delta_time);
-        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &self.game_objects, &self.animated_game_objects);
+        self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
+        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.game_objects, &game_data.animated_game_objects);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.camera);
         self.uniform_manager.submit_light_uniforms(&self.wgpu_context, game_data.delta_time);
         
@@ -179,8 +131,8 @@ impl WgpuRenderer {
             timestamp_writes: None,
         });
 
-       self.lighting_pass.render(&mut render_pass, &self.uniform_manager, &self.asset_manager, &self.game_objects);
-       self.animation_pass.render(&mut render_pass, &self.uniform_manager, &self.asset_manager, &self.animated_game_objects);
+       self.lighting_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.game_objects);
+       self.animation_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.animated_game_objects);
 
        // debug pass
        render_pass.set_pipeline(&self.debug_render_pipeline);
@@ -188,7 +140,7 @@ impl WgpuRenderer {
        render_pass.set_bind_group(0, &self.uniform_manager.camera.bind_group, &[]);
        render_pass.set_bind_group(1, &self.uniform_manager.light.bind_group, &[]);
        
-       if let Some(debug_cube) = self.asset_manager.get_model_by_name("Cube") {
+       if let Some(debug_cube) = game_data.asset_manager.get_model_by_name("Cube") {
         for mesh in &debug_cube.meshes {
          render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
          render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
@@ -202,11 +154,11 @@ impl WgpuRenderer {
        drop(render_pass);
 
        // post process
-       self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &self.game_objects, &self.asset_manager);
+       self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &game_data.game_objects, &game_data.asset_manager);
        self.postprocess_pass.render(&mut encoder, &surface_view);
 
        self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, surface_view, |ui| {
-          self.ui_manager.scene_hierarchy_window.draw(ui, &mut self.game_objects, &self.animated_game_objects, &self.asset_manager);
+          self.ui_manager.scene_hierarchy_window.draw(ui, game_data);
        });
 
        queue.submit(std::iter::once(encoder.finish()));
@@ -232,6 +184,7 @@ impl WgpuRenderer {
     pub fn hot_load_shaders(&mut self) {
          self.outline_pass.hotload_shader(&self.wgpu_context);
          self.postprocess_pass.hotload_shader(&self.wgpu_context);
+         self.lighting_pass.hotload_shader(&self.wgpu_context);
          println!("Hot-Loaded shaders!");
     }
 }

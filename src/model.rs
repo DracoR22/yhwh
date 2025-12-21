@@ -205,7 +205,7 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         usage: wgpu::BufferUsages::INDEX,
     });
 
-    let cube_mesh = Mesh {
+    let plane_mesh = Mesh {
         name: String::from("Plane_Mesh"),
         vertex_buffer,
         index_buffer,
@@ -213,7 +213,7 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero())
     };
 
-    meshes.push(cube_mesh);
+    meshes.push(plane_mesh);
 
     Ok(Model {
         meshes,

@@ -48,9 +48,8 @@ fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
     let hdr = textureSample(hdr_image, hdr_sampler, vs.uv);
     var sdr = aces_tone_map(hdr.rgb);
 
-    let final_image: vec3<f32> = sdr;
     // let gamma: f32 = 2.2;
     // sdr = pow(sdr, vec3<f32>(1.0 / gamma));
         
-    return vec4(final_image, 1.0);
+    return vec4(sdr, 1.0);
 }

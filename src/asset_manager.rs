@@ -223,6 +223,14 @@ impl AssetManager {
         return None
     }
 
+    pub fn get_mesh_by_index(&self, index: usize) -> Option<&Mesh> {
+        if index >= 0 && index < self.meshes.len() {
+            return Some(&self.meshes[index])
+        } 
+
+        return  None
+    }
+
     pub fn get_mesh_index_by_name(&self, name: &str) -> usize {
           if let Some(&index) = self.mesh_index_map.get(name) {
             index

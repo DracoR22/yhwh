@@ -5,7 +5,6 @@ use cgmath::Rotation3;
 
 pub struct AnimatedGameObject {
     pub object_id: usize,
-    name: String,
     model_name: String,
     position: cgmath::Vector3<f32>,
     size: cgmath::Vector3<f32>,
@@ -18,7 +17,6 @@ impl AnimatedGameObject {
     pub fn new(create_info: &GameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
         Self { 
             model_name: create_info.model_name.clone(),
-            name: create_info.name.clone(),
             position: cgmath::Vector3::new(create_info.position[0], create_info.position[1], create_info.position[2]),
             euler_rotation: cgmath::Vector3::new(create_info.rotation[0], create_info.rotation[1], create_info.rotation[2]),
             size: cgmath::Vector3::new(create_info.size[0], create_info.size[1], create_info.size[2]),
@@ -28,11 +26,7 @@ impl AnimatedGameObject {
         }
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    pub fn get_model_name(&self) -> &String {
+    pub fn get_model_name(&self) -> &str {
         &self.model_name
     }
 

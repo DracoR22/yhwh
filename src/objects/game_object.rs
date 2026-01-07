@@ -2,14 +2,13 @@ use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreate
 use cgmath::Rotation3;
 
 pub struct GameObject {
-    name: String,
     model_name: String,
     position: cgmath::Vector3<f32>,
     size: cgmath::Vector3<f32>,
     euler_rotation: cgmath::Vector3<f32>,
     pub tex_scale: cgmath::Vector2<f32>,
     pub is_selected: bool,
-    pub object_id: usize,
+    pub id: usize,
     mesh_nodes: MeshNodes,
 }
 
@@ -17,22 +16,17 @@ impl GameObject {
     pub fn new(create_info: &GameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
         Self { 
             model_name: create_info.model_name.clone(),
-            name: create_info.name.clone(),
             position: cgmath::Vector3::new(create_info.position[0], create_info.position[1], create_info.position[2]),
             euler_rotation: cgmath::Vector3::new(create_info.rotation[0], create_info.rotation[1], create_info.rotation[2]),
             size: cgmath::Vector3::new(create_info.size[0], create_info.size[1], create_info.size[2]),
             tex_scale: cgmath::Vector2::new(create_info.tex_scale[0], create_info.tex_scale[1]),
             is_selected: false,
-            object_id: unique_id::next_id(),
+            id: unique_id::next_id(),
             mesh_nodes: MeshNodes::new(&create_info.model_name.clone(), &create_info.mesh_rendering_info, asset_manager),
         }
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
-    }
-
-    pub fn get_model_name(&self) -> &String {
+    pub fn get_model_name(&self) -> &str {
         &self.model_name
     }
 
@@ -110,13 +104,12 @@ impl GameObject {
         }
 
         let create_info = GameObjectCreateInfo {
-            name: self.get_name().clone(),
             size: self.get_size().into(),
             position: self.get_position().into(),
             rotation: self.get_rotation().into(),
             tex_scale: self.tex_scale.into(),
             mesh_rendering_info: mesh_nodes_create_infos,
-            model_name: self.get_model_name().clone()
+            model_name: self.get_model_name().to_string()
         };
 
         create_info

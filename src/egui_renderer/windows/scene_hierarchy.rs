@@ -1,11 +1,27 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use crate::{asset_manager::AssetManager, engine::GameData, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, utils::json::{self, save_level}};
+use egui::{Align, Align2, Context, Sense, TextureId, Ui, Vec2, load::SizedTexture};
+
+use crate::{
+    common::create_info::GameObjectCreateInfo,
+    egui_renderer::ui_manager::EguiMaterial,
+    engine::GameData,
+    objects::{
+        animated_game_object::{self, AnimatedGameObject},
+        game_object::GameObject,
+    },
+    utils::json::{save_level},
+};
 
 pub struct SceneHierarchyWindow {
     selected_game_object_id: isize,
     selected_mesh_index: HashMap<usize, usize>,
-    material_previews: HashMap<String, egui::TextureId>,
+
+    add_game_object_selected: bool,
+    selected_model_index: usize,
+    selected_material_index: usize,
+
+    objects_marked_for_removal: HashSet<usize>
 }
 
 impl SceneHierarchyWindow {
@@ -13,17 +29,30 @@ impl SceneHierarchyWindow {
         Self {
             selected_game_object_id: -1,
             selected_mesh_index: HashMap::new(),
-            material_previews: HashMap::new(),
+            add_game_object_selected: false,
+            selected_model_index: 0,
+            selected_material_index: 0,
+            objects_marked_for_removal: HashSet::new()
         }
     }
 
-    pub fn draw(&mut self, ui: &egui::Context, game_data: &mut GameData) {
+    pub fn draw(
+        &mut self,
+        ui: &egui::Context,
+        materials: &Vec<EguiMaterial>,
+        game_data: &mut GameData,
+        (window_width, window_height): (u32, u32)
+    ) {
         egui::Window::new("Transforms")
-             .resizable(true)
-             .vscroll(true)
-             .default_open(true)
-             .show(&ui, |ui| {
-                for game_object in game_data.game_objects.iter_mut() {
+            .resizable(true)
+            .vscroll(true)
+            .title_bar(false)
+            .collapsible(false)
+            .fixed_size(Vec2::new((window_width / 6) as f32, window_height as f32))
+            .anchor(Align2([Align::RIGHT, Align::TOP]), Vec2::new(0.0, 0.0))
+            .default_open(true)
+            .show(&ui, |ui| {
+                for game_object in game_data.scene.game_objects.iter_mut() {
                     if game_object.is_selected {
                         ui.label("Position X");
                         ui.add(egui::DragValue::new(&mut game_object.get_position_mut().x));
@@ -43,45 +72,165 @@ impl SceneHierarchyWindow {
 
                         ui.label("Rotation X");
                         let mut rotation = game_object.get_rotation();
-                        let slider_rot_x = ui.add(egui::Slider::new(&mut rotation.x, 0.0..=360.0).suffix("°"));
-                        let slider_rot_y = ui.add(egui::Slider::new(&mut rotation.y, 0.0..=360.0).suffix("°"));
-                        let slider_rot_z = ui.add(egui::Slider::new(&mut rotation.z, 0.0..=360.0).suffix("°"));
+                        let slider_rot_x =
+                            ui.add(egui::Slider::new(&mut rotation.x, 0.0..=360.0).suffix("°"));
+                        let slider_rot_y =
+                            ui.add(egui::Slider::new(&mut rotation.y, 0.0..=360.0).suffix("°"));
+                        let slider_rot_z =
+                            ui.add(egui::Slider::new(&mut rotation.z, 0.0..=360.0).suffix("°"));
 
-                        if slider_rot_x.changed() || slider_rot_y.changed() || slider_rot_z.changed() {
+                        if slider_rot_x.changed()
+                            || slider_rot_y.changed()
+                            || slider_rot_z.changed()
+                        {
                             game_object.set_rotation(rotation);
                         }
 
                         ui.label("Texture Scale");
-                        //let mut texture_scale = game_object.tex_scale;
-                        ui.add(egui::Slider::new(&mut game_object.tex_scale.x, 1.0..=10.0).suffix(" X"));
-                        ui.add(egui::Slider::new(&mut game_object.tex_scale.y, 1.0..=10.0).suffix(" Y"));
+                        ui.add(
+                            egui::Slider::new(&mut game_object.tex_scale.x, 1.0..=10.0)
+                                .suffix(" X"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut game_object.tex_scale.y, 1.0..=10.0)
+                                .suffix(" Y"),
+                        );
+
+                        //self.draw_meshes(game_object, game_data, &materials, &mut ui);
+                        if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
+                            if !model.meshes.is_empty() {
+                                let selected_index =  self.selected_mesh_index.entry(game_object.id).or_insert(0);
+
+                                if *selected_index >= model.meshes.len() {
+                                    *selected_index = 0;
+                                }
+
+                                egui::ComboBox::from_label("Meshes")
+                                    .selected_text(&model.meshes[*selected_index].name)
+                                    .show_ui(ui, |ui| {
+                                        for (i, mesh) in model.meshes.iter().enumerate() {
+                                            if ui
+                                                .selectable_label(i == *selected_index, &mesh.name)
+                                                .clicked()
+                                            {
+                                                *selected_index = i;
+                                            }
+                                        }
+                                    });
+
+                                ui.label("Material");
+                                for material in materials.iter() {
+                                    let button = ui.add(egui::Image::from_texture(SizedTexture::new(
+                                            material.texture_id,
+                                            Vec2::new(100.0, 100.0),
+                                        )).sense(Sense::click()));
+
+                                    if button.hovered() {
+                                        ui.painter().rect_stroke(
+                                            button.rect,
+                                            4.0,
+                                            egui::Stroke::new(1.5, egui::Color32::WHITE),
+                                            egui::StrokeKind::Middle,
+                                        );
+                                    }
+
+                                    if button.clicked() {
+                                        game_object.get_mesh_nodes_mut().set_mesh_material_by_mesh_index(
+                                                &game_data.asset_manager,
+                                                &model.meshes[*selected_index].name,
+                                                &material.material_name,
+                                        );
+
+                                       // self.selected_material_index = material.material_index;
+                                    }
+                                }
+                            } else {
+                                egui::ComboBox::from_label("Meshes")
+                                    .selected_text("No Meshes")
+                                    .show_ui(ui, |_| {});
+                            }
+                        }
+
+                        ui.separator();
+                        if ui.button("Delete").clicked() {
+                           self.objects_marked_for_removal.insert(game_object.id);
+                        }
                     }
                 }
-             });
+
+                self.process_marked_for_removal(game_data);
+
+                if self.add_game_object_selected {
+                    let models = game_data.asset_manager.get_models();
+                    egui::ComboBox::from_label("Select Model")
+                        .selected_text(&models[self.selected_model_index].name)
+                        .show_ui(ui, |ui| {
+                            for (index, model) in models.iter().enumerate() {
+                                ui.selectable_value(
+                                    &mut self.selected_model_index,
+                                    index,
+                                    &model.name,
+                                );
+                            }
+                        });
+
+                    let create_info = GameObjectCreateInfo {
+                        model_name: models[self.selected_model_index].name.to_string(),
+                        position: [1.0, 5.0, 1.0],
+                        rotation: [1.0, 1.0, 1.0],
+                        size: [1.0, 1.0, 1.0],
+                        tex_scale: [1.0, 1.0],
+                        mesh_rendering_info: vec![],
+                    };
+
+                    if ui.button("Add").clicked() {
+                        game_data.scene .add_game_object(&create_info, &game_data.asset_manager);
+                    }
+                }
+            });
         egui::Window::new("Settings")
             .resizable(true)
             .vscroll(true)
+            .title_bar(false)
+            .collapsible(false)
+            .fixed_size(Vec2::new((window_width / 6) as f32, window_height as f32))
+            .anchor(Align2([Align::LEFT, Align::TOP]), Vec2::new(0.0, 0.0))
             .default_open(true)
             .show(&ui, |ui| {
                 ui.collapsing("Game Objects", |ui| {
-                    for game_object in game_data.game_objects.iter_mut() {
-                        let button = ui.button(game_object.get_name());
+                    for (index, game_object) in game_data.scene.game_objects.iter_mut().enumerate()
+                    {
+                        let button = ui.button(game_object.get_model_name().to_string() + " (" + &index.to_string() + ")");
 
                         if button.clicked() {
-                            self.selected_game_object_id = game_object.object_id as isize;
+                            self.selected_game_object_id = game_object.id as isize;
+                            self.add_game_object_selected = false;
                         }
 
-                        if game_object.object_id as isize == self.selected_game_object_id {
+                        if game_object.id as isize == self.selected_game_object_id {
                             game_object.set_selected(true);
                         } else {
                             game_object.set_selected(false);
                         }
                     }
+
+                    ui.separator();
+                    if ui.button("New Game Object").clicked() {
+                        for game_object in game_data.scene.game_objects.iter_mut() {
+                            game_object.set_selected(false);
+                        }
+                        self.selected_game_object_id = -1;
+                        self.add_game_object_selected = true;
+                    }
                 });
 
                 ui.collapsing("Animated Game Objects", |ui| {
-                    for animated_game_object in game_data.animated_game_objects.iter() {
-                        ui.label(animated_game_object.get_name());
+                    for (index, animated_game_object) in
+                        game_data.scene.animated_game_objects.iter().enumerate()
+                    {
+                        ui.label(
+                            animated_game_object.get_model_name().to_string() + &index.to_string(),
+                        );
 
                         if let Some(model) = game_data.asset_manager.get_model_by_name(animated_game_object.get_model_name()) {
                             if !model.meshes.is_empty() {
@@ -98,40 +247,21 @@ impl SceneHierarchyWindow {
                                     .selected_text(&model.meshes[*selected_index].name)
                                     .show_ui(ui, |ui| {
                                         for (i, mesh) in model.meshes.iter().enumerate() {
-                                            if ui.selectable_label(i == *selected_index, &mesh.name).clicked() {
+                                            if ui
+                                                .selectable_label(i == *selected_index, &mesh.name)
+                                                .clicked()
+                                            {
                                                 *selected_index = i;
                                             }
                                         }
                                     });
 
-                                // let materials = asset_manager.get_all_materials();
-                                // for material in materials.iter() {
-                                //     let material_name: &str = &material.name;
-                                //     if let Some(texture) = asset_manager.get_texture_by_name(&format!("{material_name}_ALB.png")) {
-                                //         let tex_id = self
-                                //             .material_previews
-                                //             .entry(material_name.to_string())
-                                //             .or_insert_with(|| {
-                                //                 let color_image =
-                                //                     egui::ColorImage::from_rgba_unmultiplied(
-                                //                         [
-                                //                             texture.dimensions.0 as usize,
-                                //                             texture.dimensions.1 as usize,
-                                //                         ],
-                                //                         &texture.pixel_data,
-                                //                     );
-                                //                 ui.ctx()
-                                //                     .load_texture(
-                                //                         &format!("preview_{material_name}"),
-                                //                         color_image,
-                                //                         egui::TextureOptions::default(),
-                                //                     )
-                                //                     .id()
-                                //             });
-
-                                //         ui.image((*tex_id, egui::vec2(128.0, 128.0)));
-                                //     }
-                                // }
+                                for material in materials.iter() {
+                                    ui.add(egui::Image::from_texture(SizedTexture::new(
+                                        material.texture_id,
+                                        Vec2::new(100.0, 100.0),
+                                    )));
+                                }
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")
@@ -147,5 +277,76 @@ impl SceneHierarchyWindow {
                     }
                 })
             });
+    }
+
+    pub fn process_marked_for_removal(&mut self, game_data: &mut GameData) {
+        for id in self.objects_marked_for_removal.drain() {
+            game_data.scene.remove_game_object_by_id(id);
+        }
+    }
+
+    fn draw_meshes(
+        &mut self,
+        game_object: &mut GameObject,
+        game_data: &GameData,
+        materials: &Vec<EguiMaterial>,
+        ui: &mut Ui,
+    ) {
+        if let Some(model) = game_data
+            .asset_manager
+            .get_model_by_name(game_object.get_model_name())
+        {
+            if !model.meshes.is_empty() {
+                let selected_index = self.selected_mesh_index.entry(game_object.id).or_insert(0);
+
+                if *selected_index >= model.meshes.len() {
+                    *selected_index = 0;
+                }
+
+                egui::ComboBox::from_label("Meshes")
+                    .selected_text(&model.meshes[*selected_index].name)
+                    .show_ui(ui, |ui| {
+                        for (i, mesh) in model.meshes.iter().enumerate() {
+                            if ui
+                                .selectable_label(i == *selected_index, &mesh.name)
+                                .clicked()
+                            {
+                                *selected_index = i;
+                            }
+                        }
+                    });
+
+                ui.label("Material");
+                for material in materials.iter() {
+                    let button = ui.add(egui::Image::from_texture(SizedTexture::new(
+                        material.texture_id,
+                        Vec2::new(100.0, 100.0),
+                    )));
+
+                    if button.hovered() {
+                        ui.painter().rect_stroke(
+                            button.rect,
+                            4.0,
+                            egui::Stroke::new(1.5, egui::Color32::WHITE),
+                            egui::StrokeKind::Middle,
+                        );
+                    }
+
+                    if button.clicked() {
+                        game_object
+                            .get_mesh_nodes_mut()
+                            .set_mesh_material_by_mesh_index(
+                                &game_data.asset_manager,
+                                &model.meshes[*selected_index].name,
+                                &material.material_name,
+                            );
+                    }
+                }
+            } else {
+                egui::ComboBox::from_label("Meshes")
+                    .selected_text("No Meshes")
+                    .show_ui(ui, |_| {});
+            }
+        }
     }
 }

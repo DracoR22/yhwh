@@ -21,25 +21,26 @@ pub struct WgpuRenderer {
 impl WgpuRenderer {
     pub async fn create_context(window: &Arc<Window>) -> WgpuContext {
         let context = WgpuContext::new(&window).await.unwrap();
-        
         context
     }
 
     pub fn new(window: &Arc<Window>, context: WgpuContext, game_data: &GameData) -> Self {
         // init wgpu
-        //let context = WgpuContext::new(&window).await.unwrap();
         let config = context.get_surface_config();
         let device = context.get_device();
 
-        let egui_renderer = EguiRenderer::new(&context, &window);
+        // init egui
+        let mut egui_renderer = EguiRenderer::new(&context, &window);
+        let mut ui_manager = UiManager::new();
+        ui_manager.register_textures(&context, &mut egui_renderer.renderer, &game_data.asset_manager);
 
         // load uniforms
-        let wgpu_uniforms = UniformManager::new(&context, &game_data.game_objects, &game_data.animated_game_objects);
+        let wgpu_uniforms = UniformManager::new(&context, &game_data.scene.game_objects, &game_data.scene.animated_game_objects);
 
         // load fbos
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture", DEPTH_TEXTURE_STENCIL_FORMAT);
 
-        // render groups
+        // load render groups
         let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let animation_pass = AnimationPass::new(&device, &wgpu_uniforms, &game_data.asset_manager);
         let skybox_pass = SkyboxPass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
@@ -73,14 +74,14 @@ impl WgpuRenderer {
             skybox_pass,
             outline_pass,
             uniform_manager: wgpu_uniforms,
-            ui_manager: UiManager::new()
+            ui_manager
         };
     }
 
     pub fn render(&mut self, window: &Window, game_data: &mut GameData) -> Result<(), wgpu::SurfaceError> {
         // submit uniforms
         self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
-        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.game_objects, &game_data.animated_game_objects);
+        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.camera);
         self.uniform_manager.submit_light_uniforms(&self.wgpu_context, game_data.delta_time);
         
@@ -131,8 +132,8 @@ impl WgpuRenderer {
             timestamp_writes: None,
         });
 
-       self.lighting_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.game_objects);
-       self.animation_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.animated_game_objects);
+       self.lighting_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.scene.game_objects);
+       self.animation_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.scene.animated_game_objects);
 
        // debug pass
        render_pass.set_pipeline(&self.debug_render_pipeline);
@@ -154,11 +155,11 @@ impl WgpuRenderer {
        drop(render_pass);
 
        // post process
-       self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &game_data.game_objects, &game_data.asset_manager);
+       self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &game_data.scene.game_objects, &game_data.asset_manager);
        self.postprocess_pass.render(&mut encoder, &surface_view);
 
        self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, surface_view, |ui| {
-          self.ui_manager.scene_hierarchy_window.draw(ui, game_data);
+          self.ui_manager.scene_hierarchy_window.draw(ui, &self.ui_manager.materials, game_data, (window.inner_size().width, window.inner_size().height));
        });
 
        queue.submit(std::iter::once(encoder.finish()));

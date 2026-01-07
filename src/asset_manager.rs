@@ -3,7 +3,8 @@ use std::{collections::HashMap, path::Path, sync::mpsc, thread};
 use crate::{material::Material, model::{self, Mesh, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
-    models: HashMap<String, Model>,
+    models: Vec<Model>,
+    model_index_map: HashMap<String, usize>,
     textures: HashMap<String, Texture>,
     material_index_map: HashMap<String, usize>,
     materials: Vec<Material>,
@@ -14,11 +15,11 @@ pub struct AssetManager {
 impl AssetManager {
     pub fn new(ctx: &WgpuContext) -> Self {
         let textures = Self::load_all_textures(&ctx);
-        let models = Self::load_models(&ctx);
+        let (models, model_index_map) = Self::load_models(&ctx);
 
         let mut meshes: Vec<Mesh> = Vec::new();
         let mut mesh_index_map: HashMap<String, usize> = HashMap::new();
-        for (_key, model) in &models {
+        for model in models.iter() {
             for mesh in &model.meshes {
                 meshes.push(mesh.clone());
                 mesh_index_map.insert(mesh.name.clone(), meshes.len() - 1);
@@ -28,6 +29,7 @@ impl AssetManager {
         Self {
             textures,
             models,
+            model_index_map,
             meshes,
             mesh_index_map,
             materials: Default::default(),
@@ -152,8 +154,9 @@ impl AssetManager {
 
 // models
 impl AssetManager {
-     pub fn load_models(ctx: &WgpuContext) -> HashMap<String, Model> {
-        let mut models: HashMap<String, Model> = HashMap::new();
+     pub fn load_models(ctx: &WgpuContext) -> (Vec<Model>, HashMap<String, usize>) {
+        let mut models: Vec<Model> = Vec::new();
+        let mut model_index_map: HashMap<String, usize> = HashMap::new();
         for entry in std::fs::read_dir("res/models").unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
@@ -162,7 +165,9 @@ impl AssetManager {
                 if extension.eq_ignore_ascii_case("glb") {
                     match model::load_glb_model(&ctx.device, &entry.path().to_str().unwrap()) {
                         Ok(res) => { 
-                            models.insert(res.name.clone(), res);
+                           let model_name = res.name.clone();
+                           models.push(res);
+                           model_index_map.insert(model_name, models.len() -1);
                          },
                         Err(err) => {
                             println!("AssetManager::load_models() error with file {:?} {}", path.file_name().unwrap(), err);
@@ -173,7 +178,9 @@ impl AssetManager {
                 if extension.eq_ignore_ascii_case("obj") {
                     match model::load_obj_model_sync(&ctx.device, &entry.path().to_str().unwrap()) {
                         Ok(res) => {
-                            models.insert(res.name.clone(), res);
+                           let model_name = res.name.clone();
+                           models.push(res);
+                           model_index_map.insert(model_name, models.len() -1);
                         },
                         Err(err) => {
                             println!("AssetManager::load_models() error with file {:?} {}", path.file_name().unwrap(), err)
@@ -184,30 +191,38 @@ impl AssetManager {
         }
 
         let cube_model = model::load_cube(&ctx.device, "Cube").unwrap();
-        models.insert(cube_model.name.clone(), cube_model);
+        let cube_model_name = cube_model.name.clone();
+        models.push(cube_model);
+        model_index_map.insert(cube_model_name, models.len() -1);
 
         let plane_model = model::load_plane(&ctx.device, "Plane").unwrap();
-        models.insert(plane_model.name.clone(), plane_model);
+        let plane_model_name = plane_model.name.clone();
+        models.push(plane_model);
+        model_index_map.insert(plane_model_name, models.len() - 1);
 
-        models
+        (models, model_index_map)
     }
 
-     pub fn get_model_by_name(&self, name: &str) -> Option<&Model> {
-        if self.models.contains_key(name) {
-            self.models.get(name)
+    pub fn get_model_by_name(&self, name: &str) -> Option<&Model> {
+        if let Some(index) = self.model_index_map.get(name) {
+            self.models.get(*index)
         } else {
             println!("AssetManager::get_model_by_name() error: model {name} not found!");
             None
         }
     }
 
-     pub fn get_model_by_name_mut(&mut self, name: &str) -> Option<&mut Model> {
-        if self.models.contains_key(name) {
-            self.models.get_mut(name)
+    pub fn get_model_by_name_mut(&mut self, name: &str) -> Option<&mut Model> {
+        if let Some(index) = self.model_index_map.get(name) {
+            self.models.get_mut(*index)
         } else {
             println!("AssetManager::get_model_by_name() error: model {name} not found!");
             None
         }
+    }
+
+    pub fn get_models(&self) -> &Vec<Model> {
+        &self.models
     }
 }
 

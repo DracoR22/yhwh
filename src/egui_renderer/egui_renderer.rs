@@ -1,13 +1,14 @@
+use egui::TextureId;
 use wgpu::rwh::HasDisplayHandle;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, wgpu_context::WgpuContext};
 
 pub struct EguiRenderer {
     pub context: egui::Context,
     pub state: egui_winit::State,
     pub renderer: egui_wgpu::Renderer,
-    pub show_cursor: bool
+    pub show_cursor: bool,
 }
 
 impl EguiRenderer {
@@ -33,7 +34,7 @@ impl EguiRenderer {
             context: egui_state.egui_ctx().clone(),
             renderer: egui_renderer,
             state: egui_state,
-            show_cursor: false
+            show_cursor: false,
         }
     }
 

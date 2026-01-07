@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
 
 pub struct GameData {
     pub camera: Camera,
     pub camera_controller: CameraController,
     pub asset_manager: AssetManager,
-    pub game_objects: Vec<GameObject>,
-    pub animated_game_objects: Vec<AnimatedGameObject>,
+    pub scene: Scene,
     pub delta_time: std::time::Duration,
     pub last_redraw: std::time::Instant,
     pub fps_accum: Vec<f64>,
@@ -44,33 +43,12 @@ impl Engine {
         let mut asset_manager = AssetManager::new(&wgpu_context);
         asset_manager.build_materials(&wgpu_context.device);
     
-        // load scene  
-
-        let mut game_objects: Vec<GameObject> = Vec::new();
-        let mut animated_game_objects: Vec<AnimatedGameObject> = Vec::new();
-
-        let level = load_level().expect("Could not load level!!"); 
-
-        for create_info in level.game_objects {
-            game_objects.push(GameObject::new(&create_info, &asset_manager));
-        }
-
-        let glock_create_info = GameObjectCreateInfo {
-            model_name: "glock".to_string(),
-            name: "Glock".to_string(),
-            position: [10.0, 2.0, 0.0],//cgmath::Vector3::new(10.0, 2.0, 0.0),
-            rotation: [1.0, 1.0, 1.0],//cgmath::Vector3::new(1.0, 1.0, 1.0),
-            size: [1.5, 1.5, 1.5],//cgmath::Vector3::new(1.5, 1.5, 1.5),
-            tex_scale: [1.0, 1.0],
-            mesh_rendering_info: vec![]
-        };
-
-        animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
+        // load scene
+        let scene = Scene::new(&asset_manager);
 
         let game_data = GameData {
             asset_manager,
-            game_objects,
-            animated_game_objects,
+            scene,
             camera,
             camera_controller,
             avg_fps: 0.0,
@@ -185,7 +163,7 @@ impl Engine {
 
      // TODO: MOVE OUT OF HERE!!
     pub fn update_object_position(&mut self) {
-        for game_object in self.game_data.game_objects.iter_mut() {
+        for game_object in self.game_data.scene.game_objects.iter_mut() {
             if self.game_data.game_state == GameState::Editor && game_object.is_selected {
               if self.input.keyboard.key_pressed(KeyCode::KeyR) {
                 let sensitivity = 0.05;
@@ -210,10 +188,4 @@ impl GameData {
 
         self.avg_fps = self.fps_accum.iter().sum::<f64>() / self.fps_accum.len() as f64;
     }
-}
-
-pub fn create_scene() {
-     let level = load_level().expect("Could not load level!!"); 
-
-
 }

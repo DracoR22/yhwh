@@ -66,8 +66,8 @@ impl OutlinePass {
 
         for game_object in game_objects.iter() {
            if game_object.is_selected {
-            let Some(model_uniform) = uniforms.models.get(&game_object.object_id) else {
-             println!("No model bind group for object {:?}, skipping draw", game_object.object_id);
+            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+             println!("No model bind group for object {:?}, skipping draw", game_object.id);
              continue;
             };
 

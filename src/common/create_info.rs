@@ -8,7 +8,6 @@ pub struct MeshNodeCreateInfo {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameObjectCreateInfo {
-    pub name: String,
     pub model_name: String,
     pub position: [f32; 3],
     pub size: [f32; 3],

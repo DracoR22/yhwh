@@ -7,6 +7,7 @@ use cgmath::Rotation3;
 use crate::asset_manager::AssetManager;
 use crate::bind_group_manager::BindGroupManager;
 use crate::objects::animated_game_object::AnimatedGameObject;
+use crate::scene::Scene;
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
 
 #[repr(C)]
@@ -127,7 +128,7 @@ impl UniformManager {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
 
       for game_object in game_objects.iter() {
-        model_uniforms.insert(game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
+        model_uniforms.insert(game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
 
       for animated_game_object in animated_game_objects.iter() {
@@ -148,16 +149,28 @@ impl UniformManager {
         bind_group_layout
       }
     }
-    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) {
-      for animated_game_object in animated_game_objects {
+
+    pub fn create_model(&mut self, ctx: &WgpuContext, id: usize) {
+      self.models.insert(id, Uniform::new(ModelUniform::new(), &ctx.device));
+    }
+
+    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene) {
+      for animated_game_object in scene.animated_game_objects.iter() {
+        if !self.models.contains_key(&animated_game_object.object_id) {
+           self.create_model(&ctx, animated_game_object.object_id);
+        }
         if let Some(model_uniform) = self.models.get_mut(&animated_game_object.object_id) {
           model_uniform.value_mut().update(&animated_game_object.get_model_matrix(), &animated_game_object.tex_scale);
           model_uniform.update(&ctx.queue);
         }
       }
 
-      for game_object in game_objects {
-        if let Some(model_uniform) = self.models.get_mut(&game_object.object_id) {
+      for game_object in scene.game_objects.iter() {
+        if !self.models.contains_key(&game_object.id) {
+          self.create_model(&ctx, game_object.id);
+        }
+
+        if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
           model_uniform.value_mut().update(&game_object.get_model_matrix(), &game_object.tex_scale);
           model_uniform.update(&ctx.queue);  
         }

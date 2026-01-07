@@ -58,8 +58,8 @@ impl LightingPass {
 
     pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager, asset_manager: &AssetManager, game_objects: &Vec<GameObject>) {
         for game_object in game_objects.iter() {
-          let Some(model_uniform) = uniforms.models.get(&game_object.object_id) else {
-            println!("No model bind group for object {:?}, skipping draw", game_object.object_id);
+          let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+            println!("No model bind group for object {:?}, skipping draw", game_object.id);
             continue;
           };
 

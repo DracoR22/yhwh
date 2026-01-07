@@ -5,7 +5,7 @@ use crate::{common::create_info::{GameObjectCreateInfo, LevelCreateInfo}, engine
 pub fn save_level(game_data: &GameData) {
     let mut game_object_create_infos: Vec<GameObjectCreateInfo> = Vec::new();
 
-    for game_object in game_data.game_objects.iter() {
+    for game_object in game_data.scene.game_objects.iter() {
       game_object_create_infos.push(game_object.get_create_info(&game_data.asset_manager));
     }
 

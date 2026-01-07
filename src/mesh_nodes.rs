@@ -63,7 +63,7 @@ impl MeshNodes {
 
     pub fn set_mesh_material_by_mesh_index(&mut self, asset_manager: &AssetManager, mesh_name: &str, material_name: &str) {
         let mesh_index = asset_manager.get_mesh_index_by_name(mesh_name);
-        let material_index = asset_manager.get_mesh_index_by_name(material_name);
+        let material_index = asset_manager.get_material_index_by_name(material_name);
 
         for info in self.mesh_rendering_info.iter_mut() {
             if info.mesh_index == mesh_index {

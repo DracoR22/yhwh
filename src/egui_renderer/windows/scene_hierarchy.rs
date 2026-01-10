@@ -43,15 +43,12 @@ impl SceneHierarchyWindow {
         game_data: &mut GameData,
         (window_width, window_height): (u32, u32)
     ) {
-        egui::Window::new("Transforms")
-            .resizable(true)
-            .vscroll(true)
-            .title_bar(false)
-            .collapsible(false)
-            .fixed_size(Vec2::new((window_width / 6) as f32, window_height as f32))
-            .anchor(Align2([Align::RIGHT, Align::TOP]), Vec2::new(0.0, 0.0))
-            .default_open(true)
+        egui::SidePanel::right("Transforms")
+           .resizable(true)
+           .default_width(250.0)
+           .width_range(250.0..=300.0)
             .show(&ui, |ui| {
+                ui.separator();
                 for game_object in game_data.scene.game_objects.iter_mut() {
                     if game_object.is_selected {
                         ui.label("Position X");
@@ -188,16 +185,15 @@ impl SceneHierarchyWindow {
                     }
                 }
             });
-        egui::Window::new("Settings")
-            .resizable(true)
-            .vscroll(true)
-            .title_bar(false)
-            .collapsible(false)
-            .fixed_size(Vec2::new((window_width / 6) as f32, window_height as f32))
-            .anchor(Align2([Align::LEFT, Align::TOP]), Vec2::new(0.0, 0.0))
-            .default_open(true)
-            .show(&ui, |ui| {
-                ui.collapsing("Game Objects", |ui| {
+
+            egui::SidePanel::left("right_panel")
+               .resizable(true)
+               .default_width(250.0)
+               .width_range(250.0..=300.0)
+               .show(&ui, |ui| {
+                    //ui.set_min_width(200.0);
+                    ui.separator();
+                    ui.collapsing("Game Objects", |ui| {
                     for (index, game_object) in game_data.scene.game_objects.iter_mut().enumerate()
                     {
                         let button = ui.button(game_object.get_model_name().to_string() + " (" + &index.to_string() + ")");
@@ -276,7 +272,7 @@ impl SceneHierarchyWindow {
                         save_level(game_data);
                     }
                 })
-            });
+               });
     }
 
     pub fn process_marked_for_removal(&mut self, game_data: &mut GameData) {

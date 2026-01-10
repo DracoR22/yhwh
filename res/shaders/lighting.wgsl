@@ -12,9 +12,9 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
     @location(1) world_position: vec3<f32>,
-    @location(2) tangent: vec3<f32>, // tangent
-    @location(3) bitangent: vec3<f32>, // bitangent
-    @location(4) normal: vec3<f32>, // normal
+    @location(2) tangent: vec3<f32>,
+    @location(3) bitangent: vec3<f32>,
+    @location(4) normal: vec3<f32>, 
 }
 
 struct CameraUniform {
@@ -177,24 +177,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let light_strength = 50.0;
     let light_radius = 10.0;
     final_color += get_spot_light_lighting(light.position, light.color, light_strength, light_radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
-    //final_color *= ao;
     return vec4<f32>(final_color, 1.0);
-
-    // let ambient_strength = 0.1;
-    // let ambient_color = light.color * ambient_strength;
-
-    // let light_dir = normalize(light.position - in.world_position);
-    // let diffuse_strength = max(dot(world_normal, light_dir), 0.0);
-    // let diffuse_color = light.color * diffuse_strength;
-
-    // // specular
-    // let view_dir = normalize(camera.view_position.xyz - in.world_position);
-    // let half_dir = normalize(view_dir + light_dir);
-
-    // let specular_strength = pow(max(dot(world_normal, half_dir), 0.0), 32.0);
-    // let specular_color = specular_strength * light.color;
-
-    // let result = (ambient_color + diffuse_color + specular_color) * base_texture.xyz;
-
-    // return vec4<f32>(result, 1.0);
 }

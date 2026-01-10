@@ -4,7 +4,7 @@
     {
       "model_name": "Barrel",
       "position": [
-        0.0,
+        1.0,
         2.0,
         0.0
       ],
@@ -43,6 +43,34 @@
       ],
       "rotation": [
         1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        2.5,
+        2.5
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Marble_Tile"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        0.0,
+        5.0,
+        -15.0
+      ],
+      "size": [
+        50.0,
+        50.0,
+        50.0
+      ],
+      "rotation": [
+        90.0,
         1.0,
         1.0
       ],

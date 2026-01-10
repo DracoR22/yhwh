@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse, yhwh_keys::YHWHMouseButton}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
 
 pub struct GameData {
     pub camera: Camera,
@@ -76,14 +76,12 @@ impl Engine {
         //self.physics.step_simulation(self.game_data.delta_time);
 
         // update game
-        self.game_data.update_fps();
-        self.game_data.camera_controller.update_camera(&mut self.game_data.camera, self.game_data.delta_time);
+        self.game_data.update(&self.input);
 
         self.window.set_title(&format!("FPS: {:.1}", self.game_data.avg_fps));
         self.toggle_cursor();
 
         self.handle_dev_tools();
-        self.update_object_position();
 
         // update wgpu renderer
         match self.wgpu_renderer.render(&self.window, &mut self.game_data) {
@@ -98,6 +96,7 @@ impl Engine {
         }
 
         self.input.keyboard.end_frame();
+        self.input.mouse.end_frame();
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
@@ -108,14 +107,15 @@ impl Engine {
     pub fn handle_window_events(&mut self, event: &WindowEvent) {
         self.game_data.camera_controller.handle_keyboard(&event);
         self.input.keyboard.handle_event(&event);
+        self.input.mouse.handle_window_event(&event);
         self.wgpu_renderer.egui_renderer.handle_input(&self.window, &event);
         self.wgpu_renderer.egui_renderer.set_cursor_visible(self.show_cursor);
     }
 
     pub fn handle_device_events(&mut self, event: &DeviceEvent) {
+         self.input.mouse.handle_device_event(&event);
          match event {
             DeviceEvent::MouseMotion { delta } => {
-               self.input.mouse.handle_mouse_motion(delta.0, delta.1);
                if !self.show_cursor {
                  self.game_data.camera_controller.handle_mouse(delta.0, delta.1);
                }
@@ -160,21 +160,27 @@ impl Engine {
             }
         }
     }
-
-     // TODO: MOVE OUT OF HERE!!
-    pub fn update_object_position(&mut self) {
-        for game_object in self.game_data.scene.game_objects.iter_mut() {
-            if self.game_data.game_state == GameState::Editor && game_object.is_selected {
-              if self.input.keyboard.key_pressed(KeyCode::KeyR) {
-                let sensitivity = 0.05;
-                game_object.get_position_mut().x += self.input.mouse.delta_x as f32 * sensitivity;
-             }
-           }  
-        }
-    }
 }
 
 impl GameData {
+    pub fn update(&mut self, input: &Input) {
+        self.update_fps();
+        self.camera_controller.update_camera(&mut self.camera, self.delta_time);
+
+        if self.game_state == GameState::Editor {
+            if input.mouse.button_pressed(&YHWHMouseButton::Middle) {
+                let dx: f64 = input.mouse.delta_x;
+                let dy: f64 = input.mouse.delta_y;
+
+                let sensitivity: f64 = 0.75;
+
+                if dx.abs() > 2.0 || dy.abs() > 2.0 {
+                  self.camera_controller.handle_mouse(dx * sensitivity, dy * sensitivity);
+                }
+            }
+        }
+    }
+
     pub fn update_fps(&mut self) {
         let now = std::time::Instant::now();
         self.delta_time = now - self.last_redraw;

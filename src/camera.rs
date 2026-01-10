@@ -102,6 +102,7 @@ pub struct CameraController {
     scroll: f32,
     speed: f32,
     sensitivity: f32,
+    pub smoothed_delta: cgmath::Vector2<f64>
 }
 
 impl CameraController {
@@ -118,6 +119,7 @@ impl CameraController {
             scroll: 0.0,
             speed,
             sensitivity,
+            smoothed_delta: cgmath::Vector2::new(0.0, 0.0)
         }
     }
 
@@ -220,5 +222,9 @@ impl CameraController {
         } else if camera.pitch > Rad(SAFE_FRAC_PI_2) {
             camera.pitch = Rad(SAFE_FRAC_PI_2);
         }
-    }
+    }   
+
+    pub fn get_smoothed_delta_mut(&mut self) -> &mut cgmath::Vector2<f64> {
+        &mut self.smoothed_delta
+    } 
 }

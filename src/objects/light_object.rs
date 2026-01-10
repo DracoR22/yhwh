@@ -1,0 +1,22 @@
+use crate::common::{create_info::LightObjectCreateInfo, enums::LightType};
+
+pub struct LightObject {
+    pub color: cgmath::Vector3<f32>,
+    pub position: cgmath::Vector3<f32>,
+    pub strength: f32,
+    pub radius: f32,
+    pub light_type: LightType
+}
+
+impl LightObject {
+    pub fn new(create_info: &LightObjectCreateInfo) -> Self {
+        Self {
+            color: cgmath::Vector3::new(create_info.color[0], create_info.color[1], create_info.color[2]),
+            position: cgmath::Vector3::new(create_info.position[0], create_info.position[1], create_info.position[2]),
+            radius: create_info.radius,
+            strength: create_info.strength,
+            light_type: create_info.light_type.clone()
+        }
+    }
+}
+

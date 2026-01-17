@@ -2,19 +2,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use wgpu::util::DeviceExt;
 
-use crate::bind_group_manager::BindGroupManager;
+use crate::{bind_group_manager::BindGroupManager, u8slice::ToU8Slice};
 
-/// Trait is needed to use bytemuck's conversion on external types
-pub trait ToU8Slice: Sized {
-    //fn cast_slice(self_slice: &[Self]) -> &[u8];
-     fn as_u8_slice(&self) -> &[u8];
-}
-
-impl<T: bytemuck::Pod> ToU8Slice for T {
-    fn as_u8_slice(&self) -> &[u8] {
-        bytemuck::bytes_of(self)
-    }
-}
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -29,7 +18,7 @@ where T: ToU8Slice {
     pub fn new(value: T, device: &wgpu::Device) -> Self {
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: value.as_u8_slice(),
+            contents: value.cast_slice(),
             usage:  wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -74,13 +63,13 @@ where T: ToU8Slice {
             queue.write_buffer(
                 &self.buffer,
                 0,
-                self.value.as_u8_slice(),
+                self.value.cast_slice(),
             );
         }
     }
 
     pub fn update_direct(&self, queue: &wgpu::Queue, value: &T) {
-        let data = value.as_u8_slice();
+        let data = value.cast_slice();
         queue.write_buffer(&self.buffer, 0, data);
         self.changed.store(false, Ordering::SeqCst);
     }

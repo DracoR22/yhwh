@@ -1,11 +1,12 @@
-use crate::common::{create_info::LightObjectCreateInfo, enums::LightType};
+use crate::{common::{create_info::LightObjectCreateInfo, enums::LightType}, utils::unique_id};
 
 pub struct LightObject {
     pub color: cgmath::Vector3<f32>,
     pub position: cgmath::Vector3<f32>,
     pub strength: f32,
     pub radius: f32,
-    pub light_type: LightType
+    pub light_type: LightType,
+    pub id: usize
 }
 
 impl LightObject {
@@ -15,7 +16,8 @@ impl LightObject {
             position: cgmath::Vector3::new(create_info.position[0], create_info.position[1], create_info.position[2]),
             radius: create_info.radius,
             strength: create_info.strength,
-            light_type: create_info.light_type.clone()
+            light_type: create_info.light_type.clone(),
+            id: unique_id::next_id()
         }
     }
 }

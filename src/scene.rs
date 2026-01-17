@@ -30,14 +30,22 @@ impl Scene {
 
         animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
 
-
+        // TODO REMOVE HARDCODED!!!!
         lights.push(LightObject::new(&LightObjectCreateInfo {
             color: [1.0, 1.0, 1.0],
-            position: [0.0, 1.0, 0.0],
+            position: [2.0, 2.0, 2.0],
             radius: 10.0,
             strength: 50.0,
             light_type: LightType::Point
         }));
+
+        //  lights.push(LightObject::new(&LightObjectCreateInfo {
+        //     color: [1.0, 0.0, 0.0],
+        //     position: [10.0, 1.0, 0.0],
+        //     radius: 10.0,
+        //     strength: 50.0,
+        //     light_type: LightType::Point
+        // }));
 
         Self {
             game_objects,
@@ -54,3 +62,10 @@ impl Scene {
         self.game_objects.retain(|g| g.id != id);
     }
 }
+
+// Lights
+// impl Scene {
+//     pub fn get_lights(&self) {
+
+//     }
+// }

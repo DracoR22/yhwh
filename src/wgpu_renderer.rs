@@ -35,7 +35,7 @@ impl WgpuRenderer {
         ui_manager.register_textures(&context, &mut egui_renderer.renderer, &game_data.asset_manager);
 
         // load uniforms
-        let wgpu_uniforms = UniformManager::new(&context, &game_data.scene.game_objects, &game_data.scene.animated_game_objects);
+        let wgpu_uniforms = UniformManager::new(&context, &game_data.scene);
 
         // load fbos
         let depth_texture = texture::Texture::create_depth_texture(&device, &config, "depth_texture", DEPTH_TEXTURE_STENCIL_FORMAT);
@@ -83,7 +83,7 @@ impl WgpuRenderer {
         self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
         self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.camera);
-        self.uniform_manager.submit_light_uniforms(&self.wgpu_context, game_data.delta_time);
+        self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data.scene);
         
         window.request_redraw();
 

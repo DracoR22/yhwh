@@ -6,8 +6,11 @@ use cgmath::Rotation3;
 
 use crate::asset_manager::AssetManager;
 use crate::bind_group_manager::BindGroupManager;
+use crate::common::constants::MAX_LIGHTS;
 use crate::objects::animated_game_object::AnimatedGameObject;
+use crate::objects::light_object::LightObject;
 use crate::scene::Scene;
+use crate::ssbo::SSBO;
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
 
 #[repr(C)]
@@ -120,20 +123,23 @@ pub struct UniformManager {
     pub models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub animation: Uniform<AnimationUniform>,
-    pub light: Uniform<LightUniform>
+    pub light: Uniform<LightUniform>,
+    pub lights_ssbo: SSBO
 }
 
 impl UniformManager {
-    pub fn new(ctx: &WgpuContext, game_objects: &Vec<GameObject>, animated_game_objects: &Vec<AnimatedGameObject>) -> Self {
+    pub fn new(ctx: &WgpuContext, scene: &Scene) -> Self {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
 
-      for game_object in game_objects.iter() {
+      for game_object in scene.game_objects.iter() {
         model_uniforms.insert(game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
 
-      for animated_game_object in animated_game_objects.iter() {
+      for animated_game_object in scene.animated_game_objects.iter() {
         model_uniforms.insert(animated_game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
+
+      let lights_ssbo = SSBO::new((std::mem::size_of::<LightUniform>() * MAX_LIGHTS as usize) as u64, &ctx.device);
 
       let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
         &ctx.device,
@@ -146,7 +152,8 @@ impl UniformManager {
         animation: Uniform::new(AnimationUniform::new(), &ctx.device),
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
         light: Uniform::new(LightUniform::new(), &ctx.device),
-        bind_group_layout
+        bind_group_layout,
+        lights_ssbo
       }
     }
 
@@ -197,11 +204,25 @@ impl UniformManager {
       self.animation.update(&ctx.queue);
     }
 
-    pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, dt: std::time::Duration) {
-      let light_uniform = self.light.value_mut();
-      let old_position: cgmath::Vector3<_> = light_uniform.position.into();
-      light_uniform.position = (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(60.0 * dt.as_secs_f32())) * old_position).into();
-      self.light.update(&ctx.queue);
+    pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene) {
+      // let light_uniform = self.light.value_mut();
+      // let old_position: cgmath::Vector3<_> = light_uniform.position.into();
+      // light_uniform.position = (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(60.0 * dt.as_secs_f32())) * old_position).into();
+      // self.light.update(&ctx.queue);
+
+      let mut light_uniforms: Vec<LightUniform> = Vec::with_capacity(scene.lights.len());
+      for light in scene.lights.iter() {
+        let light_uniform = LightUniform {
+           position: light.position.into(),
+           _padding: 0,
+           color: light.position.into(),
+          _padding2: 0,
+        };
+
+        light_uniforms.push(light_uniform);
+      }
+
+      self.lights_ssbo.update(&ctx, (light_uniforms.len() * std::mem::size_of::<LightUniform>()) as u64, &light_uniforms);
     }
 
     pub fn submit_camera_uniforms(&mut self, ctx: &WgpuContext, camera: &Camera) {

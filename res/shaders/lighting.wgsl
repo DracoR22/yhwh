@@ -57,7 +57,11 @@ var<uniform> camera: CameraUniform;
 var<uniform> model: ModelUniform;
 
 @group(3) @binding(0)
-var<uniform> light: LightUniform;
+var<storage, read> lights: array<LightUniform>;
+//var<uniform> light: LightUniform;
+
+@group(3) @binding(1)
+var<uniform> light_count: u32;
 
 const PI = 3.14159265359;
 
@@ -175,7 +179,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // TODO: DO MULTIPLE LIGHTS!!
     let light_strength = 50.0;
-    let light_radius = 10.0;
-    final_color += get_spot_light_lighting(light.position, light.color, light_strength, light_radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
+    let light_radius = 5.0;
+
+    for (var i: u32 = 0u; i < light_count; i = i + 1u) {
+        let light = lights[i];
+
+        final_color += get_spot_light_lighting(light.position, light.color, light_strength, light_radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
+    }
+   
     return vec4<f32>(final_color, 1.0);
 }

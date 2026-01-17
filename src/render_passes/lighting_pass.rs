@@ -22,7 +22,7 @@ impl LightingPass {
                 &texture_bind_group_layout,
                 &uniforms.camera.bind_group_layout,
                 &uniforms.bind_group_layout,
-                &uniforms.light.bind_group_layout
+                &uniforms.lights_ssbo.bind_group_layout
             ],
             push_constant_ranges: &[],
         });
@@ -71,7 +71,7 @@ impl LightingPass {
 
           render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
           render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
-          render_pass.set_bind_group(3, &uniforms.light.bind_group, &[]);
+          render_pass.set_bind_group(3, &uniforms.lights_ssbo.bind_group, &[]);
 
           if let Some(model) = asset_manager.get_model_by_name(&game_object.get_model_name()) {
             for mesh in &model.meshes {

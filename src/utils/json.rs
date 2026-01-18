@@ -1,17 +1,23 @@
 use std::{fs::{self, File}, io::Write};
 
-use crate::{common::create_info::{GameObjectCreateInfo, LevelCreateInfo}, engine::GameData};
+use crate::{common::create_info::{GameObjectCreateInfo, LevelCreateInfo, LightObjectCreateInfo}, engine::GameData};
 
 pub fn save_level(game_data: &GameData) {
     let mut game_object_create_infos: Vec<GameObjectCreateInfo> = Vec::new();
+    let mut light_create_infos: Vec<LightObjectCreateInfo> = Vec::new();
 
     for game_object in game_data.scene.game_objects.iter() {
       game_object_create_infos.push(game_object.get_create_info(&game_data.asset_manager));
     }
 
+    for light in game_data.scene.lights.iter() {
+      light_create_infos.push(light.get_create_info());
+    }
+
     let level_create_info = LevelCreateInfo {
       name: "test".to_string(),
-      game_objects: game_object_create_infos
+      game_objects: game_object_create_infos,
+      lights: light_create_infos
     };
 
     let json = serde_json::to_string_pretty(&level_create_info).unwrap();

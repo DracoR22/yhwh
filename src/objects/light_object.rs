@@ -20,5 +20,17 @@ impl LightObject {
             id: unique_id::next_id()
         }
     }
+
+     pub fn get_create_info(&self) -> LightObjectCreateInfo {
+        let create_info = LightObjectCreateInfo { 
+            position: [self.position.x, self.position.y, self.position.z],
+            color: [self.color.x, self.color.y, self.color.z],
+            radius: self.radius,
+            strength: self.strength,
+            light_type: self.light_type.clone()
+        };
+
+        create_info
+    }
 }
 

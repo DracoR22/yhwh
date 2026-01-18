@@ -85,5 +85,37 @@
         }
       ]
     }
+  ],
+  "lights": [
+    {
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "position": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "strength": 50.0,
+      "radius": 10.0,
+      "light_type": "Point"
+    },
+    {
+      "color": [
+        1.0,
+        0.1723637,
+        0.1723637
+      ],
+      "position": [
+        3.0,
+        2.0,
+        17.0
+      ],
+      "strength": 50.0,
+      "radius": 10.0,
+      "light_type": "Point"
+    }
   ]
 }

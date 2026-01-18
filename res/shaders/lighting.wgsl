@@ -25,7 +25,14 @@ struct CameraUniform {
 
 struct LightUniform {
     position: vec3<f32>,
+    _pad0: u32,
     color: vec3<f32>, 
+    _pad1: u32,
+    strength: f32,
+    radius: f32,
+    _pad2: u32,
+    _pad3: u32
+
 }
 
 struct ModelUniform {
@@ -177,14 +184,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var final_color = vec3<f32>(0.0);
 
-    // TODO: DO MULTIPLE LIGHTS!!
-    let light_strength = 50.0;
-    let light_radius = 5.0;
-
     for (var i: u32 = 0u; i < light_count; i = i + 1u) {
         let light = lights[i];
 
-        final_color += get_spot_light_lighting(light.position, light.color, light_strength, light_radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
+        final_color += get_spot_light_lighting(light.position, light.color, light.strength, light.radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
     }
    
     return vec4<f32>(final_color, 1.0);

@@ -3,18 +3,19 @@ use std::collections::{HashMap, HashSet};
 use egui::{Align, Align2, Context, Sense, TextureId, Ui, Vec2, load::SizedTexture};
 
 use crate::{
-    common::create_info::GameObjectCreateInfo,
+    common::{create_info::{GameObjectCreateInfo, LightObjectCreateInfo}, enums::LightType},
     egui_renderer::ui_manager::EguiMaterial,
     engine::GameData,
     objects::{
         animated_game_object::{self, AnimatedGameObject},
         game_object::GameObject,
     },
-    utils::json::{save_level},
+    utils::json::save_level,
 };
 
 pub struct SceneHierarchyWindow {
     selected_game_object_id: isize,
+    selected_light_id: isize,
     selected_mesh_index: HashMap<usize, usize>,
 
     add_game_object_selected: bool,
@@ -28,6 +29,7 @@ impl SceneHierarchyWindow {
     pub fn new() -> Self {
         Self {
             selected_game_object_id: -1,
+            selected_light_id: -1,
             selected_mesh_index: HashMap::new(),
             add_game_object_selected: false,
             selected_model_index: 0,
@@ -181,7 +183,35 @@ impl SceneHierarchyWindow {
                     };
 
                     if ui.button("Add").clicked() {
-                        game_data.scene .add_game_object(&create_info, &game_data.asset_manager);
+                        game_data.scene.add_game_object(&create_info, &game_data.asset_manager);
+                    }
+                }
+
+                if self.selected_light_id > 0 {
+                    for light in game_data.scene.lights.iter_mut() {
+                        if light.id as isize == self.selected_light_id {
+                            ui.label("Position X");
+                            ui.add(egui::DragValue::new(&mut light.position.x));
+
+                            ui.label("Position Y");
+                            ui.add(egui::DragValue::new(&mut light.position.y));
+
+                            ui.label("Position Z");
+                            ui.add(egui::DragValue::new(&mut light.position.z));
+
+                            let mut color = [
+                                light.color.x,
+                                light.color.y,
+                                light.color.z,
+                            ];
+
+                            ui.label("Color");
+                            if ui.color_edit_button_rgb(&mut color).changed() {
+                                light.color.x = color[0];
+                                light.color.y = color[1];
+                                light.color.z = color[2];
+                            }
+                        }
                     }
                 }
             });
@@ -194,8 +224,7 @@ impl SceneHierarchyWindow {
                     //ui.set_min_width(200.0);
                     ui.separator();
                     ui.collapsing("Game Objects", |ui| {
-                    for (index, game_object) in game_data.scene.game_objects.iter_mut().enumerate()
-                    {
+                    for (index, game_object) in game_data.scene.game_objects.iter_mut().enumerate() {
                         let button = ui.button(game_object.get_model_name().to_string() + " (" + &index.to_string() + ")");
 
                         if button.clicked() {
@@ -217,13 +246,12 @@ impl SceneHierarchyWindow {
                         }
                         self.selected_game_object_id = -1;
                         self.add_game_object_selected = true;
+                        self.selected_light_id = -1;
                     }
                 });
 
                 ui.collapsing("Animated Game Objects", |ui| {
-                    for (index, animated_game_object) in
-                        game_data.scene.animated_game_objects.iter().enumerate()
-                    {
+                    for (index, animated_game_object) in game_data.scene.animated_game_objects.iter().enumerate() {
                         ui.label(
                             animated_game_object.get_model_name().to_string() + &index.to_string(),
                         );
@@ -267,12 +295,38 @@ impl SceneHierarchyWindow {
                     }
                 });
 
+                ui.collapsing("Lights", |ui| {
+                    for (index, light) in game_data.scene.lights.iter().enumerate() {
+                        let button = ui.button("Light (".to_string() + &index.to_string() + ")");
+
+                        if button.clicked() {
+                            self.selected_light_id = light.id as isize;
+                            self.add_game_object_selected = false;
+                            self.add_game_object_selected = false;
+                        }
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Add Light").clicked() {
+                        let create_info = LightObjectCreateInfo {
+                                    color: [1.0, 1.0, 1.0],
+                                    position: [2.0, 2.0, 2.0],
+                                    radius: 10.0,
+                                    strength: 50.0,
+                                    light_type: LightType::Point
+                                };
+
+                        game_data.scene.add_light(&create_info);
+                    }
+                });
+
                 ui.collapsing("File", |ui| {
                     if ui.button("Save Level").clicked() {
                         save_level(game_data);
                     }
                 })
-               });
+            });
     }
 
     pub fn process_marked_for_removal(&mut self, game_data: &mut GameData) {

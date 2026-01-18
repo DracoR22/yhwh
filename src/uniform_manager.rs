@@ -102,18 +102,26 @@ impl CameraUniform {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct LightUniform {
    pub position: [f32; 3],
-   pub _padding: u32,
+   pub _pad0: u32,
    pub color: [f32; 3],
-   pub _padding2: u32,
+   pub _pad1: u32,
+   pub strength: f32,
+   pub radius: f32,
+   pub _pad2: u32,
+   pub _pad3: u32
 }
 
 impl LightUniform {
     pub fn new() -> Self {
         Self {
-           position: [2.0, 2.0, 2.0],
-           _padding: 0,
-           color: [1.0, 1.0, 1.0],
-          _padding2: 0,
+          position: [2.0, 2.0, 2.0],
+          _pad0: 0,
+          color: [1.0, 1.0, 1.0],
+          _pad1: 0,
+          strength: 50.0,
+          radius: 5.0,
+          _pad2: 0,
+          _pad3: 0
         }
     }
 }
@@ -205,18 +213,17 @@ impl UniformManager {
     }
 
     pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene) {
-      // let light_uniform = self.light.value_mut();
-      // let old_position: cgmath::Vector3<_> = light_uniform.position.into();
-      // light_uniform.position = (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(60.0 * dt.as_secs_f32())) * old_position).into();
-      // self.light.update(&ctx.queue);
-
       let mut light_uniforms: Vec<LightUniform> = Vec::with_capacity(scene.lights.len());
       for light in scene.lights.iter() {
         let light_uniform = LightUniform {
-           position: light.position.into(),
-           _padding: 0,
-           color: light.position.into(),
-          _padding2: 0,
+          position: light.position.into(),
+          _pad0: 0,
+          color: light.color.into(),
+          _pad1: 0,
+          strength: light.strength,
+          radius: light.radius,
+          _pad2: 0,
+          _pad3: 0
         };
 
         light_uniforms.push(light_uniform);

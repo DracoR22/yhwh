@@ -30,5 +30,6 @@ pub struct LightObjectCreateInfo {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LevelCreateInfo {
     pub name: String,
-    pub game_objects: Vec<GameObjectCreateInfo>
+    pub game_objects: Vec<GameObjectCreateInfo>,
+    pub lights: Vec<LightObjectCreateInfo>
 }

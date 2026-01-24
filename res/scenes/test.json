@@ -47,13 +47,13 @@
         1.0
       ],
       "tex_scale": [
-        2.5,
-        2.5
+        3.0,
+        3.0
       ],
       "mesh_rendering_info": [
         {
           "mesh_name": "Plane_Mesh",
-          "material_name": "Marble_Tile"
+          "material_name": "Wood_Floor"
         }
       ]
     },
@@ -75,13 +75,13 @@
         1.0
       ],
       "tex_scale": [
-        2.5,
-        2.5
+        5.0,
+        5.0
       ],
       "mesh_rendering_info": [
         {
           "mesh_name": "Plane_Mesh",
-          "material_name": "Marble_Tile"
+          "material_name": "Brick_Wall"
         }
       ]
     }
@@ -96,7 +96,7 @@
       "position": [
         2.0,
         2.0,
-        2.0
+        0.0
       ],
       "strength": 50.0,
       "radius": 10.0,
@@ -105,8 +105,8 @@
     {
       "color": [
         1.0,
-        0.1723637,
-        0.1723637
+        1.0,
+        1.0
       ],
       "position": [
         3.0,

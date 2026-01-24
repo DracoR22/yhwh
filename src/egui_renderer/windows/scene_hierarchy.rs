@@ -51,7 +51,8 @@ impl SceneHierarchyWindow {
            .width_range(250.0..=300.0)
             .show(&ui, |ui| {
                 ui.separator();
-                for game_object in game_data.scene.game_objects.iter_mut() {
+                if self.selected_game_object_id != -1 {
+                     for game_object in game_data.scene.game_objects.iter_mut() {
                     if game_object.is_selected {
                         ui.label("Position X");
                         ui.add(egui::DragValue::new(&mut game_object.get_position_mut().x));
@@ -118,7 +119,8 @@ impl SceneHierarchyWindow {
                                     });
 
                                 ui.label("Material");
-                                for material in materials.iter() {
+                                egui::ScrollArea::vertical().max_height(10.0).show(ui, |ui| {
+                                     for material in materials.iter() {
                                     let button = ui.add(egui::Image::from_texture(SizedTexture::new(
                                             material.texture_id,
                                             Vec2::new(100.0, 100.0),
@@ -143,6 +145,7 @@ impl SceneHierarchyWindow {
                                        // self.selected_material_index = material.material_index;
                                     }
                                 }
+                                });
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")
@@ -156,7 +159,8 @@ impl SceneHierarchyWindow {
                         }
                     }
                 }
-
+                }
+               
                 self.process_marked_for_removal(game_data);
 
                 if self.add_game_object_selected {
@@ -302,7 +306,7 @@ impl SceneHierarchyWindow {
                         if button.clicked() {
                             self.selected_light_id = light.id as isize;
                             self.add_game_object_selected = false;
-                            self.add_game_object_selected = false;
+                            self.selected_game_object_id = -1;
                         }
                     }
 

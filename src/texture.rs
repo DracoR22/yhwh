@@ -46,6 +46,8 @@ impl Texture {
             depth_or_array_layers: 1,
         };
 
+        let mip_count = (dimensions.0.max(dimensions.1) as f32).log2().floor() as u32 + 1;
+
          let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: texture_size,
             mip_level_count: 1,

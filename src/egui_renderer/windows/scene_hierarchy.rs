@@ -22,7 +22,8 @@ pub struct SceneHierarchyWindow {
     selected_model_index: usize,
     selected_material_index: usize,
 
-    objects_marked_for_removal: HashSet<usize>
+    objects_marked_for_removal: HashSet<usize>,
+    scale_uniform: bool
 }
 
 impl SceneHierarchyWindow {
@@ -34,7 +35,8 @@ impl SceneHierarchyWindow {
             add_game_object_selected: false,
             selected_model_index: 0,
             selected_material_index: 0,
-            objects_marked_for_removal: HashSet::new()
+            objects_marked_for_removal: HashSet::new(),
+            scale_uniform: true
         }
     }
 
@@ -63,13 +65,37 @@ impl SceneHierarchyWindow {
                         ui.label("Position Z");
                         ui.add(egui::DragValue::new(&mut game_object.get_position_mut().z));
 
-                        ui.label("Size");
-                        let mut size = game_object.get_size().x;
-                        let slider = ui.add(egui::Slider::new(&mut size, 0.0..=100.0));
-                        if slider.changed() {
-                            game_object.set_size(cgmath::Vector3::new(size, size, size));
-                        }
+                        ui.checkbox(&mut self.scale_uniform, "Scale Uniform");
 
+                        let mut size = game_object.get_size();
+
+                        let changed_x = ui
+                            .add(egui::Slider::new(&mut size.x, 0.0..=100.0).text("Size X"))
+                            .changed();
+
+                        let changed_y = ui
+                            .add(egui::Slider::new(&mut size.y, 0.0..=100.0).text("Size Y"))
+                            .changed();
+
+                        let changed_z = ui
+                            .add(egui::Slider::new(&mut size.z, 0.0..=100.0).text("Size Z"))
+                            .changed();
+
+                        if changed_x || changed_y || changed_z {
+                            if self.scale_uniform {
+                                let new_value = if changed_x {
+                                    size.x
+                                } else if changed_y {
+                                    size.y
+                                } else {
+                                    size.z
+                                };
+
+                                game_object.set_size(cgmath::Vector3::new(new_value, new_value, new_value));
+                            } else {
+                                game_object.set_size(size);
+                            }
+                        }
                         ui.label("Rotation X");
                         let mut rotation = game_object.get_rotation();
                         let slider_rot_x =
@@ -215,6 +241,12 @@ impl SceneHierarchyWindow {
                                 light.color.y = color[1];
                                 light.color.z = color[2];
                             }
+
+                            ui.label("Strength");
+                            ui.add(egui::Slider::new(&mut light.strength, 0.0..=100.0));
+
+                            ui.label("Radius");
+                            ui.add(egui::Slider::new(&mut light.radius, 0.0..=100.0));
                         }
                     }
                 }

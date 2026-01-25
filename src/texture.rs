@@ -2,6 +2,8 @@ use std::{default, path::PathBuf};
 
 use image::{DynamicImage, GenericImageView};
 
+use crate::{bind_group_manager::{self, BindGroupManager, TL}, wgpu_context::WgpuContext};
+
 #[derive(Clone)]
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -50,11 +52,11 @@ impl Texture {
 
          let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: texture_size,
-            mip_level_count: 1,
+            mip_level_count: mip_count, // 1
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT,
             label: Some("2D_Texture"),
             view_formats: &[],
         });
@@ -74,6 +76,8 @@ impl Texture {
             },
             texture_size,
         );
+        
+        generate_mips(device, queue, &texture, format, mip_count);
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let texture_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -212,4 +216,101 @@ impl TextureHelpers for Texture {
 pub struct TextureData {
     pub image: DynamicImage,
     pub name: String
+}
+
+fn generate_mips(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, format: wgpu::TextureFormat, mip_count: u32) {
+    let shader_code = std::fs::read_to_string("res/shaders/mipmap.wgsl").expect("res/shaders/mipmap.wgsl was not found!");
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("mip shader"),
+        source: wgpu::ShaderSource::Wgsl(shader_code.into())
+    });
+
+    let bglayout = BindGroupManager::create_texture_bind_group_layout(device, [TL::Float]).unwrap();
+
+    let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[&bglayout],
+        push_constant_ranges: &[],
+    });
+
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("mip pipeline"),
+        layout: Some(&layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs_main"),
+            buffers: &[],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs_main"),
+            targets: &[Some(format.into())],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        cache: None,
+        multiview: None
+    });
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        min_filter: wgpu::FilterMode::Linear,
+        mag_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
+
+     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("mip encoder"),
+     });
+
+    for mip in 1..mip_count {
+        let src_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            base_mip_level: mip - 1,
+            mip_level_count: Some(1),
+            ..Default::default()
+        });
+
+        let dst_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            base_mip_level: mip,
+            mip_level_count: Some(1),
+            ..Default::default()
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &pipeline.get_bind_group_layout(0),
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&src_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+            label: None,
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &dst_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            ..Default::default()
+        });
+
+        render_pass.set_pipeline(&pipeline);
+        render_pass.set_bind_group(0, &bind_group, &[]);
+        render_pass.draw(0..3, 0..1);
+    }
+
+    queue.submit(Some(encoder.finish()));
 }

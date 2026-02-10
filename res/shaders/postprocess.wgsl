@@ -43,6 +43,11 @@ var hdr_image: texture_2d<f32>;
 @group(0) @binding(1)
 var hdr_sampler: sampler;
 
+@group(0) @binding(2)
+var emissive_image: texture_2d<f32>;
+@group(0) @binding(3)
+var emissive_sampler: sampler;
+
 @fragment
 fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
     let hdr = textureSample(hdr_image, hdr_sampler, vs.uv);

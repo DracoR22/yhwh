@@ -1,9 +1,9 @@
-use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct LightingPass {
-    pipeline_layout: wgpu::PipelineLayout,
     stencil_pipeline: wgpu::RenderPipeline,
-    pipeline: wgpu::RenderPipeline
+    pipeline: wgpu::RenderPipeline,
+    texture_bg_layout: wgpu::BindGroupLayout
 }
 
 impl LightingPass {
@@ -16,43 +16,45 @@ impl LightingPass {
 
         let texture_bind_group_layout = &asset_manager.get_material_by_name("Barrel_RED").unwrap().bind_group_layout;
 
-        let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("lighting_pipeline_layout"),
-            bind_group_layouts: &[
-                &texture_bind_group_layout,
-                &uniforms.camera.bind_group_layout,
-                &uniforms.bind_group_layout,
-                &uniforms.lights_ssbo.bind_group_layout
+         let pipeline = PipelineBuilder::new(
+            "lighting pipeline",
+            &[
+              &texture_bind_group_layout,
+              &uniforms.camera.bind_group_layout,
+              &uniforms.bind_group_layout,
+              &uniforms.lights_ssbo.bind_group_layout
             ],
-            push_constant_ranges: &[],
-        });
-
-         let pipeline = PipelineManager::create_pipeline(
-            &ctx.device,
-            &pipeline_layout,
-            HDR_TEX_FORMAT,
-            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-            &shader_module,
             &[Vertex::desc()],
-            Some("Lighting_Pipeline")
-        )
-        .unwrap();
-
-        let stencil_pipeline = PipelineManager::create_stencil_pipeline(
-            &ctx.device,
-            &pipeline_layout,
-            HDR_TEX_FORMAT,
-            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
             &shader_module,
-            &[Vertex::desc()],
-            true
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
         )
-        .unwrap();
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth_write()
+        .build(&ctx.device);
+
+        let write_stencil = true;
+        let stencil_pipeline = PipelineBuilder::new(
+            "lighting stencil pipeline",
+            &[
+              &texture_bind_group_layout,
+              &uniforms.camera.bind_group_layout,
+              &uniforms.bind_group_layout,
+              &uniforms.lights_ssbo.bind_group_layout
+            ],
+            &[Vertex::desc()],
+            &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth_write()
+        .with_stencil_state(write_stencil)
+        .with_blend(wgpu::BlendState::REPLACE)
+        .build(&ctx.device);
 
      Self {
-        pipeline_layout,
         stencil_pipeline,
-        pipeline
+        pipeline,
+        texture_bg_layout: texture_bind_group_layout.clone()
      }
     }
 
@@ -62,6 +64,11 @@ impl LightingPass {
             println!("No model bind group for object {:?}, skipping draw", game_object.id);
             continue;
           };
+
+          // TODO: CHECK WITH THE MESH NODES FLAG INSTEAD!!! STRING HERE IS BAD
+          if game_object.get_model_name() == "candles" {
+            continue;
+          }
 
           if game_object.is_selected {
             render_pass.set_pipeline(&self.stencil_pipeline);
@@ -89,42 +96,49 @@ impl LightingPass {
         }
     }
 
-    pub fn hotload_shader(&mut self, ctx: &WgpuContext) {
+    pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {
       let shader_code = std::fs::read_to_string("res/shaders/lighting.wgsl").unwrap();
       let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Lighting_Shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
        });
 
-      let pipeline = PipelineManager::create_pipeline(
-            &ctx.device,
-            &self.pipeline_layout,
-            HDR_TEX_FORMAT,
-            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-            &shader_module,
+       let pipeline = PipelineBuilder::new(
+            "lighting pipeline",
+            &[
+              &self.texture_bg_layout,
+              &uniforms.camera.bind_group_layout,
+              &uniforms.bind_group_layout,
+              &uniforms.lights_ssbo.bind_group_layout
+            ],
             &[Vertex::desc()],
-            Some("Lighting_Pipeline")
-        );
-
-      let stencil_pipeline = PipelineManager::create_stencil_pipeline(
-            &ctx.device,
-            &self.pipeline_layout,
-            HDR_TEX_FORMAT,
-            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
             &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth_write()
+        .build(&ctx.device);
+
+      let write_stencil = true;
+      let stencil_pipeline = PipelineBuilder::new(
+            "lighting stencil pipeline",
+            &[
+              &self.texture_bg_layout,
+              &uniforms.camera.bind_group_layout,
+              &uniforms.bind_group_layout,
+              &uniforms.lights_ssbo.bind_group_layout
+            ],
             &[Vertex::desc()],
-            true
-        );
+            &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth_write()
+        .with_stencil_state(write_stencil)
+        .with_blend(wgpu::BlendState::REPLACE)
+        .build(&ctx.device);
 
-      match (pipeline, stencil_pipeline) {
-        (Ok(pipeline), Ok(stencil_pipeline)) => {
-          self.pipeline = pipeline;
-          self.stencil_pipeline = stencil_pipeline;
-        },
-
-        (Err(e), _) | (_, Err(e)) => {
-          println!("LightingPass::hotload_shader() error: {e}");
-        }
-      }
+      self.pipeline = pipeline;
+      self.stencil_pipeline = stencil_pipeline;
     }
 }

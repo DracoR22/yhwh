@@ -2,7 +2,7 @@ use std::{sync::Arc};
 
 use winit::{window::Window};
 
-use crate::{common::{constants::DEPTH_TEXTURE_STENCIL_FORMAT, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}}, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager, windows::scene_hierarchy::SceneHierarchyWindow}, engine::GameData, input::keyboard::Keyboard, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, skybox_pass::SkyboxPass}, texture, uniform::Uniform, uniform_manager::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, UniformManager}, utils::unique_id, vertex::Vertex, wgpu_context::{self, WgpuContext}};
+use crate::{common::{constants::DEPTH_TEXTURE_STENCIL_FORMAT, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}}, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager, windows::scene_hierarchy::SceneHierarchyWindow}, engine::GameData, input::keyboard::Keyboard, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, skybox_pass::SkyboxPass}, texture, uniform::Uniform, uniform_manager::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, UniformManager}, utils::unique_id, vertex::Vertex, wgpu_context::{self, WgpuContext}};
 
 pub struct WgpuRenderer {
     pub egui_renderer: EguiRenderer,
@@ -14,6 +14,7 @@ pub struct WgpuRenderer {
     animation_pass: AnimationPass,
     skybox_pass: SkyboxPass,
     outline_pass: OutlinePass,
+    emissive_pass: EmissivePass,
     uniform_manager: UniformManager,
     ui_manager: UiManager
 }
@@ -42,10 +43,11 @@ impl WgpuRenderer {
 
         // load render groups
         let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
-        let animation_pass = AnimationPass::new(&device, &wgpu_uniforms, &game_data.asset_manager);
+        let animation_pass = AnimationPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
+        let emissive_pass = EmissivePass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let skybox_pass = SkyboxPass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
         let outline_pass = OutlinePass::new(&context, &wgpu_uniforms);
-        let postprocess_pass = PostProcessPass::new(&device, &config);
+        let postprocess_pass = PostProcessPass::new(&context, &config);
  
         // load shaders
         let debug_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -73,6 +75,7 @@ impl WgpuRenderer {
             animation_pass,
             skybox_pass,
             outline_pass,
+            emissive_pass,
             uniform_manager: wgpu_uniforms,
             ui_manager
         };
@@ -96,7 +99,7 @@ impl WgpuRenderer {
         }
 
         let swapchain_fbo = surface.get_current_texture()?;
-        let surface_view = swapchain_fbo.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let swapchain_view = swapchain_fbo.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
@@ -104,19 +107,24 @@ impl WgpuRenderer {
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("First_Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[
+              Some(wgpu::RenderPassColorAttachment {
                 view: self.postprocess_pass.get_view(),
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
                 },
-            })],
+             }),
+              Some(wgpu::RenderPassColorAttachment {
+                view: &self.postprocess_pass.get_emissive_view(),
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+             })
+            ],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
             view: &self.depth_texture.view,
             depth_ops: Some(wgpu::Operations {
@@ -134,20 +142,7 @@ impl WgpuRenderer {
 
        self.lighting_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.scene.game_objects);
        self.animation_pass.render(&mut render_pass, &self.uniform_manager, &game_data.asset_manager, &game_data.scene.animated_game_objects);
-
-       // debug pass
-       render_pass.set_pipeline(&self.debug_render_pipeline);
-
-       render_pass.set_bind_group(0, &self.uniform_manager.camera.bind_group, &[]);
-       render_pass.set_bind_group(1, &self.uniform_manager.light.bind_group, &[]);
-       
-       if let Some(debug_cube) = game_data.asset_manager.get_model_by_name("Cube") {
-        for mesh in &debug_cube.meshes {
-         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-        }
-       }
+       self.emissive_pass.render(&mut render_pass, &game_data, &self.uniform_manager, self.postprocess_pass.get_view(), self.postprocess_pass.get_emissive_view(), &self.depth_texture.view);
 
        // skybox
        self.skybox_pass.render(&mut render_pass, &self.uniform_manager);
@@ -156,9 +151,9 @@ impl WgpuRenderer {
 
        // post process
        self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &game_data.scene.game_objects, &game_data.asset_manager);
-       self.postprocess_pass.render(&mut encoder, &surface_view);
+       self.postprocess_pass.render(&mut encoder, &swapchain_view);
 
-       self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, surface_view, |ui| {
+       self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, swapchain_view, |ui| {
           self.ui_manager.scene_hierarchy_window.draw(ui, &self.ui_manager.materials, game_data, (window.inner_size().width, window.inner_size().height));
        });
 
@@ -183,9 +178,9 @@ impl WgpuRenderer {
     }
 
     pub fn hot_load_shaders(&mut self) {
-         self.outline_pass.hotload_shader(&self.wgpu_context);
+         self.outline_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
          self.postprocess_pass.hotload_shader(&self.wgpu_context);
-         self.lighting_pass.hotload_shader(&self.wgpu_context);
+         self.lighting_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
          println!("Hot-Loaded shaders!");
     }
 }

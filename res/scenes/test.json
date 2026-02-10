@@ -2,44 +2,16 @@
   "name": "test",
   "game_objects": [
     {
-      "model_name": "Barrel",
-      "position": [
-        -13.0,
-        2.0,
-        0.0
-      ],
-      "size": [
-        6.0,
-        6.0,
-        6.0
-      ],
-      "rotation": [
-        1.0,
-        1.0,
-        1.0
-      ],
-      "tex_scale": [
-        1.0,
-        1.0
-      ],
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "barrel_YELLOW",
-          "material_name": "Barrel_RED"
-        }
-      ]
-    },
-    {
       "model_name": "Plane",
       "position": [
-        0.0,
         1.0,
-        0.0
+        0.0,
+        1.0
       ],
       "size": [
-        100.0,
-        100.0,
-        100.0
+        50.0,
+        50.0,
+        50.0
       ],
       "rotation": [
         1.0,
@@ -60,14 +32,14 @@
     {
       "model_name": "Plane",
       "position": [
-        0.0,
+        1.0,
         5.0,
-        -15.0
+        1.0
       ],
       "size": [
-        50.0,
-        50.0,
-        50.0
+        13.0,
+        10.0,
+        10.0
       ],
       "rotation": [
         90.0,
@@ -75,41 +47,205 @@
         1.0
       ],
       "tex_scale": [
-        5.0,
-        5.0
+        1.0,
+        1.0
       ],
       "mesh_rendering_info": [
         {
           "mesh_name": "Plane_Mesh",
-          "material_name": "Brick_Wall"
+          "material_name": "Wood_Floor"
         }
       ]
     },
     {
       "model_name": "Plane",
       "position": [
-        21.0,
+        7.0,
         5.0,
-        15.0
+        12.0
       ],
       "size": [
-        66.0,
-        21.0,
-        21.0
+        10.0,
+        25.0,
+        10.0
       ],
       "rotation": [
-        90.0,
-        1.0,
+        0.0,
+        0.0,
         90.0
       ],
       "tex_scale": [
-        7.2,
-        2.1
+        1.0,
+        1.0
       ],
       "mesh_rendering_info": [
         {
           "mesh_name": "Plane_Mesh",
-          "material_name": "Brick_Wall"
+          "material_name": "Wood_Floor"
+        }
+      ]
+    },
+    {
+      "model_name": "door_wall",
+      "position": [
+        -6.0,
+        2.0,
+        18.9
+      ],
+      "size": [
+        3.0,
+        3.0,
+        2.5
+      ],
+      "rotation": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube.001",
+          "material_name": "Wood_Floor"
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        -3.0,
+        4.9,
+        5.0
+      ],
+      "size": [
+        1.0,
+        10.0,
+        10.0
+      ],
+      "rotation": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Wood_Floor"
+        }
+      ]
+    },
+    {
+      "model_name": "cross",
+      "position": [
+        2.5,
+        7.0,
+        1.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "defaultMaterial",
+          "material_name": "Default"
+        }
+      ]
+    },
+    {
+      "model_name": "candles",
+      "position": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "size": [
+        0.035,
+        0.035,
+        0.035
+      ],
+      "rotation": [
+        270.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Object_0",
+          "material_name": "Candle_Flame"
+        },
+        {
+          "mesh_name": "Object_1",
+          "material_name": "Candle_Flame"
+        },
+        {
+          "mesh_name": "Object_2",
+          "material_name": "Candle_Flame"
+        },
+        {
+          "mesh_name": "Object_3",
+          "material_name": "Candle_Flame"
+        }
+      ]
+    },
+    {
+      "model_name": "candles",
+      "position": [
+        5.0,
+        0.0,
+        8.0
+      ],
+      "size": [
+        0.035,
+        0.035,
+        0.035
+      ],
+      "rotation": [
+        270.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Object_0",
+          "material_name": "Default"
+        },
+        {
+          "mesh_name": "Object_1",
+          "material_name": "Default"
+        },
+        {
+          "mesh_name": "Object_2",
+          "material_name": "Default"
+        },
+        {
+          "mesh_name": "Object_3",
+          "material_name": "Default"
         }
       ]
     }
@@ -123,26 +259,11 @@
       ],
       "position": [
         2.0,
-        10.0,
-        0.0
-      ],
-      "strength": 10.0,
-      "radius": 17.0,
-      "light_type": "Point"
-    },
-    {
-      "color": [
-        1.0,
-        1.0,
-        1.0
-      ],
-      "position": [
-        3.0,
         2.0,
-        17.0
+        2.0
       ],
-      "strength": 50.0,
-      "radius": 10.0,
+      "strength": 64.0,
+      "radius": 63.0,
       "light_type": "Point"
     }
   ]

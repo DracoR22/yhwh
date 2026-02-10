@@ -11,8 +11,7 @@ pub struct SSBO {
     buffer_size: u64
 }
 
-impl SSBO
- {
+impl SSBO {
     pub fn new(size: u64, device: &wgpu::Device) -> Self {
         let value_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("SSBO Value Buffer"),

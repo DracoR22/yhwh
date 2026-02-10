@@ -98,17 +98,16 @@ impl SceneHierarchyWindow {
                         }
                         ui.label("Rotation X");
                         let mut rotation = game_object.get_rotation();
-                        let slider_rot_x =
-                            ui.add(egui::Slider::new(&mut rotation.x, 0.0..=360.0).suffix("°"));
-                        let slider_rot_y =
-                            ui.add(egui::Slider::new(&mut rotation.y, 0.0..=360.0).suffix("°"));
-                        let slider_rot_z =
-                            ui.add(egui::Slider::new(&mut rotation.z, 0.0..=360.0).suffix("°"));
+                        let slider_rot_x = ui.add(egui::Slider::new(&mut rotation.x, 0.0..=360.0).suffix("°"));
+                        ui.label("Rotation Y");
+                        let slider_rot_y = ui.add(egui::Slider::new(&mut rotation.y, 0.0..=360.0).suffix("°"));
+                        ui.label("Rotation Z");
+                        let slider_rot_z = ui.add(egui::Slider::new(&mut rotation.z, 0.0..=360.0).suffix("°"));
 
                         if slider_rot_x.changed()
                             || slider_rot_y.changed()
                             || slider_rot_z.changed()
-                        {
+                            || slider_rot_x.changed() {
                             game_object.set_rotation(rotation);
                         }
 

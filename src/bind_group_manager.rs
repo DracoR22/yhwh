@@ -118,7 +118,7 @@ impl BindGroupManager {
                     resource: wgpu::BindingResource::Sampler(&texture.sampler),
                 },
             ],
-            label: Some("Texture_Bind_Group_Layout"),
+            label: Some("Texture_Bind_Group"),
         });
 
         Ok(bind_group)
@@ -136,9 +136,31 @@ impl BindGroupManager {
             }))
         })
     }
+//     pub fn multi_bindgroup_entries<'a>(
+//     binding_offset: u32,
+//     texs: &'a [&texture::Texture],
+// ) -> Vec<wgpu::BindGroupEntry<'a>> {
+//     let mut entries = Vec::new();
+
+//     for (i, tex) in texs.iter().enumerate() {
+//         entries.push(wgpu::BindGroupEntry {
+//             binding: binding_offset + (i as u32 * 2),
+//             resource: wgpu::BindingResource::TextureView(&tex.view),
+//         });
+
+//         entries.push(wgpu::BindGroupEntry {
+//             binding: binding_offset + (i as u32 * 2 + 1),
+//             resource: wgpu::BindingResource::Sampler(&tex.sampler),
+//         });
+//     }
+
+//     entries
+// }
+
 
      pub fn create_multi_texture_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, texs: &[&texture::Texture]) -> anyhow::Result<wgpu::BindGroup> {
       let entries = Self::multi_bindgroup_entries(0, texs).collect::<Vec<_>>();
+       //let entries = Self::multi_bindgroup_entries(0, texs);
       let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             entries: &entries,

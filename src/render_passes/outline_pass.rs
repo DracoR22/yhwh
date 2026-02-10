@@ -1,7 +1,7 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_manager::PipelineManager, texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct OutlinePass {
-    pipeline_layout: wgpu::PipelineLayout,
+    //pipeline_layout: wgpu::PipelineLayout,
     pipeline: wgpu::RenderPipeline,
 }
 
@@ -13,27 +13,41 @@ impl OutlinePass {
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 
-        let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Outline_Pipeline_Layout"),
-                bind_group_layouts: &[
-                    &uniforms.camera.bind_group_layout,
-                    &uniforms.bind_group_layout
-                ],
-                push_constant_ranges: &[],
-        });
+        // let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        //         label: Some("Outline_Pipeline_Layout"),
+        //         bind_group_layouts: &[
+        //             &uniforms.camera.bind_group_layout,
+        //             &uniforms.bind_group_layout
+        //         ],
+        //         push_constant_ranges: &[],
+        // });
 
-        let pipeline = PipelineManager::create_stencil_pipeline(
-            &ctx.device,
-            &pipeline_layout,
-            HDR_TEX_FORMAT,
-            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-            &shader_module,
+        // let pipeline = PipelineManager::create_stencil_pipeline(
+        //     &ctx.device,
+        //     &pipeline_layout,
+        //     HDR_TEX_FORMAT,
+        //     Some(DEPTH_TEXTURE_STENCIL_FORMAT),
+        //     &shader_module,
+        //     &[Vertex::desc()],
+        //     false
+        // ).unwrap();
+
+        let write_stencil = false;
+
+        let pipeline = PipelineBuilder::new(
+            "outline pipeline",
+            &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
             &[Vertex::desc()],
-            false
-        ).unwrap();
+            &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_stencil_state(write_stencil)
+        .with_blend(wgpu::BlendState::REPLACE)
+        .build(&ctx.device);
 
         Self {
-            pipeline_layout,
+            //pipeline_layout,
             pipeline,
         }
     }
@@ -41,7 +55,16 @@ impl OutlinePass {
     pub fn render(&self, encoder: &mut wgpu::CommandEncoder, out_texture_view: &wgpu::TextureView, depth_texture_view: &wgpu::TextureView, uniforms: &UniformManager, game_objects: &Vec<GameObject>, asset_manager: &AssetManager) {
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Outline_Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[
+              Some(wgpu::RenderPassColorAttachment {
+                view: &out_texture_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            }),
+              Some(wgpu::RenderPassColorAttachment {
                 view: &out_texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -85,26 +108,33 @@ impl OutlinePass {
         }
     }
 
-    pub fn hotload_shader(&mut self, ctx: &WgpuContext) {
+    pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {
       let shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
       let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Outline_Shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
        });
 
-      let new_pipeline = PipelineManager::create_stencil_pipeline(
-        &ctx.device,
-        &self.pipeline_layout,
-        HDR_TEX_FORMAT,
-        Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-        &shader_module,
-        &[Vertex::desc()],
-        false
-      );
 
-      match new_pipeline {
-          Ok(res) => self.pipeline = res,
-          Err(err) => println!("PostProcessPass::hotload_shader() error: {err}")
-      }
+     let write_stencil = false;
+
+    let new_pipeline = PipelineBuilder::new(
+            "outline pipeline",
+            &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
+            &[Vertex::desc()],
+            &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_stencil_state(write_stencil)
+        .with_blend(wgpu::BlendState::REPLACE)
+        .build(&ctx.device);
+
+    self.pipeline = new_pipeline;
+
+    //   match new_pipeline {
+    //       Ok(res) => self.pipeline = res,
+    //       Err(err) => println!("PostProcessPass::hotload_shader() error: {err}")
+    //   }
     }
 }

@@ -1,6 +1,7 @@
 use crate::bind_group_manager::{BindGroupManager, TL};
+use crate::common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT};
 use crate::cube_map::CubeMap;
-use crate::pipeline_manager::PipelineManager;
+use crate::pipeline_builder::PipelineBuilder;
 use crate::renderer_common::SKYBOX_VERTICES;
 use crate::uniform_manager::UniformManager;
 use crate::{asset_manager::AssetManager, wgpu_context::WgpuContext};
@@ -28,18 +29,28 @@ impl SkyboxPass {
             &asset_manager.get_texture_by_name("SkyBack.jpg").unwrap().pixel_data,
         ]);
 
-        let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Skybox_Map_Pipeline_Layout"),
-                bind_group_layouts: &[&cubemap.texture_bind_group_layout, &uniforms.camera.bind_group_layout],
-                push_constant_ranges: &[],
-        });
+        let cubemap_buffers = [wgpu::VertexBufferLayout {
+                array_stride:  3 * std::mem::size_of::<f32>() as wgpu::BufferAddress, 
+                step_mode: wgpu::VertexStepMode::Vertex,                         
+                attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                 }
+              ]
+        }];
 
-        let pipeline = PipelineManager::create_cubemap_pipeline(
-            &ctx.device,
-            &pipeline_layout,
-            wgpu::TextureFormat::Rgba16Float,
-            &shader_module)
-        .unwrap();
+        let pipeline = PipelineBuilder::new(
+            "skybox pipeline",
+            &[&cubemap.texture_bind_group_layout, &uniforms.camera.bind_group_layout],
+            &cubemap_buffers,
+            &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT]
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_cull_mode(wgpu::Face::Back)
+        .build(&ctx.device);
 
         Self {
             cubemap,

@@ -1,45 +1,50 @@
 use cgmath::SquareMatrix;
 use wgpu::util::DeviceExt;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, model::Model, objects::animated_game_object::AnimatedGameObject, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex};
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, model::Model, objects::animated_game_object::AnimatedGameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
-    bind_group: wgpu::BindGroup,
 }
 
 impl AnimationPass {
-    pub fn new(device: &wgpu::Device, wgpu_uniforms: &UniformManager, asset_manager: &AssetManager) -> Self {
-        let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+    pub fn new(ctx: &WgpuContext, uniforms: &UniformManager, asset_manager: &AssetManager) -> Self {
+        let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Instance_Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/animation.wgsl").into()),
         });
 
         let texture_bind_group_layout = asset_manager.get_phong_bind_group_layout().expect("No bind group layout for Phong!");
 
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("animation_pipeline_layout"),
-            bind_group_layouts: &[
-                &texture_bind_group_layout,
-                &wgpu_uniforms.camera.bind_group_layout,
-                &wgpu_uniforms.bind_group_layout,
-                &wgpu_uniforms.animation.bind_group_layout
-            ],
-            push_constant_ranges: &[],
-        });
+        // let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        //     label: Some("animation_pipeline_layout"),
+        //     bind_group_layouts: &[
+        //         &texture_bind_group_layout,
+        //         &wgpu_uniforms.camera.bind_group_layout,
+        //         &wgpu_uniforms.bind_group_layout,
+        //         &wgpu_uniforms.animation.bind_group_layout
+        //     ],
+        //     push_constant_ranges: &[],
+        // });
 
-        let pipeline = PipelineManager::create_pipeline(
-            &device,
-            &pipeline_layout,
-            HDR_TEX_FORMAT,
-            Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-            &shader_module,
+         let pipeline = PipelineBuilder::new(
+            "animation pipeline",
+            &[
+              &texture_bind_group_layout,
+              &uniforms.camera.bind_group_layout,
+              &uniforms.bind_group_layout,
+              &uniforms.animation.bind_group_layout
+            ],
             &[Vertex::desc()],
-            Some("animation_pipeline"))
-        .unwrap();
+            &shader_module,
+            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+        )
+        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth_write()
+        .build(&ctx.device);
+
 
         Self {
-          bind_group: wgpu_uniforms.animation.bind_group.clone(),
           pipeline
         }
     }

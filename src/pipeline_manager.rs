@@ -51,6 +51,58 @@ impl PipelineManager {
         Ok(render_pipeline)
     }
 
+    pub fn create_mrt_pipeline(device: &wgpu::Device, pipeline_layout: &wgpu::PipelineLayout, texture_formats: impl IntoIterator<Item = wgpu::TextureFormat>, depth_format: Option<wgpu::TextureFormat>, shader_module: &wgpu::ShaderModule, vertex_layouts: &[wgpu::VertexBufferLayout]) -> anyhow::Result<wgpu::RenderPipeline>{
+        let targets: Vec<Option<wgpu::ColorTargetState>> = texture_formats.into_iter().map(|format| {
+            Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(wgpu::BlendState::REPLACE),
+                write_mask: wgpu::ColorWrites::ALL,
+            })
+        }).collect(); 
+
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("MRT Pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader_module,
+                entry_point: Some("vs_main"),
+                buffers: vertex_layouts,
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader_module,
+                entry_point: Some("fs_main"),
+                targets: &targets,
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: depth_format.map(|format| wgpu::DepthStencilState {
+            format,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+           }),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+            cache: None,
+        });
+
+        Ok(render_pipeline)
+    }
+
     pub fn create_stencil_pipeline(device: &wgpu::Device, pipeline_layout: &wgpu::PipelineLayout, texture_format: wgpu::TextureFormat, depth_format: Option<wgpu::TextureFormat>, shader_module: &wgpu::ShaderModule, vertex_layouts: &[wgpu::VertexBufferLayout], write: bool) -> anyhow::Result<wgpu::RenderPipeline> {
         let write_mask = if write {
             0xFF

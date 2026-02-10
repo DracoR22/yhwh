@@ -55,17 +55,19 @@ impl ApplicationHandler<Engine> for App {
     }
 }
 
-pub fn run() -> Result<(), EventLoopError> {
-    env_logger::init();
+impl App {
+    pub fn run() -> Result<(), EventLoopError> {
+      env_logger::init();
 
-    let event_loop = EventLoop::with_user_event().build()?;
+      let event_loop = EventLoop::with_user_event().build()?;
 
-    let mut app = App::new();
-    event_loop.run_app(&mut app)?;
+      let mut app = App::new();
+      event_loop.run_app(&mut app)?;
 
-    Ok(())
+      Ok(())
+   }
 }
 
 fn main() {
-    run().unwrap();
+    App::run().unwrap();
 }

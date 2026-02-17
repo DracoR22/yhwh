@@ -50,8 +50,12 @@ var emissive_sampler: sampler;
 
 @fragment
 fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
-    let hdr = textureSample(hdr_image, hdr_sampler, vs.uv);
-    var sdr = aces_tone_map(hdr.rgb);
+    let hdr = textureSample(hdr_image, hdr_sampler, vs.uv).rgb;
+    let emissive = textureSample(emissive_image, emissive_sampler, vs.uv).rgb;
+
+    let hdr_with_emissive = hdr + emissive;
+
+    var sdr = aces_tone_map(hdr_with_emissive);
 
     // let gamma: f32 = 2.2;
     // sdr = pow(sdr, vec3<f32>(1.0 / gamma));

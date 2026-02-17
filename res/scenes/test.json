@@ -197,15 +197,15 @@
         },
         {
           "mesh_name": "Object_1",
-          "material_name": "Candle_Flame"
+          "material_name": "Brick_Wall"
         },
         {
           "mesh_name": "Object_2",
-          "material_name": "Candle_Flame"
+          "material_name": "Brick_Wall"
         },
         {
           "mesh_name": "Object_3",
-          "material_name": "Candle_Flame"
+          "material_name": "Brick_Wall"
         }
       ]
     },
@@ -237,11 +237,11 @@
         },
         {
           "mesh_name": "Object_1",
-          "material_name": "Default"
+          "material_name": "Brick_Wall"
         },
         {
           "mesh_name": "Object_2",
-          "material_name": "Default"
+          "material_name": "Brick_Wall"
         },
         {
           "mesh_name": "Object_3",
@@ -258,11 +258,11 @@
         1.0
       ],
       "position": [
+        -0.0,
         2.0,
-        2.0,
-        2.0
+        9.0
       ],
-      "strength": 64.0,
+      "strength": 18.0,
       "radius": 63.0,
       "light_type": "Point"
     }

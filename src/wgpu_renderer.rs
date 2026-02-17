@@ -8,7 +8,6 @@ pub struct WgpuRenderer {
     pub egui_renderer: EguiRenderer,
     pub wgpu_context: WgpuContext,
     depth_texture: texture::Texture,
-    debug_render_pipeline: wgpu::RenderPipeline,
     postprocess_pass: PostProcessPass,
     lighting_pass: LightingPass,
     animation_pass: AnimationPass,
@@ -44,31 +43,14 @@ impl WgpuRenderer {
         // load render groups
         let lighting_pass = LightingPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let animation_pass = AnimationPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
-        let emissive_pass = EmissivePass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let skybox_pass = SkyboxPass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
         let outline_pass = OutlinePass::new(&context, &wgpu_uniforms);
         let postprocess_pass = PostProcessPass::new(&context, &config);
- 
-        // load shaders
-        let debug_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Debug_Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../res/shaders/debug.wgsl").into()),
-        });
- 
-        // pipeline layouts
-        let debug_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Debug_Pipeline_Layout"),
-            bind_group_layouts: &[&wgpu_uniforms.camera.bind_group_layout, &wgpu_uniforms.light.bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        // render pipelines
-        let debug_render_pipeline = PipelineManager::create_pipeline(&device, &debug_pipeline_layout, postprocess_pass.get_format(), Some(wgpu::TextureFormat::Depth32FloatStencil8), &debug_shader_module, &[Vertex::desc()], Some("2")).unwrap();
+        let emissive_pass = EmissivePass::new(&context, &wgpu_uniforms, &game_data.asset_manager, &postprocess_pass.get_emmisive_texture());
 
         return Self {
             wgpu_context: context,
             depth_texture,
-            debug_render_pipeline,
             egui_renderer,
             lighting_pass,
             postprocess_pass,
@@ -109,7 +91,7 @@ impl WgpuRenderer {
             label: Some("First_Pass"),
             color_attachments: &[
               Some(wgpu::RenderPassColorAttachment {
-                view: self.postprocess_pass.get_view(),
+                view: &self.postprocess_pass.get_view(),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -151,7 +133,8 @@ impl WgpuRenderer {
 
        // post process
        self.outline_pass.render(&mut encoder, &self.postprocess_pass.get_view(), &self.depth_texture.view, &self.uniform_manager, &game_data.scene.game_objects, &game_data.asset_manager);
-       self.postprocess_pass.render(&mut encoder, &swapchain_view);
+       self.emissive_pass.render_blur(&mut encoder, &self.wgpu_context, &mut self.uniform_manager, self.postprocess_pass.get_emmisive_texture());
+       self.postprocess_pass.render(&mut encoder, &swapchain_view, &self.wgpu_context, &self.emissive_pass.get_final_texture());
 
        self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, swapchain_view, |ui| {
           self.ui_manager.scene_hierarchy_window.draw(ui, &self.ui_manager.materials, game_data, (window.inner_size().width, window.inner_size().height));
@@ -169,8 +152,9 @@ impl WgpuRenderer {
         }
 
         self.wgpu_context.resize(width, height);
-        self.depth_texture = texture::Texture::create_depth_texture(&self.wgpu_context.get_device(), &self.wgpu_context.get_surface_config(), "depth_texture", DEPTH_TEXTURE_STENCIL_FORMAT);
-        self.postprocess_pass.resize(&self.wgpu_context.get_device(), width, height);
+       // self.depth_texture = texture::Texture::create_depth_texture(&self.wgpu_context.get_device(), &self.wgpu_context.get_surface_config(), "depth_texture", DEPTH_TEXTURE_STENCIL_FORMAT);
+        self.emissive_pass.resize(&self.wgpu_context.device, width, height, &self.postprocess_pass.get_emmisive_texture());
+        self.postprocess_pass.resize(&self.wgpu_context.get_device(), width, height, &self.emissive_pass.get_final_texture());
     }
 
     pub fn resize_ctx(&mut self, width: u32, height: u32) {
@@ -181,6 +165,7 @@ impl WgpuRenderer {
          self.outline_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
          self.postprocess_pass.hotload_shader(&self.wgpu_context);
          self.lighting_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
+         self.emissive_pass.hotload_shader(&self.wgpu_context.device, &self.uniform_manager);
          println!("Hot-Loaded shaders!");
     }
 }

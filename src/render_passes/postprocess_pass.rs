@@ -19,11 +19,11 @@ impl PostProcessPass {
        let width = config.width;
        let height = config.height;
 
-       let hdr_texture = Texture::create_fbo(&ctx.device, (width, height), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-       let emissive_texture = Texture::create_fbo(&ctx.device, (config.width, config.height), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+       let hdr_texture = Texture::create_fbo(&ctx.device, (1920, 1080), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+       let emissive_texture = Texture::create_fbo(&ctx.device, (1920, 1080), format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float]).unwrap();
-       let bind_group = BindGroupManager::create_multi_texture_bind_group(&ctx.device, &bind_group_layout, &[&hdr_texture, &emissive_texture]).unwrap();
+        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float]).unwrap();
+        let bind_group = BindGroupManager::create_multi_texture_bind_group(&ctx.device, &bind_group_layout, &[&hdr_texture, &emissive_texture]).unwrap();
 
        let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Default_Shader"),
@@ -31,9 +31,9 @@ impl PostProcessPass {
         });
 
         let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Post_Process_Pipeline_Layout"),
-                bind_group_layouts: &[&bind_group_layout],
-                push_constant_ranges: &[],
+            label: Some("Post_Process_Pipeline_Layout"),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
         });
 
         //let pipeline = PipelineManager::create_pipeline(&device, &pipeline_layout, config.format.add_srgb_suffix(), None, &shader_module, &[], Some("4")).unwrap();
@@ -60,15 +60,16 @@ impl PostProcessPass {
         }
     }
 
-    pub fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
-       self.texture = texture::Texture::create_fbo(&device, (width, height),  wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+    pub fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32, final_blur_texture: &Texture) {
+       //self.texture = texture::Texture::create_fbo(&device, (width, height),  wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+      // self.emissive_texture = texture::Texture::create_fbo(&device, (width, height),  wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-       match BindGroupManager::create_multi_texture_bind_group(&device, &self.bind_group_layout, &[&self.texture, &self.emissive_texture]) {
-        Ok(result) => self.bind_group = result,
-        Err(e) => {
-            println!("PostProcessGroup::resize() error: failed to resize texture bind group!! {e}")
-        }
-       }
+    //    match BindGroupManager::create_multi_texture_bind_group(&device, &self.bind_group_layout, &[&self.texture, &final_blur_texture]) {
+    //     Ok(result) => self.bind_group = result,
+    //     Err(e) => {
+    //         println!("PostProcessGroup::resize() error: failed to resize texture bind group!! {e}")
+    //     }
+    //    }
 
        self.width = width;
        self.height = height;
@@ -82,6 +83,14 @@ impl PostProcessPass {
         return &self.emissive_texture.view
     }
 
+    pub fn get_hdr_texture(&self) -> &Texture {
+        return &self.texture
+    }
+
+    pub fn get_emmisive_texture(&self) -> &Texture {
+        return &self.emissive_texture
+    }
+
     pub fn get_format(&self) -> wgpu::TextureFormat {
         return self.format
     }
@@ -93,15 +102,25 @@ impl PostProcessPass {
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
        });
 
-      let new_pipeline = PipelineManager::create_pipeline(&ctx.device, &self.pipeline_layout, ctx.config.format.add_srgb_suffix(), None, &shader_module, &[], Some("4"));
+       let pipeline = PipelineBuilder::new(
+            "postprocess pipeline",
+            &[&self.bind_group_layout],
+            &[],
+            &shader_module,
+            [ctx.config.format.add_srgb_suffix()],
+        )
+        .build(&ctx.device);
 
-      match new_pipeline {
-          Ok(res) => self.pipeline = res,
-          Err(err) => println!("PostProcessPass::hotload_shader() error: {err}")
-      }
+       self.pipeline = pipeline;
     }
 
-    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, swapchain_view: &wgpu::TextureView) {
+    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, swapchain_view: &wgpu::TextureView, ctx: &WgpuContext, final_blur_texture: &Texture) {
+
+self.bind_group = BindGroupManager::create_multi_texture_bind_group(
+    &ctx.device,
+    &self.bind_group_layout,
+    &[&self.texture, &final_blur_texture],
+).unwrap();
        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Post_Process::render()"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {

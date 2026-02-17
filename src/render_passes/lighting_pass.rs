@@ -65,11 +65,6 @@ impl LightingPass {
             continue;
           };
 
-          // TODO: CHECK WITH THE MESH NODES FLAG INSTEAD!!! STRING HERE IS BAD
-          if game_object.get_model_name() == "candles" {
-            continue;
-          }
-
           if game_object.is_selected {
             render_pass.set_pipeline(&self.stencil_pipeline);
           } else {
@@ -82,6 +77,14 @@ impl LightingPass {
 
           if let Some(model) = asset_manager.get_model_by_name(&game_object.get_model_name()) {
             for mesh in &model.meshes {
+                if game_object.get_model_name() == "candles" && mesh.name == "Object_0" {
+                  continue;
+                }
+
+                 if game_object.get_model_name() == "Cube" {
+                  continue;
+                }
+
                 let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index(&mesh.name);
                 let mesh_material = asset_manager.get_material_by_index(mesh_material_index);
 

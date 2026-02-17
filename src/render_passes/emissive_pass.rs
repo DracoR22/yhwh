@@ -73,7 +73,7 @@ impl EmissivePass {
 
         let blur_pipeline = PipelineBuilder::new(
             "blur pipeline",
-            &[&bind_group_layout, &uniforms.blur.bind_group_layout],
+            &[&bind_group_layout, &uniforms.bind_group_layout],
             &[quad_vertex_buffer_layout],
             &blur_shader_module,
             [HDR_TEX_FORMAT]
@@ -157,19 +157,6 @@ impl EmissivePass {
                     &self.pong_bind_group
                 }
             };
-
-            // let texture_write = if first_iteration {
-            //     &source_texture
-            // } else {
-            //     if horizontal {
-            //         &self.ping_texture
-            //     } else {
-            //         &self.pong_texture
-            //     }
-            // };
-
-            // println!("TEX VIEW WRITE: {:?}", &target_texture.view);
-            // print!("TEX VIEW READ: {:?}", &texture_write.view);
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&format!("blur pass {}", i)),

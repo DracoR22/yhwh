@@ -155,9 +155,7 @@ pub struct UniformManager {
     pub models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub animation: Uniform<AnimationUniform>,
-    pub blur: Uniform<BlurUniform>,
     pub blurs: Vec<Uniform<BlurUniform>>,
-    //pub light: Uniform<LightUniform>,
     pub lights_ssbo: SSBO
 }
 
@@ -191,9 +189,7 @@ impl UniformManager {
         models: model_uniforms,
         animation: Uniform::new(AnimationUniform::new(), &ctx.device),
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
-        blur: Uniform::new(BlurUniform::new(), &ctx.device),
         blurs,
-       // light: Uniform::new(LightUniform::new(), &ctx.device),
         bind_group_layout,
         lights_ssbo
       }

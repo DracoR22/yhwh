@@ -43,7 +43,7 @@ struct FragmentOutput {
 fn fs_main(frag_in: VertexOutput) -> FragmentOutput {
     var out: FragmentOutput;
 
-    out.hdr = vec4<f32>(1.0, 0.5, 0.0, 1.0);
+    out.hdr = vec4<f32>(1.0, 1.0, 1.0, 1.0);
     out.emissive = vec4<f32>(1.0, 0.5, 0.0, 1.0);
 
     return out;

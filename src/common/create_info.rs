@@ -5,7 +5,8 @@ use crate::common::enums::LightType;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MeshNodeCreateInfo {
     pub mesh_name: String,
-    pub material_name: String
+    pub material_name: String,
+    pub emissive: bool
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -1,6 +1,6 @@
 use std::{fs::{self, File}, io::Write};
 
-use crate::{common::create_info::{GameObjectCreateInfo, LevelCreateInfo, LightObjectCreateInfo}, engine::GameData};
+use crate::{asset_manager::AssetManager, common::create_info::{GameObjectCreateInfo, LevelCreateInfo, LightObjectCreateInfo}, engine::GameData, objects::{game_object::GameObject, light_object::LightObject}};
 
 pub fn save_level(game_data: &GameData) {
     let mut game_object_create_infos: Vec<GameObjectCreateInfo> = Vec::new();

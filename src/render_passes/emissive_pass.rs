@@ -106,18 +106,18 @@ impl EmissivePass {
             continue;
           };
 
-          if game_object.get_model_name() == "candles" ||  game_object.get_model_name() == "Cube" {
+          //if game_object.get_model_name() == "candles" ||  game_object.get_model_name() == "Cube" {
             if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
                 render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
                 for mesh in model.meshes.iter() {
-                    if mesh.name == "Object_0" || mesh.name == "Cube_Mesh"  {
-                         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                    if game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name).emissive {
+                        render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
                     }
                 }
             }
-          }
+          //}
         }
     }
 

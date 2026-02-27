@@ -23,7 +23,7 @@ pub struct SceneHierarchyWindow {
     selected_material_index: usize,
 
     objects_marked_for_removal: HashSet<usize>,
-    scale_uniform: bool
+    scale_uniform: bool,
 }
 
 impl SceneHierarchyWindow {
@@ -161,16 +161,24 @@ impl SceneHierarchyWindow {
                                     }
 
                                     if button.clicked() {
-                                        game_object.get_mesh_nodes_mut().set_mesh_material_by_mesh_index(
-                                                &game_data.asset_manager,
-                                                &model.meshes[*selected_index].name,
-                                                &material.material_name,
+                                        game_object.get_mesh_nodes_mut().set_mesh_material(
+                                            &game_data.asset_manager,
+                                            &model.meshes[*selected_index].name,
+                                            &material.material_name,
                                         );
 
                                        // self.selected_material_index = material.material_index;
                                     }
                                 }
                                 });
+
+                                ui.label("Emissive");
+                                match game_object.get_mesh_nodes_mut().get_mesh_rendering_info_by_mesh_name_mut(&model.meshes[*selected_index].name) {
+                                    Some(mesh_node) => {
+                                        ui.checkbox(&mut mesh_node.emissive, "");
+                                    }
+                                    _ => {}
+                                }
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")
@@ -420,7 +428,7 @@ impl SceneHierarchyWindow {
                     if button.clicked() {
                         game_object
                             .get_mesh_nodes_mut()
-                            .set_mesh_material_by_mesh_index(
+                            .set_mesh_material(
                                 &game_data.asset_manager,
                                 &model.meshes[*selected_index].name,
                                 &material.material_name,

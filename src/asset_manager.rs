@@ -51,7 +51,7 @@ impl AssetManager {
             thread::spawn(move || {
                 let data = TextureData { 
                     image: Texture::decode_texture_from_path(&entry.path().to_str().unwrap()),
-                    name: file_name.to_str().unwrap_or("Default_ALB.png") .to_string()
+                    name: file_name.to_str().unwrap_or("Default_ALB.png").to_string()
                 };
                 sender.send(data).unwrap();
             });
@@ -62,12 +62,12 @@ impl AssetManager {
         let mut texture_map: HashMap<String, Texture> = HashMap::new();
         for data in receiver {
              let is_normal_map = data.name.contains("_NRM");
-               let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
-               texture_map.insert(data.name, texture);
+             let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
+             texture_map.insert(data.name, texture);
         }
 
         let duration = now.elapsed();
-        println!("Loded all textures in: {:.3?}", duration.unwrap());
+        println!("Loaded all textures in: {:.3?}", duration.unwrap());
 
         texture_map
     }

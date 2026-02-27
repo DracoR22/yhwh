@@ -355,6 +355,11 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                         indices.append(&mut iter.into_u32().collect::<Vec<u32>>());
                     }
 
+                    if primitive.get(&gltf::Semantic::Tangents).is_none() {
+                        //println!("GENERATED TANGENTS FOR: {}", mesh_name);
+                        Vertex::calc_tan_vectors(&mut vertices, &indices);
+                    }
+
                     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                             label: Some(&mesh_name),
                             contents: bytemuck::cast_slice(&vertices),

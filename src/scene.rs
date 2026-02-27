@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, LightObjectCreateInfo}, enums::LightType}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject, light_object::LightObject}, utils::json::load_level};
+use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, LightObjectCreateInfo, MeshNodeCreateInfo}, enums::LightType, types::MeshRenderingInfo}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject, light_object::LightObject}, utils::json::{load_level}};
 
 pub struct Scene {
     pub game_objects: Vec<GameObject>,
@@ -13,6 +13,7 @@ impl Scene {
         let mut lights: Vec<LightObject> = Vec::new();
 
         let level = load_level().expect("Could not load level!!");
+        //let level = load_level_copy().expect("COULD NOT LOAD LEVEL COPY");
 
         for create_info in level.game_objects {
             game_objects.push(GameObject::new(&create_info, &asset_manager));
@@ -30,7 +31,6 @@ impl Scene {
 
         animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
 
-        // TODO REMOVE HARDCODED!!!!
        for create_info in level.lights {
           lights.push(LightObject::new(&create_info));
        }

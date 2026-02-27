@@ -77,15 +77,11 @@ impl LightingPass {
 
           if let Some(model) = asset_manager.get_model_by_name(&game_object.get_model_name()) {
             for mesh in &model.meshes {
-                if game_object.get_model_name() == "candles" && mesh.name == "Object_0" {
+                if game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name).emissive {
                   continue;
                 }
 
-                 if game_object.get_model_name() == "Cube" {
-                  continue;
-                }
-
-                let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index(&mesh.name);
+                let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
                 let mesh_material = asset_manager.get_material_by_index(mesh_material_index);
 
                 render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);

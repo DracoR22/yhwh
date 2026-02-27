@@ -96,7 +96,6 @@ impl Vertex {
         }
 
    }
-
 //    pub fn gen_list(vertices: &[f32], vertices_count: i64) {
 //      let stride = 8;
 

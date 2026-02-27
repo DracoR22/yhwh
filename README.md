@@ -2,7 +2,7 @@
 
 Rust and WGPU based renderer
 
-<p align="center"><img src="./docs/bloom.png" width="95%" alt="Bloom showcase"/></>
+<p align="center"><img src="./docs/room.png" width="95%" alt="Bloom showcase"/></>
 
 ### Implemented features
 - Dynamic scenes and level Editor

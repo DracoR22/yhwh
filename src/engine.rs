@@ -3,7 +3,11 @@ use std::sync::Arc;
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse, yhwh_keys::YHWHMouseButton}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, player::Player, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::{enums::GameState}, input::{input::Input}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, player::Player, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+
+pub struct CameraManager {
+    
+}
 
 pub struct GameData {
     pub camera: Camera,
@@ -85,16 +89,12 @@ impl Engine {
         //self.physics.step_simulation(self.game_data.delta_time);
 
         // update game
-        self.game_data.update(&self.input);
+        self.game_data.update(&self.input, &mut self.audio_manager);
 
         self.window.set_title(&format!("FPS: {:.1}", self.game_data.avg_fps));
         self.toggle_cursor();
 
         self.handle_dev_tools();
-
-        if self.input.keyboard.key_just_pressed(KeyCode::KeyU) {
-            self.audio_manager.play_audio("wood1.wav", 1.0);
-        }
 
         // update wgpu renderer
         match self.wgpu_renderer.render(&self.window, &mut self.game_data) {
@@ -176,10 +176,18 @@ impl Engine {
 }
 
 impl GameData {
-    pub fn update(&mut self, input: &Input) {
+    pub fn update(&mut self, input: &Input, audio_manager: &mut AudioManager) {
         self.update_fps();
     
-        self.player.update(&input, self.delta_time);
+        match self.game_state {
+            GameState::Playing => {
+                self.player.update(&input, self.delta_time, audio_manager);
+            },
+            GameState::Editor => {
+                self.camera_controller.update_movement_editor(&input);
+                self.camera_controller.update_camera(&mut self.camera, self.delta_time);
+            }
+        }
         // if self.game_state == GameState::Playing {
         //     self.player.update(&input, self.delta_time);
         // } else if self.game_state == GameState::Editor {
@@ -214,5 +222,12 @@ impl GameData {
         }
 
         self.avg_fps = self.fps_accum.iter().sum::<f64>() / self.fps_accum.len() as f64;
+    }
+
+    pub fn active_camera(&self) -> &Camera {
+        match self.game_state {
+            GameState::Playing => &self.player.camera,
+            GameState::Editor => &self.camera
+        }
     }
 }

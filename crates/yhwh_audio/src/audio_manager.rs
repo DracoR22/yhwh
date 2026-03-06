@@ -30,13 +30,12 @@ impl AudioManager {
         }
     }
 
-    pub fn play_audio(&mut self, audio_name: &str, play_rate: f64) -> Result<(), PlaySoundError<()>> {
+    pub fn play_audio(&mut self, audio_name: &str, play_rate: f64, volume: f32) -> Result<(), PlaySoundError<()>> {
         if let Some(sound_data) = self.loaded_audios.get(audio_name) {
            let mut sound = self.manager.play(sound_data.clone())?;
 
-           sound.set_playback_rate(play_rate, Tween {
-            ..Default::default()
-           });
+           sound.set_playback_rate(play_rate, Tween::default());
+           sound.set_volume(volume, Tween::default());
 
            Ok(())
         } else {

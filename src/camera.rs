@@ -2,7 +2,7 @@ use cgmath::*;
 use winit::{dpi::PhysicalPosition, event::{ElementState, KeyEvent, MouseScrollDelta, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use std::{f32::consts::FRAC_PI_2, time::Duration};
 
-use crate::common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, input::{input::Input, yhwh_keys::YHWHMouseButton}};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::from_cols(
@@ -102,7 +102,8 @@ pub struct CameraController {
     scroll: f32,
     speed: f32,
     sensitivity: f32,
-    pub smoothed_delta: cgmath::Vector2<f64>
+    pub smoothed_delta: cgmath::Vector2<f64>,
+    pub moving: bool
 }
 
 impl CameraController {
@@ -119,7 +120,8 @@ impl CameraController {
             scroll: 0.0,
             speed,
             sensitivity,
-            smoothed_delta: cgmath::Vector2::new(0.0, 0.0)
+            smoothed_delta: cgmath::Vector2::new(0.0, 0.0),
+            moving: false
         }
     }
 
@@ -172,6 +174,37 @@ impl CameraController {
         self.rotate_vertical = mouse_dy as f32;
     }
 
+    pub fn update_movement_player(&mut self, input: &Input) {
+        self.amount_forward  = if input.keyboard.key_pressed(KeyCode::KeyW) { 1.0 } else { 0.0 };
+        self.amount_backward = if input.keyboard.key_pressed(KeyCode::KeyS) { 1.0 } else { 0.0 };
+        self.amount_left     = if input.keyboard.key_pressed(KeyCode::KeyA) { 1.0 } else { 0.0 };
+        self.amount_right    = if input.keyboard.key_pressed(KeyCode::KeyD) { 1.0 } else { 0.0 };
+
+        self.rotate_horizontal = input.mouse.delta_x as f32;
+        self.rotate_vertical = input.mouse.delta_y as f32;
+    }
+
+    pub fn update_movement_editor(&mut self, input: &Input) {
+        self.amount_forward  = if input.keyboard.key_pressed(KeyCode::KeyW) { 1.0 } else { 0.0 };
+        self.amount_backward = if input.keyboard.key_pressed(KeyCode::KeyS) { 1.0 } else { 0.0 };
+        self.amount_left     = if input.keyboard.key_pressed(KeyCode::KeyA) { 1.0 } else { 0.0 };
+        self.amount_right    = if input.keyboard.key_pressed(KeyCode::KeyD) { 1.0 } else { 0.0 };
+        self.amount_up       = if input.keyboard.key_pressed(KeyCode::Space) { 1.0 } else { 0.0 };
+        self.amount_down     = if input.keyboard.key_pressed(KeyCode::ShiftLeft) { 1.0 } else { 0.0 };
+
+        if input.mouse.button_pressed(&YHWHMouseButton::Middle) {
+            let dx: f64 = input.mouse.delta_x;
+            let dy: f64 = input.mouse.delta_y;
+
+            let sensitivity: f64 = 0.75;
+
+            if dx.abs() > 2.0 || dy.abs() > 2.0 {
+                self.rotate_horizontal = (dx * sensitivity) as f32;
+                self.rotate_vertical = (dy * sensitivity) as f32;
+            }
+        }
+    }
+
     pub fn handle_mouse_scroll(&mut self, delta: &MouseScrollDelta) {
         self.scroll = -match delta {
             // I'm assuming a line is about 100 pixels
@@ -183,7 +216,7 @@ impl CameraController {
         };
     }
 
-   pub fn update_camera(&mut self, camera: &mut Camera, dt: Duration) {
+    pub fn update_camera(&mut self, camera: &mut Camera, dt: Duration) {
         let dt = dt.as_secs_f32();
 
         // Move forward/backward and left/right
@@ -205,6 +238,13 @@ impl CameraController {
         // Move up/down. Since we don't use roll, we can just
         // modify the y coordinate directly.
         camera.position.y += (self.amount_up - self.amount_down) * self.speed * dt;
+
+        let moving = 
+        (self.amount_forward - self.amount_backward) != 0.0 || 
+        (self.amount_right - self.amount_left) != 0.0 ||
+        (self.amount_up - self.amount_down) != 0.0;
+
+        self.moving = moving;
 
         // Rotate
         camera.yaw += Rad(self.rotate_horizontal) * self.sensitivity * dt;

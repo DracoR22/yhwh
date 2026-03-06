@@ -2,13 +2,10 @@ use std::collections::HashMap;
 
 use cgmath::Matrix;
 use cgmath::SquareMatrix;
-use cgmath::Rotation3;
 
 use crate::asset_manager::AssetManager;
 use crate::bind_group_manager::BindGroupManager;
 use crate::common::constants::MAX_LIGHTS;
-use crate::objects::animated_game_object::AnimatedGameObject;
-use crate::objects::light_object::LightObject;
 use crate::scene::Scene;
 use crate::ssbo::SSBO;
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};

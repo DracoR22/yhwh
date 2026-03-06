@@ -67,7 +67,7 @@ impl WgpuRenderer {
         // submit uniforms
         self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
         self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
-        self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.camera);
+        self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.player.camera);
         self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data.scene);
         
         window.request_redraw();

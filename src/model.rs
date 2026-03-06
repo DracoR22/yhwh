@@ -5,7 +5,7 @@ use std::{
 use cgmath::{SquareMatrix, Zero};
 use gltf::buffer::Data;
 use gltf::mesh::Bounds;
-use math::aabb::Aabb;
+use yhwh_core::math::aabb::Aabb;
 use wgpu::util::DeviceExt;
 
 use crate::animation::animation::{load_animations, Animations, PlaybackMode, AnimationState};

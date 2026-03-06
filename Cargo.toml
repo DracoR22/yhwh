@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-math = { path = "./crates/math" }
+yhwh_core = { path = "./crates/yhwh_core" }
+yhwh_audio = { path = "./crates/yhwh_audio"}
 cgmath = { workspace = true }
 anyhow = "1.0.98"
 bytemuck = "1.23.2"

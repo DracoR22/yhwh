@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
+use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse, yhwh_keys::YHWHMouseButton}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController, Projection}, common::{constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, input::{input::Input, keyboard::Keyboard, mouse::Mouse, yhwh_keys::YHWHMouseButton}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, player::Player, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
 
 pub struct GameData {
     pub camera: Camera,
@@ -13,7 +14,8 @@ pub struct GameData {
     pub last_redraw: std::time::Instant,
     pub fps_accum: Vec<f64>,
     pub avg_fps: f64,
-    pub game_state: GameState
+    pub game_state: GameState,
+    pub player: Player
 }
 
 pub struct Engine {
@@ -23,6 +25,7 @@ pub struct Engine {
     game_data: GameData,
     input: Input,
     show_cursor: bool,
+    audio_manager: AudioManager
 }
 
 impl Engine {
@@ -55,11 +58,16 @@ impl Engine {
             fps_accum: Default::default(),
             delta_time: std::time::Duration::new(0, 0),
             last_redraw: std::time::Instant::now(),
-            game_state: GameState::Playing
+            game_state: GameState::Playing,
+            player: Player::new()
         };
 
         // load wgpu
         let wgpu_renderer = WgpuRenderer::new(&window, wgpu_context, &game_data);
+
+        let mut audio_manager = AudioManager::new();
+        audio_manager.load_audios("res/audio");
+        //audio_manager.load_audio("wood1.wav");
 
         Self {
             physics: Physics::new(),
@@ -68,6 +76,7 @@ impl Engine {
             input: Input::new(),
             show_cursor,
             game_data,
+            audio_manager
         }
     }
 
@@ -82,6 +91,10 @@ impl Engine {
         self.toggle_cursor();
 
         self.handle_dev_tools();
+
+        if self.input.keyboard.key_just_pressed(KeyCode::KeyU) {
+            self.audio_manager.play_audio("wood1.wav", 1.0);
+        }
 
         // update wgpu renderer
         match self.wgpu_renderer.render(&self.window, &mut self.game_data) {
@@ -105,7 +118,7 @@ impl Engine {
     }
 
     pub fn handle_window_events(&mut self, event: &WindowEvent) {
-        self.game_data.camera_controller.handle_keyboard(&event);
+        //self.game_data.camera_controller.handle_keyboard(&event);
         self.input.keyboard.handle_event(&event);
         self.input.mouse.handle_window_event(&event);
         self.wgpu_renderer.egui_renderer.handle_input(&self.window, &event);
@@ -117,7 +130,7 @@ impl Engine {
          match event {
             DeviceEvent::MouseMotion { delta } => {
                if !self.show_cursor {
-                 self.game_data.camera_controller.handle_mouse(delta.0, delta.1);
+                 //self.game_data.camera_controller.handle_mouse(delta.0, delta.1);
                }
             }
             _ => {}
@@ -165,20 +178,28 @@ impl Engine {
 impl GameData {
     pub fn update(&mut self, input: &Input) {
         self.update_fps();
-        self.camera_controller.update_camera(&mut self.camera, self.delta_time);
+    
+        self.player.update(&input, self.delta_time);
+        // if self.game_state == GameState::Playing {
+        //     self.player.update(&input, self.delta_time);
+        // } else if self.game_state == GameState::Editor {
 
-        if self.game_state == GameState::Editor {
-            if input.mouse.button_pressed(&YHWHMouseButton::Middle) {
-                let dx: f64 = input.mouse.delta_x;
-                let dy: f64 = input.mouse.delta_y;
+        // }
+        // self.camera_controller.update_movement(&input);
+        // self.camera_controller.update_camera(&mut self.camera, self.delta_time);
 
-                let sensitivity: f64 = 0.75;
+        // if self.game_state == GameState::Editor {
+        //     if input.mouse.button_pressed(&YHWHMouseButton::Middle) {
+        //         let dx: f64 = input.mouse.delta_x;
+        //         let dy: f64 = input.mouse.delta_y;
 
-                if dx.abs() > 2.0 || dy.abs() > 2.0 {
-                  self.camera_controller.handle_mouse(dx * sensitivity, dy * sensitivity);
-                }
-            }
-        }
+        //         let sensitivity: f64 = 0.75;
+
+        //         if dx.abs() > 2.0 || dy.abs() > 2.0 {
+        //           self.camera_controller.handle_mouse(dx * sensitivity, dy * sensitivity);
+        //         }
+        //     }
+        // }
     }
 
     pub fn update_fps(&mut self) {

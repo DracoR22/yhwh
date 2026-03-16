@@ -23,26 +23,13 @@ fn vs_main(vert_in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // TODO: get me out of here!!
+    // TODO: pass as uniform!!
     let resolution = vec2<f32>(1920.0, 1080.0);
     
     let uv = vec2<f32>(in.tex_coords.x, 1.0 - in.tex_coords.y);
     let texel = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y);
 
     let center = textureSample(mask_texture, mask_sampler, uv).r;
-
-    // var maxNeighbor = 0.0;
-
-    // for(var x:i32 = -2; x <= 2; x++) {
-    //     for(var y:i32 = -2; y <= 2; y++) {
-
-    //         let offset = vec2<f32>(f32(x), f32(y)) * texel;
-    //         let v = textureSample(mask_texture, mask_sampler, uv + offset).r;
-
-    //         maxNeighbor = max(maxNeighbor, v);
-    //     }
-    // }
-
     let thickness = 2.0;
 
     let right  = textureSample(mask_texture, mask_sampler, uv + vec2<f32>( texel.x * thickness, 0.0)).r;

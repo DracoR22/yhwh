@@ -33,7 +33,7 @@
     {
       "model_name": "Plane",
       "position": [
-        1.0,
+        3.8,
         5.0,
         1.0
       ],
@@ -77,8 +77,8 @@
         90.0
       ],
       "tex_scale": [
-        1.0,
-        1.0
+        3.0,
+        3.0
       ],
       "mesh_rendering_info": [
         {
@@ -888,6 +888,315 @@
           "emissive": false
         }
       ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        -7.0,
+        4.0,
+        21.9
+      ],
+      "size": [
+        32.0,
+        13.0,
+        11.0
+      ],
+      "rotation": [
+        270.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        3.8,
+        1.7
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        -9.8,
+        5.0,
+        17.0
+      ],
+      "size": [
+        15.0,
+        11.0,
+        15.0
+      ],
+      "rotation": [
+        90.0,
+        1.0,
+        270.0
+      ],
+      "tex_scale": [
+        1.5,
+        1.5
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "wooden_table",
+      "position": [
+        -9.1,
+        1.0,
+        20.0
+      ],
+      "size": [
+        0.03,
+        0.03,
+        0.03
+      ],
+      "rotation": [
+        0.0,
+        90.0,
+        180.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Desk_LP_01 - Default_0",
+          "material_name": "Wooden_Table",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "candles_set2",
+      "position": [
+        -5.0,
+        2.0,
+        20.0
+      ],
+      "size": [
+        0.06,
+        0.06,
+        0.06
+      ],
+      "rotation": [
+        0.0,
+        185.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cylinder.006_2.002",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.001",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.003",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.004",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.005",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.006",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.007",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.008",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Cylinder.006_2.009",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
+          "material_name": "Default",
+          "emissive": true
+        },
+        {
+          "mesh_name": "Wick_2.001_Extra_for_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Wick_1.001_Extra_for_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Wax_large_small_3_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Wax_large_small_2_low.002_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Wax_large_small_2_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Wax_large_small_1_low.002_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Wax_large_small_1_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Small_wax_leak_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_small_used_low.002_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_small_used_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Big_Wax_leak_low.001_Used_candles_0.001",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.002",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.003",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.005",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.006",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.007",
+          "material_name": "Ceiling",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        -13.0,
+        -3.0,
+        -15.0
+      ],
+      "size": [
+        61.0,
+        30.0,
+        30.0
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        315.0
+      ],
+      "tex_scale": [
+        3.4,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "virgin_mary_statue_low_poly",
+      "position": [
+        -8.0,
+        1.8,
+        20.0
+      ],
+      "size": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0.0,
+        140.0,
+        1.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "marie_1k_msh_marie_1k_SH_0",
+          "material_name": "Virgin_Mary",
+          "emissive": false
+        }
+      ]
     }
   ],
   "lights": [
@@ -899,11 +1208,26 @@
       ],
       "position": [
         2.0,
-        12.0,
-        5.0
+        5.0,
+        3.0
       ],
-      "strength": 2.0,
-      "radius": 62.0,
+      "strength": 3.0,
+      "radius": 5.0,
+      "light_type": "Point"
+    },
+    {
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "position": [
+        -5.0,
+        3.0,
+        20.0
+      ],
+      "strength": 3.0,
+      "radius": 3.0,
       "light_type": "Point"
     }
   ]

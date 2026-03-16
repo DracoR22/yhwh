@@ -1,7 +1,7 @@
 use cgmath::SquareMatrix;
 use wgpu::util::DeviceExt;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, model::Model, objects::animated_game_object::AnimatedGameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, bind_group_manager::BindGroupManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, engine::GameData, model::Model, objects::animated_game_object::AnimatedGameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
@@ -9,25 +9,15 @@ pub struct AnimationPass {
 
 impl AnimationPass {
     pub fn new(ctx: &WgpuContext, uniforms: &UniformManager, asset_manager: &AssetManager) -> Self {
+        let shader_code = std::fs::read_to_string("res/shaders/animation.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Instance_Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/animation.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 
         let texture_bind_group_layout = asset_manager.get_phong_bind_group_layout().expect("No bind group layout for Phong!");
 
-        // let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        //     label: Some("animation_pipeline_layout"),
-        //     bind_group_layouts: &[
-        //         &texture_bind_group_layout,
-        //         &wgpu_uniforms.camera.bind_group_layout,
-        //         &wgpu_uniforms.bind_group_layout,
-        //         &wgpu_uniforms.animation.bind_group_layout
-        //     ],
-        //     push_constant_ranges: &[],
-        // });
-
-         let pipeline = PipelineBuilder::new(
+        let pipeline = PipelineBuilder::new(
             "animation pipeline",
             &[
               &texture_bind_group_layout,
@@ -37,7 +27,7 @@ impl AnimationPass {
             ],
             &[Vertex::desc()],
             &shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+            [HDR_TEX_FORMAT],
         )
         .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
         .with_depth_write()
@@ -49,10 +39,34 @@ impl AnimationPass {
         }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager, asset_manager: &AssetManager, animated_game_objects: &Vec<AnimatedGameObject>) {
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData, output_texture: &Texture, output_depth: &Texture) {
+       let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("animation pass"),
+            color_attachments: &[
+              Some(wgpu::RenderPassColorAttachment {
+                view: &output_texture.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+             }),
+            ],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+            view: &output_depth.view,
+            depth_ops: Some(wgpu::Operations {
+              load: wgpu::LoadOp::Load,
+              store: wgpu::StoreOp::Store,
+            }),
+            stencil_ops: None,
+            }),
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+        
         render_pass.set_pipeline(&self.pipeline);
 
-        for animated_game_object in animated_game_objects.iter() {
+        for animated_game_object in game_data.scene.animated_game_objects.iter() {
           let Some(model_uniform) = uniforms.models.get(&animated_game_object.object_id) else {
             println!("No model bind group for object {:?}, skipping draw", &animated_game_object.object_id);
             return
@@ -61,10 +75,10 @@ impl AnimationPass {
           render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
           render_pass.set_bind_group(3, &uniforms.animation.bind_group, &[]);
 
-          if let Some(model) = asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
+          if let Some(model) = game_data.asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
            for mesh in &model.meshes {
              let mesh_material_index = animated_game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
-             let mesh_material = asset_manager.get_material_by_index(mesh_material_index);
+             let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
 
              render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
 

@@ -25,25 +25,16 @@ var<uniform> model: ModelUniform;
 
 @vertex
 fn vs_main(vert_in: VertexInput) -> VertexOutput {
-   var out: VertexOutput;
+    var out: VertexOutput;
 
-   let world_position = model.model_matrix * vec4<f32>(vert_in.position, 1.0);
+    let world_position = model.model_matrix * vec4<f32>(vert_in.position, 1.0);
+    out.clip_position = camera.projection * camera.view * world_position;
 
-   out.clip_position = camera.projection * camera.view * world_position;
-   return out;
-}
-
-struct FragmentOutput {
-    @location(0) hdr: vec4<f32>,
-    @location(1) emissive: vec4<f32>
+    return out;
 }
 
 @fragment
-fn fs_main(frag_in: VertexOutput) -> FragmentOutput {
-    var out: FragmentOutput;
+fn fs_main(fs_in: VertexOutput) -> @location(0) vec4<f32> {
 
-    out.hdr = vec4<f32>(1.0, 1.0, 1.0, 1.0);
-    out.emissive = vec4<f32>(1.0, 0.5, 0.0, 1.0);
-
-    return out;
+    return vec4<f32>(1.0, 1.0, 1.0, 1.0);
 }

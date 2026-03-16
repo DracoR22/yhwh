@@ -98,6 +98,15 @@ impl AssetManager {
         }
     }
 
+    pub fn get_default_material(&self) -> Option<&Material> {
+       if let Some(&index) = self.material_index_map.get("Default") {
+             Some(&self.materials[index])
+        } else {
+            println!("AssetManager::get_material_by_name() error: default material not found!");
+            None
+        }
+    }
+
     pub fn get_material_by_name(&self, name: &str) -> Option<&Material> {
         if let Some(&index) = self.material_index_map.get(name) {
              Some(&self.materials[index])
@@ -155,6 +164,8 @@ impl AssetManager {
 // models
 impl AssetManager {
      pub fn load_models(ctx: &WgpuContext) -> (Vec<Model>, HashMap<String, usize>) {
+        let now = std::time::SystemTime::now();
+
         let mut models: Vec<Model> = Vec::new();
         let mut model_index_map: HashMap<String, usize> = HashMap::new();
         for entry in std::fs::read_dir("res/models").unwrap() {
@@ -199,6 +210,9 @@ impl AssetManager {
         let plane_model_name = plane_model.name.clone();
         models.push(plane_model);
         model_index_map.insert(plane_model_name, models.len() - 1);
+
+        let duration = now.elapsed();
+        println!("Loaded all models in: {:.3?}", duration.unwrap());
 
         (models, model_index_map)
     }

@@ -6,7 +6,7 @@ Rust and WGPU based renderer
 
 ### Implemented features
 - Dynamic scenes and level Editor
-- Bloom
+- MRT Bloom
 - Skeletal animation
 - Stencil outlining
 - Custom mesh materials

@@ -96,31 +96,4 @@ impl Vertex {
         }
 
    }
-//    pub fn gen_list(vertices: &[f32], vertices_count: i64) {
-//      let stride = 8;
-
-//      let ret = Vec::with_capacity(vertices_count);
-
-//      for i in 0..vertices_count {
-//          let base = i * stride;
-//             let v = Vertex {
-//                 position: [
-//                     vertices[base + 0],
-//                     vertices[base + 1],
-//                     vertices[base + 2],
-//                 ],
-//                 normal: [
-//                     vertices[base + 3],
-//                     vertices[base + 4],
-//                     vertices[base + 5],
-//                 ],
-//                 tex_coords: [
-//                     vertices[base + 6],
-//                     vertices[base + 7],
-//                 ],
-
-//             };
-//             ret.push(v);
-//      }
-//    }
 }

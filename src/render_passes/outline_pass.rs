@@ -1,93 +1,102 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, engine::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use wgpu::util::DeviceExt;
 
 pub struct OutlinePass {
-    //pipeline_layout: wgpu::PipelineLayout,
-    pipeline: wgpu::RenderPipeline,
+    mask_pipeline: wgpu::RenderPipeline,
+    mask_texture: Texture,
+    mask_bind_group: wgpu::BindGroup,
+    outline_pipeline: wgpu::RenderPipeline,
+    outline_texture: Texture,
+    quad_vertex_buffer: wgpu::Buffer,
 }
 
 impl OutlinePass {
     pub fn new(ctx: &WgpuContext, uniforms: &UniformManager) -> Self {
-        let shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
-        let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Outline_Shader"),
-            source: wgpu::ShaderSource::Wgsl(shader_code.into()),
+        let mask_shader_code = std::fs::read_to_string("res/shaders/solid_color.wgsl").unwrap();
+        let mask_shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("mask solid color shader"),
+            source: wgpu::ShaderSource::Wgsl(mask_shader_code.into()),
         });
 
-        // let pipeline_layout = ctx.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        //         label: Some("Outline_Pipeline_Layout"),
-        //         bind_group_layouts: &[
-        //             &uniforms.camera.bind_group_layout,
-        //             &uniforms.bind_group_layout
-        //         ],
-        //         push_constant_ranges: &[],
-        // });
+        let outline_shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
+        let outline_shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("outline shader"),
+            source: wgpu::ShaderSource::Wgsl(outline_shader_code.into()),
+        });
 
-        // let pipeline = PipelineManager::create_stencil_pipeline(
-        //     &ctx.device,
-        //     &pipeline_layout,
-        //     HDR_TEX_FORMAT,
-        //     Some(DEPTH_TEXTURE_STENCIL_FORMAT),
-        //     &shader_module,
-        //     &[Vertex::desc()],
-        //     false
-        // ).unwrap();
-
-        let write_stencil = false;
-
-        let pipeline = PipelineBuilder::new(
-            "outline pipeline",
+        let mask_pipeline = PipelineBuilder::new(
+            "outline mask pipeline",
             &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
             &[Vertex::desc()],
-            &shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+            &mask_shader_module,
+            [wgpu::TextureFormat::R8Unorm],
         )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
-        .with_stencil_state(write_stencil)
-        .with_blend(wgpu::BlendState::REPLACE)
+        //.with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
         .build(&ctx.device);
 
-        Self {
-            //pipeline_layout,
-            pipeline,
+        let mask_texture = Texture::create_fbo(
+            &ctx.device, (1920, 1080),
+            wgpu::TextureFormat::R8Unorm,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        );
+
+        let bg_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]).unwrap();
+        let mask_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bg_layout, &mask_texture).unwrap();
+
+        let outline_pipeline = PipelineBuilder::new(
+            "outline pipeline",
+            &[&bg_layout],
+            &[QUAD_VERTEX_BUFFER_LAYOUT],
+            &outline_shader_module,
+            [wgpu::TextureFormat::Rgba16Float],
+        )
+        //.with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .build(&ctx.device);
+
+        let outline_texture = Texture::create_fbo(
+            &ctx.device, (1920, 1080),
+            wgpu::TextureFormat::Rgba16Float,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        );
+
+        let quad_vertex_buffer = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+          label: Some("quad vertex buffer"),
+          contents: bytemuck::cast_slice(&QUAD_VERTICES),
+          usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        Self {  
+            mask_pipeline,
+            mask_texture,
+            mask_bind_group,
+            outline_pipeline,
+            outline_texture,
+            quad_vertex_buffer
         }
     }
 
-    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, out_texture_view: &wgpu::TextureView, depth_texture_view: &wgpu::TextureView, uniforms: &UniformManager, game_objects: &Vec<GameObject>, asset_manager: &AssetManager) {
-         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Outline_Pass"),
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager,  game_data: &GameData) {
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("outline mask pass"),
             color_attachments: &[
               Some(wgpu::RenderPassColorAttachment {
-                view: &out_texture_view,
+                view: &self.mask_texture.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
                 },
             }),
-              Some(wgpu::RenderPassColorAttachment {
-                view: &out_texture_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-              view: &depth_texture_view,
-              depth_ops: None,
-              stencil_ops: Some(wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: wgpu::StoreOp::Store,
-              }),
-            }),
+            ],
+            depth_stencil_attachment: None,
             occlusion_query_set: None,
             timestamp_writes: None,
         });
 
-        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_pipeline(&self.mask_pipeline);
         render_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
 
-        for game_object in game_objects.iter() {
+        for game_object in game_data.scene.game_objects.iter() {
            if game_object.is_selected {
             let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
              println!("No model bind group for object {:?}, skipping draw", game_object.id);
@@ -96,7 +105,7 @@ impl OutlinePass {
 
             render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
 
-            if let Some(model) = asset_manager.get_model_by_name(&game_object.get_model_name()) {
+            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
              for mesh in model.meshes.iter() {
                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
@@ -106,35 +115,58 @@ impl OutlinePass {
             }
            }
         }
+
+        drop(render_pass);
+
+        let mut outline_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("outline pass"),
+            color_attachments: &[
+              Some(wgpu::RenderPassColorAttachment {
+                view: &self.outline_texture.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            }),
+            ],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        outline_pass.set_pipeline(&self.outline_pipeline);
+        outline_pass.set_bind_group(0, &self.mask_bind_group, &[]);
+        outline_pass.set_vertex_buffer(0, self.quad_vertex_buffer.slice(..));
+        outline_pass.draw(0..6, 0..1);
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {
-      let shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
-      let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Outline_Shader"),
-            source: wgpu::ShaderSource::Wgsl(shader_code.into()),
-       });
+    //   let shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
+    //   let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+    //         label: Some("Outline_Shader"),
+    //         source: wgpu::ShaderSource::Wgsl(shader_code.into()),
+    //    });
 
 
-     let write_stencil = false;
+    //  let write_stencil = false;
 
-    let new_pipeline = PipelineBuilder::new(
-            "outline pipeline",
-            &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
-            &[Vertex::desc()],
-            &shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
-        )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
-        .with_stencil_state(write_stencil)
-        .with_blend(wgpu::BlendState::REPLACE)
-        .build(&ctx.device);
+    // let new_pipeline = PipelineBuilder::new(
+    //         "outline pipeline",
+    //         &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
+    //         &[Vertex::desc()],
+    //         &shader_module,
+    //         [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+    //     )
+    //     .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+    //     .with_stencil_state(write_stencil)
+    //     .with_blend(wgpu::BlendState::REPLACE)
+    //     .build(&ctx.device);
 
-    self.pipeline = new_pipeline;
+    //    self.mask_pipeline = new_pipeline;
+    }
 
-    //   match new_pipeline {
-    //       Ok(res) => self.pipeline = res,
-    //       Err(err) => println!("PostProcessPass::hotload_shader() error: {err}")
-    //   }
+    pub fn get_outline_texture(&self) -> &Texture {
+        &self.outline_texture
     }
 }

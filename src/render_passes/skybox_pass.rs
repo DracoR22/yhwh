@@ -46,7 +46,7 @@ impl SkyboxPass {
             &[&cubemap.texture_bind_group_layout, &uniforms.camera.bind_group_layout],
             &cubemap_buffers,
             &shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT]
+            [HDR_TEX_FORMAT]
         )
         .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
         .with_cull_mode(wgpu::Face::Back)
@@ -58,7 +58,31 @@ impl SkyboxPass {
         }
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, uniforms: &UniformManager, ) {
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, output_texture: &Texture, output_depth: &Texture) {
+       let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("animation pass"),
+            color_attachments: &[
+              Some(wgpu::RenderPassColorAttachment {
+                view: &output_texture.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+             }),
+            ],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+            view: &output_depth.view,
+            depth_ops: Some(wgpu::Operations {
+              load: wgpu::LoadOp::Load,
+              store: wgpu::StoreOp::Store,
+            }),
+            stencil_ops: None,
+            }),
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
        render_pass.set_pipeline(&self.pipeline);
 
        render_pass.set_bind_group(0, &self.cubemap.texture_bind_group, &[]);

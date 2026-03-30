@@ -2,7 +2,7 @@ use std::{sync::Arc};
 
 use winit::{window::Window};
 
-use crate::{common::{constants::DEPTH_TEXTURE_STENCIL_FORMAT, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager, windows::scene_hierarchy::SceneHierarchyWindow}, engine::GameData, input::keyboard::Keyboard, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, scene_pass::ScenePass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, skybox_pass::SkyboxPass}, texture, uniform::Uniform, uniform_manager::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, UniformManager}, utils::unique_id, vertex::Vertex, wgpu_context::{self, WgpuContext}};
+use crate::{common::{constants::DEPTH_TEXTURE_STENCIL_FORMAT, create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, enums::GameState}, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager, windows::scene_hierarchy::SceneHierarchyWindow}, engine::GameData, input::keyboard::Keyboard, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, pipeline_manager::PipelineManager, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, scene_pass::ScenePass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass}, texture, uniform::Uniform, uniform_manager::{AnimationUniform, CameraUniform, LightUniform, ModelUniform, UniformManager}, utils::unique_id, vertex::Vertex, wgpu_context::{self, WgpuContext}};
 
 pub struct WgpuRenderer {
     pub egui_renderer: EguiRenderer,
@@ -13,8 +13,9 @@ pub struct WgpuRenderer {
     skybox_pass: SkyboxPass,
     outline_pass: OutlinePass,
     emissive_pass: EmissivePass,
+    shadow_pass: ShadowPass,
     uniform_manager: UniformManager,
-    ui_manager: UiManager
+    ui_manager: UiManager,
 }
 
 impl WgpuRenderer {
@@ -33,7 +34,8 @@ impl WgpuRenderer {
         ui_manager.register_textures(&context, &mut egui_renderer.renderer, &game_data.asset_manager);
 
         // load uniforms
-        let wgpu_uniforms = UniformManager::new(&context, &game_data.scene);
+        let shadow_pass = ShadowPass::new(&context, &game_data);
+        let wgpu_uniforms = UniformManager::new(&context, &game_data.scene, &shadow_pass.shadow_cube_map_array.texture);
 
         // load render groups
         let scene_pass = ScenePass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
@@ -46,6 +48,7 @@ impl WgpuRenderer {
         return Self {
             wgpu_context: context,
             egui_renderer,
+            shadow_pass,
             scene_pass,
             postprocess_pass,
             animation_pass,
@@ -62,7 +65,7 @@ impl WgpuRenderer {
         self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
         self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.active_camera());
-        self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data.scene);
+        self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data.scene, &self.shadow_pass.shadow_cube_map_array.texture);
         
         window.request_redraw();
 
@@ -81,6 +84,7 @@ impl WgpuRenderer {
             label: Some("render encoder"),
         });
 
+       self.shadow_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager, &game_data);
        self.scene_pass.render(&mut encoder, &self.uniform_manager, &game_data);
        self.animation_pass.render(&mut encoder, &self.uniform_manager, &game_data, &self.scene_pass.pbr_texture, &self.scene_pass.depth_texture);
        self.skybox_pass.render(&mut encoder, &self.uniform_manager, &self.scene_pass.pbr_texture, &self.scene_pass.depth_texture);

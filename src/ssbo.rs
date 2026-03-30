@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
-use crate::{u8slice::ToU8SliceArray, wgpu_context::WgpuContext};
+use crate::{texture::Texture, u8slice::ToU8SliceArray, wgpu_context::WgpuContext};
 
 pub struct SSBO {
     pub value_buffer: wgpu::Buffer,
@@ -12,7 +12,7 @@ pub struct SSBO {
 }
 
 impl SSBO {
-    pub fn new(size: u64, device: &wgpu::Device) -> Self {
+    pub fn new(size: u64, device: &wgpu::Device, shadow_texture: &Texture) -> Self {
         let value_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("SSBO Value Buffer"),
             size,
@@ -45,19 +45,48 @@ impl SSBO {
                         min_binding_size: None,
                     },
                     count: None,
-                }],
+                },
+                // TODO!! GET THIS OUT OF HERE. RIGHT NOW IS USED TO STORE SHADOW VALUES ON LIGHTS SSBO DUE TO WGPU LIMIT OF 4 GROUPS PER SHADER
+                    wgpu::BindGroupLayoutEntry {
+                            binding: 2,
+                            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                            ty: wgpu::BindingType::Texture {
+                                view_dimension: wgpu::TextureViewDimension::CubeArray,
+                                multisampled: false,
+                                sample_type: wgpu::TextureSampleType::Depth,
+                            },
+                            count: None,
+                        },
+                    wgpu::BindGroupLayoutEntry {
+                            binding: 3,
+                            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                            ty: wgpu::BindingType::Sampler(
+                                wgpu::SamplerBindingType::Comparison
+                            ),
+                            count: None,
+                    },
+                ],
                 label: Some("SSBO bind group layout"),
          });
 
          let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
             layout: &bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                 binding: 0,
-                 resource: value_buffer.as_entire_binding(),
+            entries: &[
+                wgpu::BindGroupEntry {
+                   binding: 0,
+                   resource: value_buffer.as_entire_binding(),
              }, wgpu::BindGroupEntry { 
-                binding: 1,
-                resource: count_buffer.as_entire_binding() 
-              }
+                   binding: 1,
+                   resource: count_buffer.as_entire_binding() 
+             },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&shadow_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&shadow_texture.sampler),
+                },
             ],
             label: Some("SSBO uniform bind group"),
          });
@@ -71,8 +100,8 @@ impl SSBO {
          }
     }
 
-    pub fn update<T: bytemuck::Pod>(&mut self, ctx: &WgpuContext, size: u64, data: &Vec<T>) {
-        self.ensure_capacity(&ctx.device, size);
+    pub fn update<T: bytemuck::Pod>(&mut self, ctx: &WgpuContext, size: u64, data: &Vec<T>, shadow_texture: &Texture) {
+        self.ensure_capacity(&ctx.device, size, shadow_texture);
 
         ctx.queue.write_buffer(&self.value_buffer, 0, data.as_slice().cast_slice());
 
@@ -80,7 +109,7 @@ impl SSBO {
         ctx.queue.write_buffer(&self.count_buffer, 0, bytemuck::bytes_of(&count));
     }
 
-    fn ensure_capacity(&mut self, device: &wgpu::Device, size: u64) {
+    fn ensure_capacity(&mut self, device: &wgpu::Device, size: u64, shadow_texture: &Texture) {
         if size == 0 || self.buffer_size >= size {
           return;
         }
@@ -94,7 +123,31 @@ impl SSBO {
           mapped_at_creation: false,
         });
 
-        self.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
+        // self.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
+        //     layout: &self.bind_group_layout,
+        //     entries: &[wgpu::BindGroupEntry {
+        //          binding: 0,
+        //          resource: self.value_buffer.as_entire_binding(),
+        //      }, wgpu::BindGroupEntry { 
+        //         binding: 1,
+        //         resource: self.count_buffer.as_entire_binding() 
+        //       },
+        //        wgpu::BindGroupEntry {
+        //             binding: 2,
+        //             resource: wgpu::BindingResource::TextureView(&shadow_texture.view),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 3,
+        //             resource: wgpu::BindingResource::Sampler(&shadow_texture.sampler),
+        //         },
+        //     ],
+        //     label: Some("SSBO uniform bind group"),
+        // });
+
+    }
+
+    pub fn rebuild_bind_group(&mut self, device: &wgpu::Device, texture: &Texture) {
+         self.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
             layout: &self.bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                  binding: 0,
@@ -102,10 +155,17 @@ impl SSBO {
              }, wgpu::BindGroupEntry { 
                 binding: 1,
                 resource: self.count_buffer.as_entire_binding() 
-              }
+              },
+               wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                },
             ],
             label: Some("SSBO uniform bind group"),
         });
-
     }
 }

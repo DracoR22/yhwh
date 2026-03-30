@@ -43,6 +43,7 @@ impl ScenePass {
         )
         .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
         .with_depth_write()
+        .with_cull_mode(wgpu::Face::Back)
         .build(&ctx.device);
 
         let emissive_pipeline = PipelineBuilder::new(
@@ -148,7 +149,7 @@ impl ScenePass {
         render_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
         
         for game_object in game_data.scene.game_objects.iter() {
-            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+          let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
             println!("No model bind group for object {:?}, skipping draw", game_object.id);
             continue;
           };
@@ -187,6 +188,7 @@ impl ScenePass {
         )
         .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
         .with_depth_write()
+        .with_cull_mode(wgpu::Face::Back)
         .build(&ctx.device);
 
       self.pbr_pipeline = pipeline;

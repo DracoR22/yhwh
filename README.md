@@ -3,12 +3,14 @@
 Rust and WGPU based renderer
 
 <p align="center"><img src="./docs/room.png" width="95%" alt="bloom"/></>
-<p align="center"><img src="./docs/editor.png" width="95%" alt="editor"/></>
+<p align="center"><img src="./docs/editor2.png" width="95%" alt="editor"/></>
 
 ### Implemented features
 - Dynamic scenes and level Editor
 - MRT Bloom
 - Skeletal animation
-- Stencil outlining
+- Inverted-hull outlining
 - Custom mesh materials
 - Physically based rendering
+- Soft Shadows
+- Skybox

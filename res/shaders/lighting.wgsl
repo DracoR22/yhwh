@@ -32,7 +32,6 @@ struct LightUniform {
     radius: f32,
     _pad2: u32,
     _pad3: u32
-
 }
 
 struct ModelUniform {
@@ -65,10 +64,66 @@ var<uniform> model: ModelUniform;
 
 @group(3) @binding(0)
 var<storage, read> lights: array<LightUniform>;
-//var<uniform> light: LightUniform;
-
 @group(3) @binding(1)
 var<uniform> light_count: u32;
+
+@group(3) @binding(2)
+var shadow_maps: texture_depth_cube_array;
+@group(3) @binding(3)
+var shadow_sampler: sampler_comparison;
+
+const gridSamplingDisk: array<vec3<f32>, 20> = array(
+   vec3<f32>(1, 1,  1), vec3<f32>( 1, -1,  1), vec3<f32>(-1, -1,  1), vec3<f32>(-1, 1,  1),
+   vec3<f32>(1, 1, -1), vec3<f32>( 1, -1, -1), vec3<f32>(-1, -1, -1), vec3<f32>(-1, 1, -1),
+   vec3<f32>(1, 1,  0), vec3<f32>( 1, -1,  0), vec3<f32>(-1, -1,  0), vec3<f32>(-1, 1,  0),
+   vec3<f32>(1, 0,  1), vec3<f32>(-1,  0,  1), vec3<f32>( 1,  0, -1), vec3<f32>(-1, 0, -1),
+   vec3<f32>(0, 1,  1), vec3<f32>( 0, -1,  1), vec3<f32>( 0, -1, -1), vec3<f32>( 0, 1, -1)
+
+);
+
+fn shadow_calculation(
+    light_index: u32,
+    light_pos: vec3<f32>,
+    light_radius: f32,
+    frag_pos: vec3<f32>,
+    view_pos: vec3<f32>,
+    normal: vec3<f32>
+) -> f32 {
+    var shadow = 0.0;
+    let samples = 20;
+
+    let light_dir = frag_pos - light_pos;
+    let distance = length(light_dir);
+    let current_depth = distance / light_radius;
+
+    if (distance > light_radius) {
+        return 1.0;
+    }
+
+    let bias = max(0.0125 * (1.0 - dot(normal, normalize(light_dir))), 0.00125); 
+
+    let view_distance = length(view_pos - frag_pos);
+    let disk_radius = (1.0 + (view_distance / light_radius)) / 200.0;
+    //let disk_radius = 0.01 * current_depth;
+    //let disk_radius = 0.01 * current_depth * (distance / light_radius);
+
+    for (var i: i32 = 0; i < samples; i = i + 1) {
+        let offset = normalize(gridSamplingDisk[i]) * disk_radius;
+        let sample_dir = normalize(normalize(light_dir) + offset);
+
+        shadow += textureSampleCompare(
+            shadow_maps,
+            shadow_sampler,
+            sample_dir,
+            light_index,
+            current_depth - bias
+        );
+    }
+
+    shadow /= f32(samples);
+
+    return shadow;
+}
 
 const PI = 3.14159265359;
 
@@ -187,8 +242,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     for (var i: u32 = 0u; i < light_count; i = i + 1u) {
         let light = lights[i];
 
-        final_color += get_spot_light_lighting(light.position, light.color, light.strength, light.radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
+        let lighting = get_spot_light_lighting(light.position, light.color, light.strength, light.radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
+        let shadow = shadow_calculation(i, light.position, light.radius, in.world_position, camera.view_position.xyz, world_normal);
+
+        final_color += lighting * shadow;
     }
-   
+
+    // let ambient = 0.01 * albedo;
+    // final_color += ambient * ao;
+
     return vec4<f32>(final_color, 1.0);
 }

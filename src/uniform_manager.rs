@@ -8,6 +8,7 @@ use crate::bind_group_manager::BindGroupManager;
 use crate::common::constants::MAX_LIGHTS;
 use crate::scene::Scene;
 use crate::ssbo::SSBO;
+use crate::texture::Texture;
 use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
 
 #[repr(C)]
@@ -147,17 +148,48 @@ impl BlurUniform {
   }
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ShadowCubeMapUniform {
+  pub light_matrix: [[f32; 4]; 4],
+  pub light_pos_x: f32,
+  pub light_pos_y: f32,
+  pub light_pos_z: f32,
+  pub far_plane: f32
+}
+
+impl ShadowCubeMapUniform {
+  pub fn new() -> Self {
+    Self {
+       light_matrix: Default::default(),
+       light_pos_x: 0.0,
+       light_pos_y: 0.0,
+       light_pos_z: 0.0,
+       far_plane: 0.0
+    }
+  }
+
+  pub fn update(&mut self, light_matrix: cgmath::Matrix4<f32>, light_pos: cgmath::Vector3<f32>, far_plane: f32) {
+    self.light_matrix = light_matrix.into();
+    self.light_pos_x = light_pos.x;
+    self.light_pos_y = light_pos.y;
+    self.light_pos_z = light_pos.z;
+    self.far_plane = far_plane;
+  }
+}
+
 pub struct UniformManager {
     pub camera: Uniform<CameraUniform>,
     pub models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub animation: Uniform<AnimationUniform>,
     pub blurs: Vec<Uniform<BlurUniform>>,
+    pub shadow_cube_maps: Vec<Uniform<ShadowCubeMapUniform>>,
     pub lights_ssbo: SSBO
 }
 
 impl UniformManager {
-    pub fn new(ctx: &WgpuContext, scene: &Scene) -> Self {
+    pub fn new(ctx: &WgpuContext, scene: &Scene, shadow_texture: &Texture) -> Self {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
 
       for game_object in scene.game_objects.iter() {
@@ -168,7 +200,20 @@ impl UniformManager {
         model_uniforms.insert(animated_game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
 
-      let lights_ssbo = SSBO::new((std::mem::size_of::<LightUniform>() * MAX_LIGHTS as usize) as u64, &ctx.device);
+      let mut shadow_cube_maps: Vec<Uniform<ShadowCubeMapUniform>> = Vec::new();
+      for _ in 0..MAX_LIGHTS {
+         for _ in 0..6 {
+           shadow_cube_maps.push(Uniform::new(ShadowCubeMapUniform::new(), &ctx.device));
+         }
+      }
+
+      let lights_ssbo = SSBO::new((std::mem::size_of::<LightUniform>() * MAX_LIGHTS as usize) as u64, &ctx.device, shadow_texture);
+
+      let blur_passes = 4;
+      let mut blurs = Vec::new();
+      for _ in 0..blur_passes {
+        blurs.push(Uniform::new(BlurUniform::new(), &ctx.device));
+      }
 
       let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
         &ctx.device,
@@ -176,19 +221,14 @@ impl UniformManager {
         Some("Uniform_Bind_Group_Layout"))
       .unwrap();
 
-      let BLUR_PASSES = 4;
-      let mut blurs = Vec::new();
-      for _ in 0..BLUR_PASSES {
-        blurs.push(Uniform::new(BlurUniform::new(), &ctx.device));
-      }
-
       Self {
         models: model_uniforms,
         animation: Uniform::new(AnimationUniform::new(), &ctx.device),
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
         blurs,
         bind_group_layout,
-        lights_ssbo
+        lights_ssbo,
+        shadow_cube_maps
       }
     }
 
@@ -239,7 +279,7 @@ impl UniformManager {
       self.animation.update(&ctx.queue);
     }
 
-    pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene) {
+    pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene, shadow_texture: &Texture) {
       let mut light_uniforms: Vec<LightUniform> = Vec::with_capacity(scene.lights.len());
       for light in scene.lights.iter() {
         let light_uniform = LightUniform {
@@ -256,7 +296,7 @@ impl UniformManager {
         light_uniforms.push(light_uniform);
       }
 
-      self.lights_ssbo.update(&ctx, (light_uniforms.len() * std::mem::size_of::<LightUniform>()) as u64, &light_uniforms);
+      self.lights_ssbo.update(&ctx, (light_uniforms.len() * std::mem::size_of::<LightUniform>()) as u64, &light_uniforms, shadow_texture);
     }
 
     pub fn submit_camera_uniforms(&mut self, ctx: &WgpuContext, camera: &Camera) {

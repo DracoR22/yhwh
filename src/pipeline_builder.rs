@@ -100,7 +100,7 @@ impl<'a> PipelineBuilder<'a> {
                     blend: Some(self.blend),
                     write_mask: wgpu::ColorWrites::ALL,
                 })
-            }).collect();
+        }).collect();
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(self.label),

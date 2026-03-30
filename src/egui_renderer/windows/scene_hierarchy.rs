@@ -1,16 +1,12 @@
 use std::collections::{HashMap, HashSet};
 
-use egui::{Align, Align2, Context, Sense, TextureId, Ui, Vec2, load::SizedTexture};
+use egui::{Align, Align2, Context, Id, Modal, Sense, TextureId, Ui, Vec2, load::SizedTexture};
 
 use crate::{
-    common::{create_info::{GameObjectCreateInfo, LightObjectCreateInfo}, enums::LightType},
-    egui_renderer::ui_manager::EguiMaterial,
-    engine::GameData,
-    objects::{
+    asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, LightObjectCreateInfo}, enums::LightType}, egui_renderer::ui_manager::EguiMaterial, engine::GameData, model::Model, objects::{
         animated_game_object::{self, AnimatedGameObject},
         game_object::GameObject,
-    },
-    utils::json::save_level,
+    }, utils::json::save_level
 };
 
 pub struct SceneHierarchyWindow {
@@ -24,6 +20,7 @@ pub struct SceneHierarchyWindow {
 
     objects_marked_for_removal: HashSet<usize>,
     scale_uniform: bool,
+    material_window_open: bool
 }
 
 impl SceneHierarchyWindow {
@@ -36,7 +33,8 @@ impl SceneHierarchyWindow {
             selected_model_index: 0,
             selected_material_index: 0,
             objects_marked_for_removal: HashSet::new(),
-            scale_uniform: true
+            scale_uniform: true,
+            material_window_open: false
         }
     }
 
@@ -54,7 +52,7 @@ impl SceneHierarchyWindow {
             .show(&ui, |ui| {
                 ui.separator();
                 if self.selected_game_object_id != -1 {
-                     for game_object in game_data.scene.game_objects.iter_mut() {
+                    for game_object in game_data.scene.game_objects.iter_mut() {
                     if game_object.is_selected {
                         ui.label("Position X");
                         ui.add(egui::DragValue::new(&mut game_object.get_position_mut().x));
@@ -143,34 +141,55 @@ impl SceneHierarchyWindow {
                                         }
                                     });
 
-                                ui.label("Material");
-                                egui::ScrollArea::vertical().max_height(10.0).show(ui, |ui| {
-                                     for material in materials.iter() {
-                                    let button = ui.add(egui::Image::from_texture(SizedTexture::new(
-                                            material.texture_id,
-                                            Vec2::new(100.0, 100.0),
-                                        )).sense(Sense::click()));
-
-                                    if button.hovered() {
-                                        ui.painter().rect_stroke(
-                                            button.rect,
-                                            4.0,
-                                            egui::Stroke::new(1.5, egui::Color32::WHITE),
-                                            egui::StrokeKind::Middle,
-                                        );
-                                    }
-
-                                    if button.clicked() {
-                                        game_object.get_mesh_nodes_mut().set_mesh_material(
-                                            &game_data.asset_manager,
-                                            &model.meshes[*selected_index].name,
-                                            &material.material_name,
-                                        );
-
-                                       // self.selected_material_index = material.material_index;
-                                    }
+                                if ui.button("Browse Materials").clicked() {
+                                    self.material_window_open = true;
                                 }
-                                });
+
+                                if self.material_window_open {
+                                   egui::Window::new("Materials")
+                                    .id(Id::new("material_window_id"))
+                                    .resizable(true)
+                                    .min_size([(window_width / 2) as f32, (window_height / 2) as f32])
+                                    .open(&mut self.material_window_open)
+                                    .show(&ui.ctx(), |ui| {
+                                        ui.horizontal_wrapped(|ui| {
+                                        // egui::ScrollArea::vertical()
+                                        // .auto_shrink([false; 2])
+                                        // .show(ui, |ui| {
+                                            for material in materials.iter() {
+                                                let button = ui.add(egui::Image::from_texture(SizedTexture::new(
+                                                        material.texture_id,
+                                                        Vec2::new(100.0, 100.0),
+                                            )).sense(Sense::click()));
+
+                                            if button.hovered() {
+                                                ui.painter().rect_stroke(
+                                                    button.rect,
+                                                    4.0,
+                                                    egui::Stroke::new(1.5, egui::Color32::WHITE),
+                                                    egui::StrokeKind::Middle,
+                                                );
+                                            }
+
+                                            if button.clicked() {
+                                                game_object.get_mesh_nodes_mut().set_mesh_material(
+                                                &game_data.asset_manager,
+                                                &model.meshes[*selected_index].name,
+                                                &material.material_name,
+                                                );
+                                             }
+                                            }
+                                            
+                                        // });
+                                        });
+                                    });
+
+
+                                }
+
+
+                                ui.label("Material");
+                        
 
                                 ui.label("Emissive");
                                 match game_object.get_mesh_nodes_mut().get_mesh_rendering_info_by_mesh_name_mut(&model.meshes[*selected_index].name) {
@@ -179,6 +198,8 @@ impl SceneHierarchyWindow {
                                     }
                                     _ => {}
                                 }
+                                ui.label("Shadows");
+                                ui.checkbox(&mut game_object.shadows, "");
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")
@@ -216,6 +237,7 @@ impl SceneHierarchyWindow {
                         rotation: [1.0, 1.0, 1.0],
                         size: [1.0, 1.0, 1.0],
                         tex_scale: [1.0, 1.0],
+                        shadows: false,
                         mesh_rendering_info: vec![],
                     };
 
@@ -250,10 +272,13 @@ impl SceneHierarchyWindow {
                             }
 
                             ui.label("Strength");
-                            ui.add(egui::Slider::new(&mut light.strength, 0.0..=100.0));
+                            ui.add(egui::Slider::new(&mut light.strength, 1.0..=100.0));
 
                             ui.label("Radius");
-                            ui.add(egui::Slider::new(&mut light.radius, 0.0..=100.0));
+                            ui.add(egui::Slider::new(&mut light.radius, 1.0..=100.0));
+
+                            ui.label("Shadows");
+                            ui.checkbox(&mut light.shadows, "");
                         }
                     }
                 }
@@ -357,7 +382,8 @@ impl SceneHierarchyWindow {
                                     position: [2.0, 2.0, 2.0],
                                     radius: 10.0,
                                     strength: 50.0,
-                                    light_type: LightType::Point
+                                    light_type: LightType::Point,
+                                    shadows: false
                                 };
 
                         game_data.scene.add_light(&create_info);
@@ -376,6 +402,37 @@ impl SceneHierarchyWindow {
         for id in self.objects_marked_for_removal.drain() {
             game_data.scene.remove_game_object_by_id(id);
         }
+    }
+
+    fn materials_window(&mut self, ui: &Context, game_object: &mut GameObject, asset_manager: &mut AssetManager, materials: &Vec<EguiMaterial>, model: &Model, selected_index: &mut usize) {
+         egui::Window::new("Materials")
+            .id(Id::new("material_window_id"))
+            .resizable(true)
+            .show(&ui, |ui| {
+                 for material in materials.iter() {
+                        let button = ui.add(egui::Image::from_texture(SizedTexture::new(
+                                material.texture_id,
+                                Vec2::new(100.0, 100.0),
+                        )).sense(Sense::click()));
+
+                        if button.hovered() {
+                            ui.painter().rect_stroke(
+                                    button.rect,
+                                    4.0,
+                                    egui::Stroke::new(1.5, egui::Color32::WHITE),
+                                    egui::StrokeKind::Middle,
+                                    );
+                         }
+
+                        if button.clicked() {
+                                game_object.get_mesh_nodes_mut().set_mesh_material(
+                                &asset_manager,
+                                &model.meshes[*selected_index].name,
+                                &material.material_name,
+                                );
+                            }
+                    }
+            });
     }
 
     fn draw_meshes(

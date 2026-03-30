@@ -16,6 +16,7 @@ pub struct GameObjectCreateInfo {
     pub size: [f32; 3],
     pub rotation: [f32; 3],
     pub tex_scale: [f32; 2],
+    pub shadows: bool,
     pub mesh_rendering_info: Vec<MeshNodeCreateInfo>
 }
 
@@ -25,7 +26,8 @@ pub struct LightObjectCreateInfo {
     pub position: [f32; 3],
     pub strength: f32,
     pub radius: f32,
-    pub light_type: LightType
+    pub light_type: LightType,
+    pub shadows: bool
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -12,13 +12,13 @@ pub struct CubeMap {
 
 impl CubeMap {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, dimensions: (u32, u32), face_bytes: [&[u8]; 6]) -> Self {
-         let texture_size = wgpu::Extent3d {
+        let texture_size = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
             depth_or_array_layers: 6,
         };
 
-         let texture = device.create_texture(&wgpu::TextureDescriptor {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: texture_size,
             mip_level_count: 1,
             sample_count: 1,

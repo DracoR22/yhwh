@@ -2,93 +2,6 @@
   "name": "test",
   "game_objects": [
     {
-      "model_name": "Plane",
-      "position": [
-        1.0,
-        0.0,
-        1.0
-      ],
-      "size": [
-        50.0,
-        50.0,
-        50.0
-      ],
-      "rotation": [
-        1.0,
-        1.0,
-        1.0
-      ],
-      "tex_scale": [
-        10.0,
-        10.0
-      ],
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Wood_Floor",
-          "emissive": false
-        }
-      ]
-    },
-    {
-      "model_name": "Plane",
-      "position": [
-        3.8,
-        5.0,
-        1.0
-      ],
-      "size": [
-        13.0,
-        10.0,
-        10.0
-      ],
-      "rotation": [
-        90.0,
-        1.0,
-        1.0
-      ],
-      "tex_scale": [
-        1.0,
-        1.0
-      ],
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Ceiling",
-          "emissive": false
-        }
-      ]
-    },
-    {
-      "model_name": "Plane",
-      "position": [
-        7.0,
-        5.0,
-        12.0
-      ],
-      "size": [
-        10.0,
-        25.0,
-        10.0
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        90.0
-      ],
-      "tex_scale": [
-        3.0,
-        3.0
-      ],
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Ceiling",
-          "emissive": false
-        }
-      ]
-    },
-    {
       "model_name": "door_wall",
       "position": [
         -6.0,
@@ -109,6 +22,7 @@
         4.0,
         4.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube.001",
@@ -138,6 +52,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube_Mesh",
@@ -167,6 +82,7 @@
         6.8,
         1.0
       ],
+      "shadows": true,
       "mesh_rendering_info": [
         {
           "mesh_name": "defaultMaterial",
@@ -179,7 +95,7 @@
       "model_name": "candles_set2",
       "position": [
         0.0,
-        -0.07,
+        0.1,
         9.0
       ],
       "size": [
@@ -196,6 +112,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cylinder.006_2.002",
@@ -343,7 +260,7 @@
       "model_name": "candles_set2",
       "position": [
         5.5,
-        -0.07,
+        0.1,
         9.0
       ],
       "size": [
@@ -360,6 +277,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cylinder.006_2.002",
@@ -524,6 +442,7 @@
         5.0,
         5.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Plane_Mesh",
@@ -553,6 +472,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Desk_LP_01 - Default_0",
@@ -582,6 +502,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cylinder.006_2.002",
@@ -746,6 +667,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cylinder.006_2.002",
@@ -890,64 +812,6 @@
       ]
     },
     {
-      "model_name": "Plane",
-      "position": [
-        -7.0,
-        4.0,
-        21.9
-      ],
-      "size": [
-        32.0,
-        13.0,
-        11.0
-      ],
-      "rotation": [
-        270.0,
-        0.0,
-        0.0
-      ],
-      "tex_scale": [
-        3.8,
-        1.7
-      ],
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Ceiling",
-          "emissive": false
-        }
-      ]
-    },
-    {
-      "model_name": "Plane",
-      "position": [
-        -9.8,
-        5.0,
-        17.0
-      ],
-      "size": [
-        15.0,
-        11.0,
-        15.0
-      ],
-      "rotation": [
-        90.0,
-        1.0,
-        270.0
-      ],
-      "tex_scale": [
-        1.5,
-        1.5
-      ],
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Ceiling",
-          "emissive": false
-        }
-      ]
-    },
-    {
       "model_name": "wooden_table",
       "position": [
         -9.1,
@@ -968,6 +832,7 @@
         1.0,
         1.0
       ],
+      "shadows": true,
       "mesh_rendering_info": [
         {
           "mesh_name": "Desk_LP_01 - Default_0",
@@ -997,6 +862,7 @@
         1.0,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cylinder.006_2.002",
@@ -1143,9 +1009,9 @@
     {
       "model_name": "Plane",
       "position": [
-        -13.0,
-        -3.0,
-        -15.0
+        10.0,
+        -2.0,
+        -23.0
       ],
       "size": [
         61.0,
@@ -1155,12 +1021,13 @@
       "rotation": [
         90.0,
         0.0,
-        315.0
+        195.0
       ],
       "tex_scale": [
         3.4,
         1.0
       ],
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Plane_Mesh",
@@ -1190,10 +1057,191 @@
         1.0,
         1.0
       ],
+      "shadows": true,
       "mesh_rendering_info": [
         {
           "mesh_name": "marie_1k_msh_marie_1k_SH_0",
           "material_name": "Virgin_Mary",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "persian_rug",
+      "position": [
+        2.4,
+        0.01,
+        5.0
+      ],
+      "size": [
+        0.015,
+        0.015,
+        0.015
+      ],
+      "rotation": [
+        0.0,
+        90.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "rug01_MDL_nar_blinn2_0",
+          "material_name": "Persian_Rug",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        -10.0,
+        5.0,
+        12.0
+      ],
+      "size": [
+        1.0,
+        28.0,
+        10.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        2.6,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        2.3,
+        5.0,
+        0.0
+      ],
+      "size": [
+        10.0,
+        2.0,
+        10.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.8
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        7.5,
+        5.0,
+        11.0
+      ],
+      "size": [
+        1.0,
+        25.0,
+        10.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        2.6,
+        1.7
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        -1.0,
+        5.0,
+        22.5
+      ],
+      "size": [
+        17.0,
+        1.0,
+        10.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.3,
+        1.5
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        2.0,
+        -1.0,
+        1.0
+      ],
+      "size": [
+        27.0,
+        55.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        3.5,
+        3.5
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Wood_Floor",
           "emissive": false
         }
       ]
@@ -1211,9 +1259,10 @@
         5.0,
         3.0
       ],
-      "strength": 3.0,
+      "strength": 5.0,
       "radius": 5.0,
-      "light_type": "Point"
+      "light_type": "Point",
+      "shadows": true
     },
     {
       "color": [
@@ -1223,12 +1272,13 @@
       ],
       "position": [
         -5.0,
-        3.0,
+        4.0,
         20.0
       ],
-      "strength": 3.0,
-      "radius": 3.0,
-      "light_type": "Point"
+      "strength": 2.0,
+      "radius": 7.0,
+      "light_type": "Point",
+      "shadows": true
     }
   ]
 }

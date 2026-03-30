@@ -26,6 +26,7 @@ impl Scene {
             rotation: [1.0, 1.0, 1.0],
             size: [1.5, 1.5, 1.5],
             tex_scale: [1.0, 1.0],
+            shadows: false,
             mesh_rendering_info: vec![]
         };
 

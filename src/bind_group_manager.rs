@@ -11,6 +11,7 @@ pub enum TL {
     NonfilterableFloat,
     NonfilterableFloatMultisampled,
     Cube,
+    CubeArray,
     UInt,
     SInt,
 }
@@ -49,10 +50,11 @@ impl BindGroupManager {
                     view_dimension: match bgtype {
                         TL::Cube => wgpu::TextureViewDimension::Cube,
                         TL::DepthArray => wgpu::TextureViewDimension::D2Array,
+                        TL::CubeArray => wgpu::TextureViewDimension::CubeArray,
                         _ => wgpu::TextureViewDimension::D2,
                     },
                     sample_type: match bgtype {
-                        TL::Depth | TL::DepthMultisampled | TL::DepthArray => {
+                        TL::Depth | TL::DepthMultisampled | TL::DepthArray | TL::CubeArray => {
                             wgpu::TextureSampleType::Depth
                         },
                         TL::UInt => wgpu::TextureSampleType::Uint,
@@ -70,7 +72,7 @@ impl BindGroupManager {
               binding: binding_offset + (i * 2 + 1) as u32,
               visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
               ty: wgpu::BindingType::Sampler(
-                    if matches!(bgtype, TL::Depth | TL::DepthMultisampled | TL::DepthArray) {
+                    if matches!(bgtype, TL::Depth | TL::DepthMultisampled | TL::DepthArray | TL::CubeArray) {
                         wgpu::SamplerBindingType::Comparison
                     } else {
                         wgpu::SamplerBindingType::Filtering

@@ -118,7 +118,6 @@ impl Engine {
     }
 
     pub fn handle_window_events(&mut self, event: &WindowEvent) {
-        //self.game_data.camera_controller.handle_keyboard(&event);
         self.input.keyboard.handle_event(&event);
         self.input.mouse.handle_window_event(&event);
         self.wgpu_renderer.egui_renderer.handle_input(&self.window, &event);
@@ -126,15 +125,7 @@ impl Engine {
     }
 
     pub fn handle_device_events(&mut self, event: &DeviceEvent) {
-         self.input.mouse.handle_device_event(&event);
-         match event {
-            DeviceEvent::MouseMotion { delta } => {
-               if !self.show_cursor {
-                 //self.game_data.camera_controller.handle_mouse(delta.0, delta.1);
-               }
-            }
-            _ => {}
-        }
+        self.input.mouse.handle_device_event(&event);
     }
 
     pub fn toggle_cursor(&mut self) {
@@ -178,6 +169,10 @@ impl Engine {
 impl GameData {
     pub fn update(&mut self, input: &Input, audio_manager: &mut AudioManager) {
         self.update_fps();
+        
+        for light in self.scene.lights.iter_mut() {
+            light.update();
+        }
     
         match self.game_state {
             GameState::Playing => {
@@ -188,26 +183,6 @@ impl GameData {
                 self.camera_controller.update_camera(&mut self.camera, self.delta_time);
             }
         }
-        // if self.game_state == GameState::Playing {
-        //     self.player.update(&input, self.delta_time);
-        // } else if self.game_state == GameState::Editor {
-
-        // }
-        // self.camera_controller.update_movement(&input);
-        // self.camera_controller.update_camera(&mut self.camera, self.delta_time);
-
-        // if self.game_state == GameState::Editor {
-        //     if input.mouse.button_pressed(&YHWHMouseButton::Middle) {
-        //         let dx: f64 = input.mouse.delta_x;
-        //         let dy: f64 = input.mouse.delta_y;
-
-        //         let sensitivity: f64 = 0.75;
-
-        //         if dx.abs() > 2.0 || dy.abs() > 2.0 {
-        //           self.camera_controller.handle_mouse(dx * sensitivity, dy * sensitivity);
-        //         }
-        //     }
-        // }
     }
 
     pub fn update_fps(&mut self) {

@@ -9,6 +9,7 @@ pub struct GameObject {
     pub tex_scale: cgmath::Vector2<f32>,
     pub is_selected: bool,
     pub id: usize,
+    pub shadows: bool,
     mesh_nodes: MeshNodes,
 }
 
@@ -23,6 +24,7 @@ impl GameObject {
             is_selected: false,
             id: unique_id::next_id(),
             mesh_nodes: MeshNodes::new(&create_info.model_name.clone(), &create_info.mesh_rendering_info, asset_manager),
+            shadows: create_info.shadows
         }
     }
 
@@ -85,6 +87,10 @@ impl GameObject {
     pub fn set_rotation(&mut self, rotation: cgmath::Vector3<f32>) {
         self.euler_rotation = rotation;
     }
+
+    pub fn set_shadows(&mut self, shadows: bool) {
+        self.shadows = shadows;
+    }
 }
 
 impl GameObject {
@@ -110,6 +116,7 @@ impl GameObject {
             rotation: self.get_rotation().into(),
             tex_scale: self.tex_scale.into(),
             mesh_rendering_info: mesh_nodes_create_infos,
+            shadows: self.shadows,
             model_name: self.get_model_name().to_string()
         };
 

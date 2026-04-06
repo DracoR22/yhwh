@@ -27,8 +27,8 @@ impl EmissivePass {
           usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let width = 1920 / 4;
-        let height = 1080 / 4;
+        let width = 1920 / 2;
+        let height = 1080 / 2;
 
         let ping_texture = Texture::create_fbo(&ctx.device, (width, height), HDR_TEX_FORMAT, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
         let pong_texture = Texture::create_fbo(&ctx.device, (width, height), HDR_TEX_FORMAT, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);

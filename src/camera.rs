@@ -2,7 +2,7 @@ use cgmath::*;
 use winit::{dpi::PhysicalPosition, event::{ElementState, KeyEvent, MouseScrollDelta, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use std::{f32::consts::FRAC_PI_2, time::Duration};
 
-use crate::{common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, input::{input::Input, yhwh_keys::YHWHMouseButton}};
+use crate::{common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, frustum::Frustum, input::{input::Input, yhwh_keys::YHWHMouseButton}};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::from_cols(
@@ -19,7 +19,8 @@ pub struct Camera {
     pub position: Point3<f32>,
     yaw: Rad<f32>,
     pitch: Rad<f32>,
-    projection: Projection
+    projection: Projection,
+    pub frustum: Frustum
 }
 
 impl Camera {
@@ -28,7 +29,8 @@ impl Camera {
             position: position.into(),
             yaw: yaw.into(),
             pitch: pitch.into(),
-            projection: Projection::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32, cgmath::Deg(45.0), 0.1, 100.0)
+            projection: Projection::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32, cgmath::Deg(45.0), 0.1, 100.0),
+            frustum: Frustum::new()
         }
     }
 

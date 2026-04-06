@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, ops::Mul};
-use cgmath::{BaseFloat, Matrix4, Vector3, Vector4};
+use cgmath::{BaseFloat, Bounded, Matrix3, Matrix4, Vector3, Vector4};
+use cgmath::num_traits::cast;
 
 /// Returns the min value of two PartialOrd values.
 pub fn min<S: PartialOrd>(v1: S, v2: S) -> S {
@@ -37,8 +38,8 @@ where
 
 #[derive(Copy, Clone, Debug)]
 pub struct Aabb<S> {
-    min: Vector3<S>,
-    max: Vector3<S>,
+    pub min: Vector3<S>,
+    pub max: Vector3<S>,
 }
 
 impl<S> Aabb<S> {
@@ -90,6 +91,40 @@ impl<S: BaseFloat> Aabb<S> {
     pub fn get_center(&self) -> Vector3<S> {
         let two = S::one() + S::one();
         self.min + (self.max - self.min) / two
+    }
+
+    /// Transform AABB to world space.
+     pub fn transform(&self, matrix: Matrix4<f32>) -> Aabb<f32> {
+        let min = self.min.map(|v| cast(v).unwrap());
+        let max = self.max.map(|v| cast(v).unwrap());
+
+        let corners: [Vector3<f32>; 8] = [
+            Vector3::new(min.x, min.y, min.z),
+            Vector3::new(max.x, min.y, min.z),
+            Vector3::new(min.x, max.y, min.z),
+            Vector3::new(max.x, max.y, min.z),
+            Vector3::new(min.x, min.y, max.z),
+            Vector3::new(max.x, min.y, max.z),
+            Vector3::new(min.x, max.y, max.z),
+            Vector3::new(max.x, max.y, max.z),
+        ];
+
+        let mut new_min = Vector3::new(f32::MAX, f32::MAX, f32::MAX);
+        let mut new_max = Vector3::new(-f32::MAX, -f32::MAX, -f32::MAX);
+
+        for i in 0..8 {
+            let corner_4d = cgmath::Vector4::new(corners[i].x, corners[i].y, corners[i].z, 1.0);
+            let transformed_4d = matrix * corner_4d;
+
+            let transformed = cgmath::Vector3::new(transformed_4d.x, transformed_4d.y, transformed_4d.z);
+            new_min = new_min.zip(transformed, |a, b| a.min(b));
+            new_max = new_max.zip(transformed, |a, b| a.max(b));
+        }
+
+        Aabb { 
+            min: new_min,
+            max: new_max
+         }
     }
 }
 

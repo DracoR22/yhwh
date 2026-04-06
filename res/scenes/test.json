@@ -35,7 +35,7 @@
       "model_name": "Cube",
       "position": [
         -3.04,
-        4.9,
+        4.8,
         5.0
       ],
       "size": [
@@ -82,7 +82,7 @@
         6.8,
         1.0
       ],
-      "shadows": true,
+      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "defaultMaterial",
@@ -1260,9 +1260,9 @@
         3.0
       ],
       "strength": 5.0,
-      "radius": 5.0,
+      "radius": 2.0,
       "light_type": "Point",
-      "shadows": true
+      "shadows": false
     },
     {
       "color": [

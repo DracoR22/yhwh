@@ -71,7 +71,6 @@ impl Engine {
 
         let mut audio_manager = AudioManager::new();
         audio_manager.load_audios("res/audio");
-        //audio_manager.load_audio("wood1.wav");
 
         Self {
             physics: Physics::new(),
@@ -183,6 +182,11 @@ impl GameData {
                 self.camera_controller.update_camera(&mut self.camera, self.delta_time);
             }
         }
+
+        let projection = self.active_camera().get_projection().calc_matrix();
+        let view = self.active_camera().calc_matrix();
+
+        self.active_camera_mut().frustum.update(&(projection * view));
     }
 
     pub fn update_fps(&mut self) {
@@ -203,6 +207,13 @@ impl GameData {
         match self.game_state {
             GameState::Playing => &self.player.camera,
             GameState::Editor => &self.camera
+        }
+    }
+
+    pub fn active_camera_mut(&mut self) -> &mut Camera {
+        match self.game_state {
+            GameState::Playing => &mut self.player.camera,
+            GameState::Editor => &mut self.camera
         }
     }
 }

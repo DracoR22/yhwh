@@ -106,6 +106,8 @@ impl ScenePass {
             timestamp_writes: None,
         });
 
+        let frustum = &game_data.active_camera().frustum;
+
         // draw pbr objects
         render_pass.set_pipeline(&self.pbr_pipeline);
         render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
@@ -117,15 +119,19 @@ impl ScenePass {
             continue;
           };
 
-          // if game_object.is_selected {
-          //   render_pass.set_pipeline(&self.stencil_pipeline);
-          // } else {
-          //   render_pass.set_pipeline(&self.pipeline);
-          // }
-
           render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
           if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+            // frustum culling
+            if let Some(model_aabb) = model.aabb {
+              let model_matrix = game_object.get_model_matrix();
+              let world_aabb = model_aabb.transform(model_matrix);
+
+              if !frustum.intersects_aabb(&world_aabb) {
+                continue;
+              }
+            }
+
             for mesh in &model.meshes {
                 if game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name).emissive {
                   continue;

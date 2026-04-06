@@ -1,5 +1,8 @@
 use std::{collections::HashMap, path::Path, sync::mpsc, thread};
 
+use cgmath::Vector3;
+use yhwh_core::math::aabb::Aabb;
+
 use crate::{material::Material, model::{self, Mesh, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
@@ -211,6 +214,11 @@ impl AssetManager {
         models.push(plane_model);
         model_index_map.insert(plane_model_name, models.len() - 1);
 
+        // set aabbs
+        for model in models.iter_mut() {
+            AssetManager::compute_model_aabb(model);
+        }
+
         let duration = now.elapsed();
         println!("Loaded all models in: {:.3?}", duration.unwrap());
 
@@ -237,6 +245,20 @@ impl AssetManager {
 
     pub fn get_models(&self) -> &Vec<Model> {
         &self.models
+    }
+
+    fn compute_model_aabb(model: &mut Model) {
+        let mut min_aabb = Vector3::new(f32::MAX, f32::MAX, f32::MAX);
+        let mut max_aabb = Vector3::new(-f32::MAX, -f32::MAX, -f32::MAX);
+
+        for mesh in model.meshes.iter() {
+            for vertex in mesh.vertices.iter() {
+                min_aabb = min_aabb.zip(Vector3::new(vertex.position[0], vertex.position[1], vertex.position[2]), f32::min);
+                max_aabb = max_aabb.zip(Vector3::new(vertex.position[0], vertex.position[1], vertex.position[2]), f32::max);
+            }
+        }
+
+        model.set_aabb(&Aabb::new(min_aabb, max_aabb));
     }
 }
 

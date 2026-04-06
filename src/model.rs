@@ -2,7 +2,7 @@ use std::path::Path;
 use std::{
     io::{BufReader, Cursor},
 };
-use cgmath::{SquareMatrix, Zero};
+use cgmath::{Matrix4, Quaternion, SquareMatrix, Vector3, Zero};
 use gltf::buffer::Data;
 use gltf::mesh::Bounds;
 use yhwh_core::math::aabb::Aabb;
@@ -24,7 +24,8 @@ pub struct Mesh {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub num_elements: u32,
-    pub aabb: Aabb<f32>
+    pub aabb: Aabb<f32>,
+    pub vertices: Vec<Vertex>,
 }
 
 pub struct Model {
@@ -33,7 +34,8 @@ pub struct Model {
     pub animations: Option<Animations>,
     pub nodes: Nodes,
     pub global_transform: cgmath::Matrix4<f32>,
-    pub skins: Vec<Skin>
+    pub skins: Vec<Skin>,
+    pub aabb: Option<Aabb<f32>>
 }
 
 pub fn load_obj_model_sync(
@@ -129,8 +131,8 @@ pub fn load_obj_model_sync(
                 vertex_buffer,
                 index_buffer,
                 num_elements: m.mesh.indices.len() as u32,
-                aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero())
-                //material: m.mesh.material_id.unwrap_or(0),
+                aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
+                vertices
             }
         })
         .collect::<Vec<_>>();
@@ -141,7 +143,8 @@ pub fn load_obj_model_sync(
         animations: Default::default(),
         nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
-        skins: Vec::new()
+        skins: Vec::new(),
+        aabb: None
     })
 }
 
@@ -170,7 +173,8 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         vertex_buffer,
         index_buffer,
         num_elements: indices.len() as u32,
-        aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero())
+        aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
+        vertices,
     };
 
     meshes.push(cube_mesh);
@@ -181,7 +185,8 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         animations: Default::default(),
         nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
-        skins: Vec::new()
+        skins: Vec::new(),
+        aabb: None
     })
 }
 
@@ -210,7 +215,8 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         vertex_buffer,
         index_buffer,
         num_elements: indices.len() as u32,
-        aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero())
+        aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
+        vertices,
     };
 
     meshes.push(plane_mesh);
@@ -221,7 +227,8 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         animations: Default::default(),
         nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
-        skins: Vec::new()
+        skins: Vec::new(),
+        aabb: None
     })
 }
 
@@ -261,7 +268,6 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model
                 });
             transform
     };
-    
 
     Ok(Model {
         name: file_stem.to_string(),
@@ -269,7 +275,8 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model
         animations,
         nodes,
         global_transform,
-        skins
+        skins,
+        aabb: None
     })
 }
 
@@ -372,12 +379,14 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                             usage: wgpu::BufferUsages::INDEX,
                     });
 
+                
                     meshes.push(Mesh {
                         name: mesh_name.to_string(),
                         vertex_buffer,
                         index_buffer,
                         num_elements: indices.len() as u32,
-                        aabb
+                        aabb,
+                        vertices,
                     });
                 }
             }
@@ -385,6 +394,12 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
         for child in node.children() {
             visit_node(&child, data, meshes, device);
         }
+}
+
+impl Model {
+    pub fn set_aabb(&mut self, aabb: &Aabb<f32>) {
+        self.aabb.get_or_insert(*aabb);
+    }
 }
 
 impl Model {
@@ -458,6 +473,7 @@ fn compute_aabb(nodes: &Nodes, meshes: &[Mesh]) -> Aabb<f32> {
         .map(|n| {
             let mesh = &meshes[n.mesh_index().unwrap()];
             mesh.aabb * n.transform()
+            //mesh.aabb.transform(n.transform())
         })
         .collect::<Vec<_>>();
     Aabb::union(&aabbs).unwrap()

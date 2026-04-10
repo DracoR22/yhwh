@@ -36,25 +36,25 @@ struct LightUniform {
 
 struct ModelUniform {
     model_matrix: mat4x4<f32>,
-    normal_matrix: mat3x4<f32>,
+    normal_matrix: mat4x4<f32>,
     tex_scale: vec2<f32>,
     _padding_0: vec2<f32>
 }
 
 @group(0) @binding(0)
-var t_base_color: texture_2d<f32>;
+var base_color_texture: texture_2d<f32>;
 @group(0) @binding(1)
-var s_base_color: sampler;
+var base_color_sampler: sampler;
 
 @group(0) @binding(2)
-var t_normal_map: texture_2d<f32>;
+var normal_texture: texture_2d<f32>;
 @group(0) @binding(3)
-var s_normal_map: sampler;
+var normal_sampler: sampler;
 
 @group(0) @binding(4)
-var t_rma_map: texture_2d<f32>;
+var rma_texture: texture_2d<f32>;
 @group(0) @binding(5)
-var s_rma_map: sampler;
+var rma_sampler: sampler;
 
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -184,7 +184,7 @@ fn microfacet_brdf(l: vec3<f32>, v: vec3<f32>, n: vec3<f32>, base_color: vec3<f3
 
     let ndotl = max(dot(n, l), 0.0);
 
-    return (kd * base_color / PI + specular) * ndotl;
+    return (kd * base_color / PI + specular);
 }
 
 @vertex
@@ -196,8 +196,8 @@ fn vs_main(vert_in: VertexInput) -> VertexOutput {
     let world_position: vec4<f32> = model.model_matrix * vec4<f32>(vert_in.position, 1.0);
     out.world_position = world_position.xyz;
 
-    let N = normalize((model.model_matrix * vec4<f32>(vert_in.normal, 0.0)).xyz);
-    var T = normalize((model.model_matrix * vec4<f32>(vert_in.tangent, 0.0)).xyz);
+    let N = normalize((model.normal_matrix * vec4<f32>(vert_in.normal, 0.0)).xyz);
+    var T = normalize((model.normal_matrix * vec4<f32>(vert_in.tangent, 0.0)).xyz);
     T = normalize(T - dot(T, N) * N);
     let B = cross(N, T);
 
@@ -211,27 +211,34 @@ fn vs_main(vert_in: VertexInput) -> VertexOutput {
 }
 
 fn get_spot_light_lighting(light_pos: vec3<f32>, light_color: vec3<f32>, light_strength: f32, light_radius: f32, world_pos: vec3<f32>, view_pos: vec3<f32>, normal: vec3<f32>, base_color: vec3<f32>, metallic: f32, roughness: f32) -> vec3<f32> {
-    let l = normalize(light_pos - world_pos);
-    let v = normalize(view_pos - world_pos);
+    // let l = normalize(light_pos - world_pos);
+    // let v = normalize(view_pos - world_pos);
 
-    let distance = length(light_pos - world_pos);
-    let d = length(light_pos - world_pos);
-    let nd = d / light_radius;
-    let attenuation = 1.0 / (nd * nd + 1.0);
-    let radiance = light_color * attenuation * light_strength;
+    // let distance = length(light_pos - world_pos);
+    // let nd = distance / light_radius;
+    // let attenuation = 1.0 / (nd * nd + 1.0);
+    // let radiance = light_color * attenuation * light_strength;
 
-    let brdf = microfacet_brdf(l, v, normal, base_color, metallic, 1.0, roughness) * radiance;
-    return brdf;
+    // let brdf = microfacet_brdf(l, v, normal, base_color, metallic, 1.0, roughness) * radiance;
+    // return brdf;
+    let to_light = light_pos - world_pos;
+    let dist = length(to_light);
+    let nd = dist / light_radius;
+    let light_dir = to_light / dist;
+    let view_dir = normalize(view_pos - world_pos);
+    let att = 1.0 / (nd * nd + 1.0);
+    let ndl = max(dot(normal, light_dir), 0.0);
+    let radiance = light_color * att * light_strength;
+    let brdf = microfacet_brdf(light_dir, view_dir, normal, base_color, metallic, 1.0, roughness);
+    return brdf * radiance * ndl;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let base_texture: vec4<f32> = textureSample(t_base_color, s_base_color, in.tex_coords);
-
-    let albedo: vec3<f32> = pow(textureSample(t_base_color, s_base_color, in.tex_coords).rgb, vec3<f32>(2.2));
-    let tangent_normal: vec3<f32> = textureSample(t_normal_map, s_normal_map, in.tex_coords).xyz * 2.0 - 1.0;
+    let base_color: vec3<f32> = pow(textureSample(base_color_texture, base_color_sampler, in.tex_coords).rgb, vec3<f32>(2.2));
+    let tangent_normal: vec3<f32> = textureSample(normal_texture, normal_sampler, in.tex_coords).xyz * 2.0 - 1.0;
     let world_normal = normalize(mat3x3<f32>(in.tangent, in.bitangent, in.normal) * tangent_normal);
-    let rma = textureSample(t_rma_map, s_rma_map, in.tex_coords);
+    let rma = textureSample(rma_texture, rma_sampler, in.tex_coords);
 
     let roughness = rma.r;
     let metallic = rma.g;
@@ -242,7 +249,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     for (var i: u32 = 0u; i < light_count; i = i + 1u) {
         let light = lights[i];
 
-        let lighting = get_spot_light_lighting(light.position, light.color, light.strength, light.radius, in.world_position, camera.view_position.xyz, world_normal, albedo, metallic, roughness);
+        let lighting = get_spot_light_lighting(light.position, light.color, light.strength, light.radius, in.world_position, camera.view_position.xyz, world_normal, base_color, metallic, roughness);
         let shadow = shadow_calculation(i, light.position, light.radius, in.world_position, camera.view_position.xyz, world_normal);
 
         final_color += lighting * shadow;

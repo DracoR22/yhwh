@@ -31,7 +31,6 @@ impl OutlinePass {
             &mask_shader_module,
             [wgpu::TextureFormat::R8Unorm],
         )
-        //.with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
         .build(&ctx.device);
 
         let mask_texture = Texture::create_fbo(
@@ -147,9 +146,6 @@ impl OutlinePass {
     //         label: Some("Outline_Shader"),
     //         source: wgpu::ShaderSource::Wgsl(shader_code.into()),
     //    });
-
-
-    //  let write_stencil = false;
 
     // let new_pipeline = PipelineBuilder::new(
     //         "outline pipeline",

@@ -26,7 +26,7 @@
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube.001",
-          "material_name": "Ceiling",
+          "material_name": "PlasterGreen",
           "emissive": false
         }
       ]
@@ -56,7 +56,7 @@
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube_Mesh",
-          "material_name": "Ceiling",
+          "material_name": "PlasterGreen",
           "emissive": false
         }
       ]
@@ -96,7 +96,7 @@
       "position": [
         0.0,
         0.1,
-        9.0
+        8.0
       ],
       "size": [
         0.06,
@@ -261,7 +261,7 @@
       "position": [
         5.5,
         0.1,
-        9.0
+        8.0
       ],
       "size": [
         0.06,
@@ -417,36 +417,6 @@
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
           "material_name": "Candles",
-          "emissive": false
-        }
-      ]
-    },
-    {
-      "model_name": "Plane",
-      "position": [
-        1.0,
-        10.0,
-        1.0
-      ],
-      "size": [
-        51.0,
-        51.0,
-        51.0
-      ],
-      "rotation": [
-        1.0,
-        1.0,
-        1.0
-      ],
-      "tex_scale": [
-        5.0,
-        5.0
-      ],
-      "shadows": false,
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Ceiling",
           "emissive": false
         }
       ]
@@ -1151,7 +1121,7 @@
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube_Mesh",
-          "material_name": "Ceiling",
+          "material_name": "PlasterGreen",
           "emissive": false
         }
       ]
@@ -1161,11 +1131,11 @@
       "position": [
         7.5,
         5.0,
-        11.0
+        21.0
       ],
       "size": [
         1.0,
-        25.0,
+        41.0,
         10.0
       ],
       "rotation": [
@@ -1174,14 +1144,14 @@
         0.0
       ],
       "tex_scale": [
-        2.6,
+        5.5,
         1.7
       ],
       "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube_Mesh",
-          "material_name": "Ceiling",
+          "material_name": "PlasterGreen",
           "emissive": false
         }
       ]
@@ -1189,14 +1159,14 @@
     {
       "model_name": "Cube",
       "position": [
-        -1.0,
+        -9.5,
         5.0,
         22.5
       ],
       "size": [
-        17.0,
+        16.0,
         1.0,
-        10.0
+        11.0
       ],
       "rotation": [
         0.0,
@@ -1245,24 +1215,209 @@
           "emissive": false
         }
       ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        1.0,
+        10.0,
+        20.0
+      ],
+      "size": [
+        41.0,
+        43.0,
+        1.0
+      ],
+      "rotation": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tex_scale": [
+        3.8,
+        3.5
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "door_wall",
+      "position": [
+        3.9,
+        2.0,
+        24.5
+      ],
+      "size": [
+        2.0,
+        1.8,
+        2.7
+      ],
+      "rotation": [
+        0.0,
+        90.0,
+        0.0
+      ],
+      "tex_scale": [
+        2.5,
+        2.5
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube.001",
+          "material_name": "PlasterGreen",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        7.1,
+        5.0,
+        22.5
+      ],
+      "size": [
+        3.0,
+        1.0,
+        12.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        3.4
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "PlasterGreen",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        -3.0,
+        6.0,
+        33.3
+      ],
+      "size": [
+        1.0,
+        22.0,
+        13.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Default",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        2.0,
+        5.0,
+        8.0
+      ],
+      "size": [
+        2.1345,
+        2.1345,
+        2.1345
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Default",
+          "emissive": false
+        }
+      ]
+    },
+    {
+      "model_name": "picture_frame",
+      "position": [
+        -2.6,
+        6.0,
+        5.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        4.0
+      ],
+      "rotation": [
+        0.0,
+        90.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane.101",
+          "material_name": "ChristPantocrator",
+          "emissive": false
+        },
+        {
+          "mesh_name": "Plane.102",
+          "material_name": "PictureFrame0",
+          "emissive": false
+        }
+      ]
     }
   ],
   "lights": [
     {
       "color": [
         0.9496776,
-        0.814479,
-        0.71346676
+        0.8113165,
+        0.7079415
       ],
       "position": [
-        2.0,
+        3.0,
         5.0,
-        3.0
+        6.0
       ],
       "strength": 5.0,
-      "radius": 2.0,
+      "radius": 4.0,
       "light_type": "Point",
-      "shadows": false
+      "shadows": true
     },
     {
       "color": [

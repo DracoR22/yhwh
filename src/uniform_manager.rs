@@ -29,7 +29,7 @@ impl AnimationUniform {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelUniform {
     pub model_matrix: [[f32; 4]; 4],
-    pub normal_matrix: [[f32; 4]; 3],
+    pub normal_matrix: [[f32; 4]; 4],
     pub tex_scale: [f32; 2],
     _padding_0: [f32; 2]
 }
@@ -43,6 +43,8 @@ impl ModelUniform {
               [normal.x.x, normal.x.y, normal.x.z, 0.0],
               [normal.y.x, normal.y.y, normal.y.z, 0.0],
               [normal.z.x, normal.z.y, normal.z.z, 0.0],
+              [0.0,        0.0,        0.0,        1.0],
+
           ],
         tex_scale: [1.0, 1.0],
         _padding_0: [0.0, 0.0],
@@ -64,6 +66,17 @@ impl ModelUniform {
             [transposed.x.x, transposed.x.y, transposed.x.z, 0.0],
             [transposed.y.x, transposed.y.y, transposed.y.z, 0.0],
             [transposed.z.x, transposed.z.y, transposed.z.z, 0.0],
+            [0.0,             0.0,             0.0,          1.0],
+
+        ];
+       } else {
+        println!("WE FUCKED UP");
+        self.normal_matrix = [
+          [1.0, 0.0, 0.0, 0.0],
+          [0.0, 1.0, 0.0, 0.0],
+          [0.0, 0.0, 1.0, 0.0],
+          [0.0, 0.0, 0.0, 1.0],
+
         ];
        }
 

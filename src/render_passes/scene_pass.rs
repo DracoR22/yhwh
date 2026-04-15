@@ -132,12 +132,10 @@ impl ScenePass {
               }
             }
 
-            if game_object.get_size().x == 2.1345 {
-              continue;
-            }
-
             for mesh in &model.meshes {
-                if game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name).emissive {
+                let mesh_node = game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name);
+
+                if mesh_node.emissive || mesh_node.glass {
                   continue;
                 }
 

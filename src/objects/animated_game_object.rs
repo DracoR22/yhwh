@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo, types::MeshRenderingInfo}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo}, mesh_nodes::MeshNodes, utils::unique_id};
 use cgmath::Rotation3;
 
 pub struct AnimatedGameObject {

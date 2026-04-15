@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, types::MeshRenderingInfo}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}}, mesh_nodes::MeshNodes, utils::unique_id};
 use cgmath::Rotation3;
 
 pub struct GameObject {
@@ -102,7 +102,8 @@ impl GameObject {
             let create_info = MeshNodeCreateInfo {
                 material_name: material.name.clone(),
                 mesh_name: mesh.name.clone(),
-                emissive: mesh_node.emissive
+                emissive: mesh_node.emissive,
+                glass: mesh_node.glass
             };
 
             mesh_nodes_create_infos.push(create_info);

@@ -53,13 +53,19 @@ var outline_image: texture_2d<f32>;
 @group(0) @binding(5)
 var outline_sampler: sampler;
 
+@group(0) @binding(6)
+var glass_image: texture_2d<f32>;
+@group(0) @binding(7)
+var glass_sampler: sampler;
+
 @fragment
 fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
     let hdr = textureSample(hdr_image, hdr_sampler, vs.uv).rgb;
     let emissive = textureSample(emissive_image, emissive_sampler, vs.uv).rgb;
     let outline = textureSample(outline_image, outline_sampler, vs.uv).rgb;
+    let glass = textureSample(glass_image, glass_sampler, vs.uv).rgb;
 
-    let composite_image = hdr + emissive + outline;
+    let composite_image = hdr + glass + emissive + outline;
 
     var sdr = aces_tone_map(composite_image);
 

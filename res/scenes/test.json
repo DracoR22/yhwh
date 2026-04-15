@@ -4,19 +4,19 @@
     {
       "model_name": "door_wall",
       "position": [
-        -6.0,
+        -6.29,
         2.0,
         18.9
       ],
       "size": [
         3.0,
         3.0,
-        2.5
+        3.0
       ],
       "rotation": [
-        1.0,
-        1.0,
-        1.0
+        0.0,
+        0.0,
+        0.0
       ],
       "tex_scale": [
         4.0,
@@ -27,7 +27,8 @@
         {
           "mesh_name": "Cube.001",
           "material_name": "PlasterGreen",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -35,18 +36,18 @@
       "model_name": "Cube",
       "position": [
         -3.04,
-        4.8,
+        5.0,
         5.0
       ],
       "size": [
         1.0,
         10.0,
-        10.0
+        12.0
       ],
       "rotation": [
-        1.0,
-        1.0,
-        1.0
+        0.0,
+        0.0,
+        0.0
       ],
       "tex_scale": [
         1.0,
@@ -57,7 +58,8 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "PlasterGreen",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -87,7 +89,8 @@
         {
           "mesh_name": "defaultMaterial",
           "material_name": "Wood_Floor",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -95,7 +98,7 @@
       "model_name": "candles_set2",
       "position": [
         0.0,
-        0.1,
+        -0.5,
         8.0
       ],
       "size": [
@@ -117,142 +120,170 @@
         {
           "mesh_name": "Cylinder.006_2.002",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.001",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.003",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.004",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.005",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.006",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.007",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.008",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.009",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_1.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_3_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Small_wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Big_Wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.002",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.003",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.005",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.006",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.007",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -260,7 +291,7 @@
       "model_name": "candles_set2",
       "position": [
         5.5,
-        0.1,
+        -0.5,
         8.0
       ],
       "size": [
@@ -282,142 +313,170 @@
         {
           "mesh_name": "Cylinder.006_2.002",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.001",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.003",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.004",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.005",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.006",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.007",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.008",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.009",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_1.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_3_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.001_Used_candles_0.001",
           "material_name": "Default",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Small_wax_leak_low.001_Used_candles_0.001",
           "material_name": "Default",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Big_Wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.002",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.003",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.005",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.006",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.007",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -425,7 +484,7 @@
       "model_name": "wooden_table",
       "position": [
         0.0,
-        1.5,
+        1.1,
         4.7
       ],
       "size": [
@@ -447,7 +506,8 @@
         {
           "mesh_name": "Desk_LP_01 - Default_0",
           "material_name": "Wooden_Table",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -455,7 +515,7 @@
       "model_name": "candles_set2",
       "position": [
         0.5,
-        2.5,
+        2.0,
         5.4
       ],
       "size": [
@@ -477,142 +537,170 @@
         {
           "mesh_name": "Cylinder.006_2.002",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.001",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.003",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.004",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.005",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.006",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.007",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.008",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.009",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_1.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_3_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Small_wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Big_Wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.002",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.003",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.005",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.006",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.007",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -620,7 +708,7 @@
       "model_name": "candles_set2",
       "position": [
         4.5,
-        2.5,
+        2.0,
         5.4
       ],
       "size": [
@@ -642,149 +730,177 @@
         {
           "mesh_name": "Cylinder.006_2.002",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.001",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.003",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.004",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.005",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.006",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.007",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.008",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.009",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_1.001_Extra_for_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_3_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Small_wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.002_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Big_Wax_leak_low.001_Used_candles_0.001",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.002",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.003",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.005",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.006",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.007",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
           "material_name": "Candles",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
     {
       "model_name": "wooden_table",
       "position": [
-        -9.1,
+        -9.4,
         1.0,
         20.0
       ],
@@ -807,14 +923,15 @@
         {
           "mesh_name": "Desk_LP_01 - Default_0",
           "material_name": "Wooden_Table",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
     {
       "model_name": "candles_set2",
       "position": [
-        -5.0,
+        -5.5,
         2.0,
         20.0
       ],
@@ -837,142 +954,170 @@
         {
           "mesh_name": "Cylinder.006_2.002",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.001",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.003",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.004",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.005",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.006",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.007",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.008",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Cylinder.006_2.009",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
           "material_name": "Default",
-          "emissive": true
+          "emissive": true,
+          "glass": false
         },
         {
           "mesh_name": "Wick_2.001_Extra_for_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wick_1.001_Extra_for_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_3_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.002_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_2_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.002_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Wax_large_small_1_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Small_wax_leak_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.002_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_small_used_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Big_Wax_leak_low.001_Used_candles_0.001",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.002",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.003",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.005",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.006",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.007",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Candle_large_big_used_low.001_Used_candles_0.008",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1002,14 +1147,15 @@
         {
           "mesh_name": "Plane_Mesh",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
     {
       "model_name": "virgin_mary_statue_low_poly",
       "position": [
-        -8.0,
+        -8.4,
         1.8,
         20.0
       ],
@@ -1032,7 +1178,8 @@
         {
           "mesh_name": "marie_1k_msh_marie_1k_SH_0",
           "material_name": "Virgin_Mary",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1040,7 +1187,7 @@
       "model_name": "persian_rug",
       "position": [
         2.4,
-        0.01,
+        -0.49,
         5.0
       ],
       "size": [
@@ -1062,21 +1209,22 @@
         {
           "mesh_name": "rug01_MDL_nar_blinn2_0",
           "material_name": "Persian_Rug",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
     {
       "model_name": "Cube",
       "position": [
-        -10.0,
+        -10.4,
         5.0,
         12.0
       ],
       "size": [
         1.0,
         28.0,
-        10.0
+        12.0
       ],
       "rotation": [
         0.0,
@@ -1084,15 +1232,16 @@
         0.0
       ],
       "tex_scale": [
-        2.6,
-        1.0
+        3.3,
+        1.7
       ],
       "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1106,7 +1255,7 @@
       "size": [
         10.0,
         2.0,
-        10.0
+        12.0
       ],
       "rotation": [
         0.0,
@@ -1122,7 +1271,8 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "PlasterGreen",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1131,12 +1281,12 @@
       "position": [
         7.5,
         5.0,
-        21.0
+        12.0
       ],
       "size": [
         1.0,
-        41.0,
-        10.0
+        22.0,
+        12.0
       ],
       "rotation": [
         0.0,
@@ -1152,21 +1302,22 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "PlasterGreen",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
     {
       "model_name": "Cube",
       "position": [
-        -9.5,
+        -8.5,
         5.0,
         22.5
       ],
       "size": [
-        16.0,
+        10.0,
         1.0,
-        11.0
+        13.0
       ],
       "rotation": [
         0.0,
@@ -1182,7 +1333,8 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1212,7 +1364,8 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "Wood_Floor",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1220,7 +1373,7 @@
       "model_name": "Cube",
       "position": [
         1.0,
-        10.0,
+        11.5,
         20.0
       ],
       "size": [
@@ -1229,9 +1382,9 @@
         1.0
       ],
       "rotation": [
-        1.0,
-        1.0,
-        1.0
+        0.0,
+        0.0,
+        0.0
       ],
       "tex_scale": [
         3.8,
@@ -1242,7 +1395,8 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "Ceiling",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1255,8 +1409,8 @@
       ],
       "size": [
         2.0,
-        1.8,
-        2.7
+        2.2,
+        3.0
       ],
       "rotation": [
         0.0,
@@ -1272,7 +1426,8 @@
         {
           "mesh_name": "Cube.001",
           "material_name": "PlasterGreen",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1302,7 +1457,8 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "PlasterGreen",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1331,38 +1487,9 @@
       "mesh_rendering_info": [
         {
           "mesh_name": "Cube_Mesh",
-          "material_name": "Default",
-          "emissive": false
-        }
-      ]
-    },
-    {
-      "model_name": "Cube",
-      "position": [
-        2.0,
-        5.0,
-        8.0
-      ],
-      "size": [
-        2.1345,
-        2.1345,
-        2.1345
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "tex_scale": [
-        1.0,
-        1.0
-      ],
-      "shadows": false,
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Cube_Mesh",
-          "material_name": "Default",
-          "emissive": false
+          "material_name": "Ceiling",
+          "emissive": false,
+          "glass": false
         }
       ]
     },
@@ -1392,12 +1519,107 @@
         {
           "mesh_name": "Plane.101",
           "material_name": "ChristPantocrator",
-          "emissive": false
+          "emissive": false,
+          "glass": false
         },
         {
           "mesh_name": "Plane.102",
           "material_name": "PictureFrame0",
-          "emissive": false
+          "emissive": false,
+          "glass": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        3.0,
+        5.0,
+        45.0
+      ],
+      "size": [
+        20.0,
+        1.0,
+        15.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false,
+          "glass": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        1.0,
+        -1.0,
+        40.0
+      ],
+      "size": [
+        17.0,
+        23.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Wood_Floor",
+          "emissive": false,
+          "glass": false
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        6.5,
+        2.0,
+        38.0
+      ],
+      "size": [
+        1.0,
+        31.0,
+        20.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "emissive": false,
+          "glass": false
         }
       ]
     }
@@ -1426,7 +1648,7 @@
         1.0
       ],
       "position": [
-        -5.0,
+        -6.0,
         4.0,
         20.0
       ],

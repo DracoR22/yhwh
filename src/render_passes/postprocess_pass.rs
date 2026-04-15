@@ -11,14 +11,14 @@ pub struct PostProcessPass {
 }
 
 impl PostProcessPass {
-    pub fn new(ctx: &WgpuContext, config: &wgpu::SurfaceConfiguration, pbr_texture: &Texture, emissive_texture: &Texture, outline_texture: &Texture) -> Self {
+    pub fn new(ctx: &WgpuContext, config: &wgpu::SurfaceConfiguration, pbr_texture: &Texture, emissive_texture: &Texture, outline_texture: &Texture, glass_texure: &Texture) -> Self {
        let format = wgpu::TextureFormat::Rgba16Float;
  
        let width = config.width;
        let height = config.height;
 
-       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float, TL::Float]).unwrap();
-       let bind_group = BindGroupManager::create_multi_texture_bind_group(&ctx.device, &bind_group_layout, &[&pbr_texture, &emissive_texture, &outline_texture]).unwrap();
+       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float, TL::Float, TL::Float]).unwrap();
+       let bind_group = BindGroupManager::create_multi_texture_bind_group(&ctx.device, &bind_group_layout, &[&pbr_texture, &emissive_texture, &outline_texture, &glass_texure]).unwrap();
 
        let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Default_Shader"),
@@ -79,11 +79,11 @@ impl PostProcessPass {
        self.pipeline = pipeline;
     }
 
-    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, swapchain_view: &wgpu::TextureView, ctx: &WgpuContext, scene_texture: &Texture, emissive_texture: &Texture, outline_texture: &Texture) {
+    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, swapchain_view: &wgpu::TextureView, ctx: &WgpuContext, scene_texture: &Texture, emissive_texture: &Texture, outline_texture: &Texture, glass_texure: &Texture) {
         self.bind_group = BindGroupManager::create_multi_texture_bind_group(
             &ctx.device,
             &self.bind_group_layout,
-            &[&scene_texture, &emissive_texture, outline_texture],
+            &[&scene_texture, &emissive_texture, &outline_texture, &glass_texure],
         ).unwrap();
 
        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

@@ -23,7 +23,7 @@ pub struct Player {
 impl Player {
     pub fn new() -> Self {
         let pos = cgmath::Vector3::new(4.0, 6.0, 20.0);
-        let speed = 4.0;
+        let speed = 6.0;
         let sensitivity = 0.4;
 
         Self {

@@ -1,6 +1,13 @@
 use std::collections::HashMap;
 
-use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo, types::MeshRenderingInfo}};
+use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo}};
+
+pub struct MeshRenderingInfo {
+   pub mesh_index: usize,
+   pub material_index: usize,
+   pub emissive: bool,
+   pub glass: bool
+}
 
 pub struct MeshNodes {
     model_name: String,
@@ -21,7 +28,8 @@ impl MeshNodes {
                  mesh_rendering_info.push(MeshRenderingInfo {
                  mesh_index,
                  material_index,
-                 emissive: false
+                 emissive: false,
+                 glass: false
                 });
                 mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
             }
@@ -36,7 +44,8 @@ impl MeshNodes {
             mesh_rendering_info.push(MeshRenderingInfo {
                 mesh_index,
                 material_index,
-                emissive: info.emissive
+                emissive: info.emissive,
+                glass: info.glass
             });
             mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
            }
@@ -82,7 +91,8 @@ impl MeshNodes {
             &MeshRenderingInfo { 
                 mesh_index: 0,
                 material_index: 0,
-                emissive: false
+                emissive: false,
+                glass: false
             }
         }
     }

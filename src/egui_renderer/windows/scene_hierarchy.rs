@@ -187,10 +187,6 @@ impl SceneHierarchyWindow {
 
                                 }
 
-
-                                ui.label("Material");
-                        
-
                                 ui.label("Emissive");
                                 match game_object.get_mesh_nodes_mut().get_mesh_rendering_info_by_mesh_name_mut(&model.meshes[*selected_index].name) {
                                     Some(mesh_node) => {
@@ -198,8 +194,17 @@ impl SceneHierarchyWindow {
                                     }
                                     _ => {}
                                 }
+
                                 ui.label("Shadows");
                                 ui.checkbox(&mut game_object.shadows, "");
+
+                                ui.label("Glass");
+                                match game_object.get_mesh_nodes_mut().get_mesh_rendering_info_by_mesh_name_mut(&model.meshes[*selected_index].name) {
+                                    Some(mesh_node) => {
+                                        ui.checkbox(&mut mesh_node.glass, "");
+                                    },
+                                    _ => {}
+                                }
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")

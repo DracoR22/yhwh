@@ -83,17 +83,17 @@ impl GlassPass {
 
             pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-            if game_object.get_model_name().to_lowercase() == "cube" {
-                if game_object.get_size().x == 2.1345 {
-                    if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
-                        for mesh in model.meshes.iter() {
-                            pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                            pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                            pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                        }
+            if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
+                for mesh in model.meshes.iter() {
+                    let mesh_node = game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name);
+
+                    if mesh_node.glass {
+                        pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                        pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
                     }
                 }
-           }
+            }
         }
     }
 

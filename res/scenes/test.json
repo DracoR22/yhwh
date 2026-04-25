@@ -1403,14 +1403,14 @@
     {
       "model_name": "door_wall",
       "position": [
-        3.9,
-        2.0,
-        24.5
+        4.3,
+        2.5,
+        35.0
       ],
       "size": [
-        2.0,
-        2.2,
-        3.0
+        3.0,
+        2.6,
+        3.3
       ],
       "rotation": [
         0.0,
@@ -1618,6 +1618,74 @@
         {
           "mesh_name": "Cube_Mesh",
           "material_name": "Ceiling",
+          "emissive": false,
+          "glass": false
+        }
+      ]
+    },
+    {
+      "model_name": "door_frame",
+      "position": [
+        3.22,
+        3.52,
+        32.0
+      ],
+      "size": [
+        0.04,
+        0.04,
+        0.04
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "F_f_0",
+          "material_name": "Default",
+          "emissive": false,
+          "glass": false
+        }
+      ]
+    },
+    {
+      "model_name": "door",
+      "position": [
+        3.37,
+        3.52,
+        32.0
+      ],
+      "size": [
+        0.042,
+        0.042,
+        0.042
+      ],
+      "rotation": [
+        0.0,
+        80.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "door_door_0",
+          "material_name": "Default",
+          "emissive": false,
+          "glass": false
+        },
+        {
+          "mesh_name": "handel_door_0",
+          "material_name": "Default",
           "emissive": false,
           "glass": false
         }

@@ -11,7 +11,7 @@ impl ShadowPass {
     pub fn new(ctx: &WgpuContext, game_data: &GameData) -> Self {
         let shader_code = std::fs::read_to_string("res/shaders/shadow_cube_map.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("blur shader"),
+            label: Some("shadow cube map shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into())
         });
 

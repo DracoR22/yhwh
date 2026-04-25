@@ -1,6 +1,6 @@
 use egui::TextureId;
 
-use crate::{asset_manager::AssetManager, egui_renderer::windows::scene_hierarchy::SceneHierarchyWindow, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, egui_renderer::editor::layout::EditorLayout, wgpu_context::WgpuContext};
 
 pub struct EguiMaterial {
     pub texture_id: TextureId,
@@ -9,14 +9,14 @@ pub struct EguiMaterial {
 }
 
 pub struct UiManager {
-    pub scene_hierarchy_window: SceneHierarchyWindow,
+    pub scene_hierarchy_window: EditorLayout,
     pub materials: Vec<EguiMaterial>
 }
 
 impl UiManager {
     pub fn new() -> Self {
         Self {
-            scene_hierarchy_window: SceneHierarchyWindow::new(),
+            scene_hierarchy_window: EditorLayout::new(),
             materials: Vec::new()
         }
     }

@@ -32,6 +32,14 @@ pub struct LightObjectCreateInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct DoorObjectCreateInfo {
+    pub position: [f32; 3],
+    pub size: [f32; 3],
+    pub rotation: [f32; 3],
+    pub mesh_rendering_info: Vec<MeshNodeCreateInfo>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LevelCreateInfo {
     pub name: String,
     pub game_objects: Vec<GameObjectCreateInfo>,

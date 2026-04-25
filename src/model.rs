@@ -26,6 +26,7 @@ pub struct Mesh {
     pub num_elements: u32,
     pub aabb: Aabb<f32>,
     pub vertices: Vec<Vertex>,
+    pub transform_matrix: Matrix4<f32>
 }
 
 pub struct Model {
@@ -132,7 +133,8 @@ pub fn load_obj_model_sync(
                 index_buffer,
                 num_elements: m.mesh.indices.len() as u32,
                 aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
-                vertices
+                vertices,
+                transform_matrix: Matrix4::identity()
             }
         })
         .collect::<Vec<_>>();
@@ -175,6 +177,7 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         num_elements: indices.len() as u32,
         aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
         vertices,
+        transform_matrix: Matrix4::identity()
     };
 
     meshes.push(cube_mesh);
@@ -217,6 +220,7 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         num_elements: indices.len() as u32,
         aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
         vertices,
+        transform_matrix: Matrix4::identity()
     };
 
     meshes.push(plane_mesh);
@@ -283,6 +287,8 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model
 fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: &wgpu::Device) {
      if let Some(mesh) = node.mesh() {
                 let mesh_name = mesh.name().map(|n| n.to_string()).unwrap_or_else(|| format!("UnNamedMesh"));
+
+                let transform_matrix = node.transform().matrix();
 
                 for primitive in mesh.primitives() {
                     let mut vertices: Vec<Vertex> = Vec::new();
@@ -387,6 +393,7 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                         num_elements: indices.len() as u32,
                         aabb,
                         vertices,
+                        transform_matrix: Matrix4::from(transform_matrix)
                     });
                 }
             }

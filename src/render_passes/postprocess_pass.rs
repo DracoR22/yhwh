@@ -1,4 +1,4 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::HDR_TEX_FORMAT, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, texture::{self, Texture}, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::HDR_TEX_FORMAT, pipeline_builder::PipelineBuilder, texture::{self, Texture}, wgpu_context::WgpuContext};
 
 pub struct PostProcessPass {
     pipeline_layout: wgpu::PipelineLayout,

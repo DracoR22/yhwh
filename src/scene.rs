@@ -1,16 +1,18 @@
-use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, LightObjectCreateInfo, MeshNodeCreateInfo}}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject, light_object::LightObject}, utils::json::{load_level}};
+use crate::{asset_manager::AssetManager, common::create_info::{DoorObjectCreateInfo, GameObjectCreateInfo, LightObjectCreateInfo, MeshNodeCreateInfo}, objects::{animated_game_object::AnimatedGameObject, door_object::DoorObject, game_object::GameObject, light_object::LightObject}, utils::json::load_level};
 
 pub struct Scene {
     pub game_objects: Vec<GameObject>,
     pub animated_game_objects: Vec<AnimatedGameObject>,
+    pub door_objects: Vec<DoorObject>,
     pub lights: Vec<LightObject>
 }
 
 impl Scene {
     pub fn new(asset_manager: &AssetManager) -> Self {
-        let mut game_objects: Vec<GameObject> = Vec::new();
-        let mut animated_game_objects: Vec<AnimatedGameObject> = Vec::new();  
-        let mut lights: Vec<LightObject> = Vec::new();
+        let mut game_objects = Vec::<GameObject>::new();
+        let mut animated_game_objects = Vec::<AnimatedGameObject>::new();  
+        let mut door_objects = Vec::<DoorObject>::new();
+        let mut lights = Vec::<LightObject>::new();
 
         let level = load_level().expect("Could not load level!!");
 
@@ -31,14 +33,24 @@ impl Scene {
 
         animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
 
-       for create_info in level.lights {
-          lights.push(LightObject::new(&create_info));
-       }
+        let door_create_info = DoorObjectCreateInfo {
+            position: [3.0, 3.52, 32.0],
+            rotation: [0.0, 0.0, 0.0],
+            size: [0.038, 0.038, 0.038],
+            mesh_rendering_info: vec![]
+        };
+
+        door_objects.push(DoorObject::new(&door_create_info, &asset_manager));
+
+        for create_info in level.lights {
+            lights.push(LightObject::new(&create_info));
+        }
 
         Self {
             game_objects,
             animated_game_objects,
-            lights
+            lights,
+            door_objects
         }
     }
 
@@ -55,5 +67,12 @@ impl Scene {
 impl Scene {
     pub fn add_light(&mut self, create_info: &LightObjectCreateInfo) {
         self.lights.push(LightObject::new(&create_info));
+    }
+}
+
+// doors
+impl Scene {
+    pub fn add_door_object(&mut self, create_info: &DoorObjectCreateInfo, asset_manager: &AssetManager) {
+        self.door_objects.push(DoorObject::new(create_info, asset_manager));
     }
 }

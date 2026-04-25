@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use cgmath::Matrix;
 use cgmath::SquareMatrix;
+use cgmath::Vector2;
 
 use crate::asset_manager::AssetManager;
 use crate::bind_group_manager::BindGroupManager;
@@ -213,6 +214,10 @@ impl UniformManager {
         model_uniforms.insert(animated_game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
 
+      for door_object in scene.door_objects.iter() {
+        model_uniforms.insert(door_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
+      }
+
       let mut shadow_cube_maps: Vec<Uniform<ShadowCubeMapUniform>> = Vec::new();
       for _ in 0..MAX_LIGHTS {
          for _ in 0..6 {
@@ -267,6 +272,18 @@ impl UniformManager {
 
         if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
           model_uniform.value_mut().update(&game_object.get_model_matrix(), &game_object.tex_scale);
+          model_uniform.update(&ctx.queue);  
+        }
+      }
+
+      let door_tex_scale = Vector2::new(1.0, 1.0);
+      for door_object in scene.door_objects.iter() {
+        if !self.models.contains_key(&door_object.id) {
+          self.create_model(&ctx, door_object.id);
+        }
+
+        if let Some(model_uniform) = self.models.get_mut(&door_object.id) {
+          model_uniform.value_mut().update(&door_object.get_model_matrix(), &door_tex_scale);
           model_uniform.update(&ctx.queue);  
         }
       }

@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, engine::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, pipeline_manager::PipelineManager, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, engine::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct ScenePass {
     pbr_pipeline: wgpu::RenderPipeline,
@@ -133,13 +133,59 @@ impl ScenePass {
             }
 
             for mesh in &model.meshes {
-                let mesh_node = game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name);
-
-                if mesh_node.emissive || mesh_node.glass {
-                  continue;
+                match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                  Some(mesh_node) => {
+                    if mesh_node.emissive || mesh_node.glass {
+                      continue;
+                    }
+                  },
+                  None => ()
                 }
 
                 let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+                let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+
+                render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+
+                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.set_stencil_reference(1);
+                render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+            }
+          }
+        }
+
+        // Doors
+        for door_object in game_data.scene.door_objects.iter() {
+           let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
+            println!("No model bind group for object {:?}, skipping draw", door_object.id);
+            continue;
+          };
+
+          render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+
+          if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+            // frustum culling
+            if let Some(model_aabb) = model.aabb {
+              let model_matrix = door_object.get_model_matrix();
+              let world_aabb = model_aabb.transform(model_matrix);
+
+              if !frustum.intersects_aabb(&world_aabb) {
+                continue;
+              }
+            }
+
+            for mesh in &model.meshes {
+                match door_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                  Some(mesh_node) => {
+                    if mesh_node.emissive || mesh_node.glass {
+                      continue;
+                    }
+                  },
+                  None => ()
+                }
+
+                let mesh_material_index = door_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
                 let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
 
                 render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
@@ -165,11 +211,25 @@ impl ScenePass {
           if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
               render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
                 for mesh in model.meshes.iter() {
-                    if game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name).emissive {
+                  match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                    Some(mesh_node) => {
+                      if mesh_node.emissive {
                         render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                         render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                         render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                    }
+                      }
+                    },
+                    None => ()
+                  }
+
+                  // if let Some(mesh_node) = game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name) {
+                    
+                  // }
+                  //   if game_object.get_mesh_nodes().get_mesh_rendering_info_by_mesh_name(&mesh.name).emissive {
+                  //       render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                  //       render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                  //       render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                  //   }
               }
           }
         }

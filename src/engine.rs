@@ -3,7 +3,7 @@ use std::sync::Arc;
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::{enums::GameState}, input::{input::Input}, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject}, physics::physics::Physics, player::Player, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, input::input::Input, objects::{animated_game_object::AnimatedGameObject, door_object::DoorState, game_object::GameObject}, physics::physics::Physics, player::Player, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
 
 pub struct CameraManager {
     
@@ -171,6 +171,11 @@ impl GameData {
         
         for light in self.scene.lights.iter_mut() {
             light.update();
+        }
+
+        for door in self.scene.door_objects.iter_mut() {
+            door.update(self.delta_time.as_secs_f32());
+            door.toggle_state(audio_manager, &input);
         }
     
         match self.game_state {

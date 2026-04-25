@@ -3,7 +3,6 @@ pub mod texture;
 pub mod camera;
 pub mod instance;
 pub mod wgpu_context;
-pub mod pipeline_manager;
 pub mod bind_group_manager;
 pub mod input;
 pub mod model;

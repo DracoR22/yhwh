@@ -1626,14 +1626,14 @@
     {
       "model_name": "door_frame",
       "position": [
-        3.22,
+        3.1,
         3.52,
         32.0
       ],
       "size": [
-        0.04,
-        0.04,
-        0.04
+        0.038,
+        0.038,
+        0.038
       ],
       "rotation": [
         0.0,
@@ -1653,29 +1653,25 @@
           "glass": false
         }
       ]
-    },
+    }
+  ],
+  "door_objects": [
     {
-      "model_name": "door",
       "position": [
-        3.37,
+        3.23,
         3.52,
         32.0
       ],
       "size": [
-        0.042,
-        0.042,
-        0.042
+        0.04,
+        0.04,
+        0.04
       ],
       "rotation": [
         0.0,
-        80.0,
+        0.0,
         0.0
       ],
-      "tex_scale": [
-        1.0,
-        1.0
-      ],
-      "shadows": false,
       "mesh_rendering_info": [
         {
           "mesh_name": "door_door_0",

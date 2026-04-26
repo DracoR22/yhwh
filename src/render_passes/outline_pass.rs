@@ -95,44 +95,46 @@ impl OutlinePass {
         render_pass.set_pipeline(&self.mask_pipeline);
         render_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
 
-        for (game_object, door_object) in game_data.scene.game_objects.iter().zip(game_data.scene.door_objects.iter()) {
+        for game_object in game_data.scene.game_objects.iter() {
             // game objects
            if game_object.is_selected {
-            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-             println!("No model bind group for object {:?}, skipping draw", game_object.id);
-             continue;
-            };
+               let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+                    println!("No model bind group for object {:?}, skipping draw", game_object.id);
+                    continue;
+                };
 
-            render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+                render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
-             for mesh in model.meshes.iter() {
-                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.set_stencil_reference(1);
-                render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-             }
+                if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+                    for mesh in model.meshes.iter() {
+                        render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        render_pass.set_stencil_reference(1);
+                        render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                    }
+                }
             }
-           }
+        }
 
-           // doors
-           if door_object.is_selected {
-            let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
-             println!("No model bind group for object {:?}, skipping draw", door_object.id);
-             continue;
-           };
+         // doors
+        for door_object in game_data.scene.door_objects.iter() {
+            if door_object.is_selected {
+                let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
+                    println!("No model bind group for object {:?}, skipping draw", door_object.id);
+                    continue;
+               };
 
-            render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+                render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
-             for mesh in model.meshes.iter() {
-                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.set_stencil_reference(1);
-                render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-             }
+                if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+                    for mesh in model.meshes.iter() {
+                        render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        render_pass.set_stencil_reference(1);
+                        render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                    }
+                }
             }
-           }
         }
 
         drop(render_pass);

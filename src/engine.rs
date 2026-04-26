@@ -175,7 +175,9 @@ impl GameData {
 
         for door in self.scene.door_objects.iter_mut() {
             door.update(self.delta_time.as_secs_f32());
-            door.toggle_state(audio_manager, &input);
+            if door.interact(&self.asset_manager, &self.player.camera) {
+                door.toggle_state(audio_manager, &input);
+            }
         }
     
         match self.game_state {

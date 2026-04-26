@@ -11,7 +11,8 @@ pub struct GameObjects {
     add_game_object_selected: bool,
     scale_uniform: bool,
     material_window_open: bool,
-    selected_model_index: usize
+    selected_model_index: usize,
+    pub should_reset_other_states: bool
 }
 
 impl GameObjects {
@@ -23,7 +24,8 @@ impl GameObjects {
             objects_marked_for_removal: HashSet::new(),
             scale_uniform: true,
             material_window_open: false,
-            selected_model_index: 0
+            selected_model_index: 0,
+            should_reset_other_states: false
         }
     }
 
@@ -52,6 +54,7 @@ impl GameObjects {
                     }
                     self.selected_id = -1;
                     self.add_game_object_selected = true;
+                    self.should_reset_other_states = true;
                     // self.selected_light_id = -1;
                 }
             });
@@ -224,6 +227,9 @@ impl GameObjects {
                     }
                 }
             }
+
+            self.add_new(ui, game_data);
+            self.process_marked_for_removal(game_data);
     }
 
     pub fn process_marked_for_removal(&mut self, game_data: &mut GameData) {
@@ -261,5 +267,12 @@ impl GameObjects {
                         game_data.scene.add_game_object(&create_info, &game_data.asset_manager);
                 }
         }
+    }
+
+    pub fn reset_states(&mut self) {
+        self.selected_id = -1;
+        self.add_game_object_selected = false;
+        self.material_window_open = false;
+        self.scale_uniform = false;
     }
 }

@@ -43,5 +43,6 @@ pub struct DoorObjectCreateInfo {
 pub struct LevelCreateInfo {
     pub name: String,
     pub game_objects: Vec<GameObjectCreateInfo>,
+    pub door_objects: Vec<DoorObjectCreateInfo>,
     pub lights: Vec<LightObjectCreateInfo>
 }

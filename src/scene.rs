@@ -33,14 +33,9 @@ impl Scene {
 
         animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
 
-        let door_create_info = DoorObjectCreateInfo {
-            position: [3.0, 3.52, 32.0],
-            rotation: [0.0, 0.0, 0.0],
-            size: [0.038, 0.038, 0.038],
-            mesh_rendering_info: vec![]
-        };
-
-        door_objects.push(DoorObject::new(&door_create_info, &asset_manager));
+        for create_info in level.door_objects {
+            door_objects.push(DoorObject::new(&create_info, asset_manager));
+        }
 
         for create_info in level.lights {
             lights.push(LightObject::new(&create_info));

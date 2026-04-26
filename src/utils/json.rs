@@ -1,13 +1,18 @@
 use std::{fs::{self, File}, io::Write};
 
-use crate::{asset_manager::AssetManager, common::create_info::{GameObjectCreateInfo, LevelCreateInfo, LightObjectCreateInfo}, engine::GameData, objects::{game_object::GameObject, light_object::LightObject}};
+use crate::{asset_manager::AssetManager, common::create_info::{DoorObjectCreateInfo, GameObjectCreateInfo, LevelCreateInfo, LightObjectCreateInfo}, engine::GameData, objects::{game_object::GameObject, light_object::LightObject}};
 
 pub fn save_level(game_data: &GameData) {
-    let mut game_object_create_infos: Vec<GameObjectCreateInfo> = Vec::new();
-    let mut light_create_infos: Vec<LightObjectCreateInfo> = Vec::new();
+    let mut game_object_create_infos = Vec::<GameObjectCreateInfo>::new();
+    let mut light_create_infos = Vec::<LightObjectCreateInfo>::new();
+    let mut door_objects_create_infos = Vec::<DoorObjectCreateInfo>::new();
 
     for game_object in game_data.scene.game_objects.iter() {
       game_object_create_infos.push(game_object.get_create_info(&game_data.asset_manager));
+    }
+
+    for door_object in game_data.scene.door_objects.iter() {
+      door_objects_create_infos.push(door_object.get_create_info(&game_data.asset_manager));
     }
 
     for light in game_data.scene.lights.iter() {
@@ -17,6 +22,7 @@ pub fn save_level(game_data: &GameData) {
     let level_create_info = LevelCreateInfo {
       name: "test".to_string(),
       game_objects: game_object_create_infos,
+      door_objects: door_objects_create_infos,
       lights: light_create_infos
     };
 

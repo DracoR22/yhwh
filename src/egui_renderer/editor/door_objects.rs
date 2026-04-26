@@ -9,7 +9,8 @@ pub struct DoorObjects {
     scale_uniform: bool,
     selected_mesh_index_map: HashMap<usize, usize>,
     material_window_open: bool,
-    add_object_selected: bool
+    add_object_selected: bool,
+    pub should_reset_other_states: bool
 }
 
 impl DoorObjects {
@@ -19,12 +20,12 @@ impl DoorObjects {
             scale_uniform: true,
             selected_mesh_index_map: HashMap::new(),
             material_window_open: false,
-            add_object_selected: false
+            add_object_selected: false,
+            should_reset_other_states: false
         }
     }
 
     pub fn list(&mut self, ui: &mut Ui, game_data: &mut GameData) {
-        ui.separator();
         ui.collapsing("Door Objects", |ui| {
             for (index, door_object) in game_data.scene.door_objects.iter_mut().enumerate() {
                 let button = ui.button(door_object.model_name.to_string() + " (" + &index.to_string() + ")");
@@ -48,6 +49,7 @@ impl DoorObjects {
                     }
                     self.selected_id = -1;
                     self.add_object_selected = true;
+                    self.should_reset_other_states = true;
                     // self.selected_light_id = -1;
                 }
         });
@@ -185,6 +187,12 @@ impl DoorObjects {
                         }
                     }
                 }
+
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.label("Door State: ");
+                    ui.label(door_object.state_to_string());
+                });
             }
         }
 
@@ -204,5 +212,11 @@ impl DoorObjects {
                 game_data.scene.add_door_object(&create_info, &game_data.asset_manager);
             }
         }
+    }
+
+    pub fn reset_states(&mut self) {
+        self.selected_id = -1;
+        self.material_window_open = false;
+        self.add_object_selected = false;
     }
 }

@@ -36,11 +36,19 @@ impl EditorLayout {
            .width_range(250.0..=300.0)
             .show(&ui, |ui| {
                 self.game_objects_panel.update(ui, game_data, materials, (window_width, window_height));
-                self.game_objects_panel.add_new(ui, game_data);
-                self.game_objects_panel.process_marked_for_removal(game_data);
-
                 self.door_objects_panel.update(ui, game_data, materials, (window_width, window_height));
                 self.lights_panel.update(ui, game_data);
+
+                // reset states
+                if self.door_objects_panel.should_reset_other_states {
+                    self.game_objects_panel.reset_states();
+                    self.door_objects_panel.should_reset_other_states = false;
+                }
+
+                if self.game_objects_panel.should_reset_other_states {
+                    self.door_objects_panel.reset_states();
+                    self.game_objects_panel.should_reset_other_states = false;
+                }
             });
 
             egui::SidePanel::left("right_panel")

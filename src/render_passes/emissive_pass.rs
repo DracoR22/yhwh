@@ -70,9 +70,9 @@ impl EmissivePass {
         let mut sample_distance = 4.0;
 
         for i in 0..blur_passes {
-            if sample_distance < 8.0 {
-                sample_distance = sample_distance + 1.0
-            }
+            // if sample_distance < 8.0 {
+            //     sample_distance = sample_distance + 1.0
+            // }
 
             let direction = if horizontal {
                 [1.0, 0.0]

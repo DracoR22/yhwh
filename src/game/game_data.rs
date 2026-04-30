@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use cgmath::Vector2;
+use rapier3d::na::Vector;
 use yhwh_audio::audio_manager::AudioManager;
 
 use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::ui::{UiElement, UiElementKind}, input::input::Input, player::Player, scene::Scene};
@@ -29,7 +30,11 @@ impl GameData {
         let mut ui_map = HashMap::<UiElementKind, UiElement>::new();
         let crosshair_pos = Vector2::new(w_width * 0.5, w_height * 0.5);
         let crosshair_scale = 50.0;
-        ui_map.insert(UiElementKind::Crosshair, UiElement::new(crosshair_pos, crosshair_scale, "crosshair005.png"));
+        ui_map.insert(UiElementKind::Crosshair, UiElement::new(crosshair_pos, crosshair_scale, "crosshair179.png"));
+
+        let key_g_pos = Vector2::new(crosshair_pos.x + 60.0, crosshair_pos.y);
+        let key_g_scale = 50.0;
+        ui_map.insert(UiElementKind::KeyG, UiElement::new(key_g_pos, key_g_scale, "Key_G.png"));
 
         Self {
             asset_manager,
@@ -53,18 +58,22 @@ impl GameData {
             light.update();
         }
 
-        let crosshair = self.ui_map.get_mut(&UiElementKind::Crosshair).unwrap();
-
         for door in self.scene.door_objects.iter_mut() {
             door.update(self.delta_time.as_secs_f32());
             if door.interact(&self.asset_manager, &self.player.camera) {
                 door.toggle_state(audio_manager, &input);
-                // self.ui.crosshair.visible = true
-                crosshair.visible = true;
+                self.player.can_interact = true;
             } else {
-                // self.ui.crosshair.visible = false
-                crosshair.visible = false;
+                self.player.can_interact = false;
             }
+        }
+
+        if let Some(crosshair) = self.ui_map.get_mut(&UiElementKind::Crosshair) {
+            crosshair.visible = self.player.can_interact;
+        }
+        
+        if let Some(interact_key) = self.ui_map.get_mut(&UiElementKind::KeyG) {
+            interact_key.visible = self.player.can_interact;
         }
     
         match self.game_state {

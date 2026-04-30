@@ -130,7 +130,7 @@ impl DoorObject {
                     let ray_origin = Vector3::<f32>::new(camera.position.x, camera.position.y, camera.position.z);
                     let ray_dir = camera.forward();
 
-                    let max_distance = 30.0;
+                    let max_distance = 10.0;
 
                     if let Some(distance) = ray_intersects_aabb(ray_origin, ray_dir, &world_aabb) {
                         return distance < max_distance;

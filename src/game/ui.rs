@@ -4,7 +4,8 @@ use crate::utils::unique_id;
 
 #[derive(Eq, Hash, PartialEq)]
 pub enum UiElementKind {
-    Crosshair
+    Crosshair,
+    KeyG
 }
 
 pub struct UiElement {

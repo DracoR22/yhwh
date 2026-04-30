@@ -18,6 +18,7 @@ pub struct Player {
     camera_controller: CameraController,
     step_timer: f32,
     pub camera: Camera,
+    pub can_interact: bool
 }
 
 impl Player {
@@ -30,7 +31,8 @@ impl Player {
             position: pos,
             camera: Camera::new(cgmath::Point3::new(pos.x, pos.y, pos.z), cgmath::Deg(-90.0), cgmath::Deg(-20.0)),
             camera_controller: CameraController::new(speed, sensitivity),
-            step_timer: 0.0
+            step_timer: 0.0,
+            can_interact: false
         }
     }
 

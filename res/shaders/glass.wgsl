@@ -125,18 +125,6 @@ fn microfacet_brdf(l: vec3<f32>, v: vec3<f32>, n: vec3<f32>, base_color: vec3<f3
 }
 
 fn get_direct_lighting(light_pos: vec3<f32>, light_color: vec3<f32>, light_strength: f32, light_radius: f32, world_pos: vec3<f32>, view_pos: vec3<f32>, normal: vec3<f32>, base_color: vec3<f32>, metallic: f32, roughness: f32) -> vec3<f32> {
-    // let l = normalize(light_pos - world_pos);
-    // let v = normalize(view_pos - world_pos);
-
-    // let distance = length(light_pos - world_pos);
-    // let nd = distance / light_radius;
-    // let attenuation = 1.0 / (nd * nd + 1.0);
-    // let radiance = light_color * attenuation * light_strength;
-    // let ndl = max(dot(normal, l), 0.0);
-
-    // let brdf = microfacet_brdf(l, v, normal, base_color, metallic, 1.0, roughness) * radiance * ndl;
-    // return brdf;
-
     let to_light = light_pos - world_pos;
     let dist = length(to_light);
     let nd = dist / light_radius;

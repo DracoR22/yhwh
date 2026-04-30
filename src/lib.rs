@@ -29,3 +29,4 @@ pub mod u8slice;
 pub mod pipeline_builder;
 pub mod shadow_cube_map_array;
 pub mod frustum;
+pub mod game;

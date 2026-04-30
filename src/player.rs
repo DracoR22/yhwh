@@ -4,7 +4,7 @@ use rand::Rng;
 use winit::keyboard::KeyCode;
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{camera::{Camera, CameraController}, engine::GameData, input::input::Input};
+use crate::{camera::{Camera, CameraController}, game::game_data::GameData, input::input::Input};
 
 const WOOD_FOOTSTEPS: [&str; 4] = [
     "wood1.wav",

@@ -1,4 +1,4 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, MAX_LIGHTS, SHADOW_MAP_RES_SIZE}, engine::GameData, pipeline_builder::PipelineBuilder, shadow_cube_map_array::ShadowCubeMapArray, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, MAX_LIGHTS, SHADOW_MAP_RES_SIZE}, game::game_data::GameData, pipeline_builder::PipelineBuilder, shadow_cube_map_array::ShadowCubeMapArray, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct ShadowPass {
     pub shadow_cube_map_array: ShadowCubeMapArray,

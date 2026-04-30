@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{common::{create_info::LightObjectCreateInfo, enums::LightType}, engine::GameData};
+use crate::{common::{create_info::LightObjectCreateInfo, enums::LightType}, game::game_data::GameData};
 
 pub struct Lights {
     selected_id: i32,

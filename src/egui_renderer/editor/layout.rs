@@ -3,7 +3,7 @@ use std::collections::{HashMap};
 use egui::{Vec2, load::SizedTexture};
 
 use crate::{
-    egui_renderer::{editor::{door_objects::DoorObjects, game_objects::GameObjects, lights::Lights}, ui_manager::EguiMaterial}, engine::GameData, utils::json::save_level
+    egui_renderer::{editor::{door_objects::DoorObjects, game_objects::GameObjects, lights::Lights}, ui_manager::EguiMaterial}, game::game_data::GameData, utils::json::save_level
 };
 
 pub struct EditorLayout {

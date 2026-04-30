@@ -6,7 +6,6 @@ use yhwh_core::math::aabb::Aabb;
 
 use crate::camera::Camera;
 use crate::common::create_info::DoorObjectCreateInfo;
-use crate::engine::GameData;
 use crate::input::input::Input;
 use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
 
@@ -211,7 +210,7 @@ pub fn ray_intersects_aabb(origin: Vector3<f32>, dir: Vector3<f32>, aabb: &Aabb<
     tmax = tmax.min(tzmax);
 
     if tmax < 0.0 {
-        return None; // box is behind you
+        return None; 
     }
 
     Some(tmin.max(0.0))

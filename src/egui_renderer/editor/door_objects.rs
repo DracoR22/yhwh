@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use egui::{Id, Sense, Ui, Vec2, load::SizedTexture};
 
-use crate::{common::create_info::DoorObjectCreateInfo, egui_renderer::ui_manager::EguiMaterial, engine::GameData};
+use crate::{common::create_info::DoorObjectCreateInfo, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData};
 
 pub struct DoorObjects {
     selected_id: i32,

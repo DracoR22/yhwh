@@ -6,9 +6,10 @@ use yhwh_core::math::aabb::Aabb;
 use crate::{material::Material, model::{self, Mesh, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
-    models: Vec<Model>,
     model_index_map: HashMap<String, usize>,
-    textures: HashMap<String, Texture>,
+    models: Vec<Model>,
+    texture_index_map: HashMap<String, usize>,
+    textures: Vec<Texture>,
     material_index_map: HashMap<String, usize>,
     materials: Vec<Material>,
     mesh_index_map: HashMap<String, usize>,
@@ -17,7 +18,7 @@ pub struct AssetManager {
 
 impl AssetManager {
     pub fn new(ctx: &WgpuContext) -> Self {
-        let textures = Self::load_all_textures(&ctx);
+        let (textures, texture_index_map) = Self::load_all_textures(&ctx);
         let (models, model_index_map) = Self::load_models(&ctx);
 
         let mut meshes: Vec<Mesh> = Vec::new();
@@ -31,6 +32,7 @@ impl AssetManager {
 
         Self {
             textures,
+            texture_index_map,
             models,
             model_index_map,
             meshes,
@@ -40,7 +42,7 @@ impl AssetManager {
         }
     }
 
-    pub fn load_all_textures(ctx: &WgpuContext) -> HashMap<String, Texture> {
+    pub fn load_all_textures(ctx: &WgpuContext) -> (Vec<Texture>, HashMap<String, usize>) {
         let now = std::time::SystemTime::now();
 
         let (sender, receiver) = mpsc::channel::<TextureData>();
@@ -62,30 +64,51 @@ impl AssetManager {
 
         drop(sender);
 
-        let mut texture_map: HashMap<String, Texture> = HashMap::new();
-        for data in receiver {
+        let mut texture_index_map = HashMap::<String, usize>::new();
+        let mut textures = Vec::<Texture>::new();
+
+        for (index, data) in receiver.iter().enumerate() {
              let is_normal_map = data.name.contains("_NRM");
              let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
-             texture_map.insert(data.name, texture);
+             texture_index_map.insert(data.name, index);
+             textures.push(texture);
         }
 
         let duration = now.elapsed();
         println!("Loaded all textures in: {:.3?}", duration.unwrap());
 
-        texture_map
+        (textures, texture_index_map)
     }
 
     pub fn get_texture_by_name(&self, name: &str) -> Option<&Texture> {
-        if self.textures.contains_key(name) {
-            self.textures.get(name)
+        if let Some(&index) = self.texture_index_map.get(name) {
+             Some(&self.textures[index])
         } else {
             println!("AssetManager::get_texture_by_name() error: texture {name} not found!");
-            None
+             None
+        }
+    }
+
+    pub fn get_texture_by_index(&self, index: usize) -> Option<&Texture> {
+        if let Some(texture) = self.textures.get(index) {
+            Some(texture)
+        } else {
+             println!("AssetManager::get_texture_by_index() error: texture with index {index} not found!");
+             None
+        }
+    }
+
+    pub fn get_texture_index_by_name(&self, name: &str) -> usize {
+        if let Some(&index) = self.texture_index_map.get(name) {
+            index
+        } else {
+            println!("AssetManager::get_material_index_by_name() error: material {name} not found!");
+            0
         }
     }
 
     pub fn build_materials(&mut self, device: &wgpu::Device) {
-        for (key, _texture) in &self.textures {
+        for (key, _data) in &self.texture_index_map {
             if key.contains("_ALB") {
                 let material_name = Self::get_texture_material_name(key);
 

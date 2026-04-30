@@ -211,16 +211,6 @@ fn vs_main(vert_in: VertexInput) -> VertexOutput {
 }
 
 fn get_spot_light_lighting(light_pos: vec3<f32>, light_color: vec3<f32>, light_strength: f32, light_radius: f32, world_pos: vec3<f32>, view_pos: vec3<f32>, normal: vec3<f32>, base_color: vec3<f32>, metallic: f32, roughness: f32) -> vec3<f32> {
-    // let l = normalize(light_pos - world_pos);
-    // let v = normalize(view_pos - world_pos);
-
-    // let distance = length(light_pos - world_pos);
-    // let nd = distance / light_radius;
-    // let attenuation = 1.0 / (nd * nd + 1.0);
-    // let radiance = light_color * attenuation * light_strength;
-
-    // let brdf = microfacet_brdf(l, v, normal, base_color, metallic, 1.0, roughness) * radiance;
-    // return brdf;
     let to_light = light_pos - world_pos;
     let dist = length(to_light);
     let nd = dist / light_radius;

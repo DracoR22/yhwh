@@ -73,6 +73,8 @@ impl Camera {
 #[derive(Debug)]
 pub struct Projection {
     aspect: f32,
+    width: f32,
+    height: f32,
     fovy: Rad<f32>,
     znear: f32,
     zfar: f32,
@@ -88,6 +90,8 @@ impl Projection {
     ) -> Self {
         Self {
             aspect: width as f32 / height as f32,
+            width: width as f32,
+            height: height as f32,
             fovy: fovy.into(),
             znear,
             zfar,
@@ -96,10 +100,12 @@ impl Projection {
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.aspect = width as f32 / height as f32;
+        self.width = width as f32;
+        self.height = height as f32;
     }
 
     pub fn calc_matrix(&self) -> Matrix4<f32> {
-        OPENGL_TO_WGPU_MATRIX * perspective(self.fovy, self.aspect, self.znear, self.zfar)
+        OPENGL_TO_WGPU_MATRIX * cgmath::perspective(self.fovy, self.aspect, self.znear, self.zfar)
     }
 }
  

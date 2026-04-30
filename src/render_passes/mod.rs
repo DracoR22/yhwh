@@ -6,3 +6,4 @@ pub mod outline_pass;
 pub mod emissive_pass;
 pub mod shadow_pass;
 pub mod glass_pass;
+pub mod ui_pass;

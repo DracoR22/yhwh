@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, engine::GameData, objects::{door_object, game_object::GameObject}, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 use wgpu::util::DeviceExt;
 
 pub struct OutlinePass {
@@ -7,7 +7,7 @@ pub struct OutlinePass {
     mask_bind_group: wgpu::BindGroup,
     outline_pipeline: wgpu::RenderPipeline,
     outline_texture: Texture,
-    quad_vertex_buffer: wgpu::Buffer,
+    vertex_buffer: wgpu::Buffer,
 }
 
 impl OutlinePass {
@@ -58,8 +58,8 @@ impl OutlinePass {
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
         );
 
-        let quad_vertex_buffer = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-          label: Some("quad vertex buffer"),
+        let vertex_buffer = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+          label: Some("outline quad vertex buffer"),
           contents: bytemuck::cast_slice(&QUAD_VERTICES),
           usage: wgpu::BufferUsages::VERTEX,
         });
@@ -70,11 +70,11 @@ impl OutlinePass {
             mask_bind_group,
             outline_pipeline,
             outline_texture,
-            quad_vertex_buffer
+            vertex_buffer
         }
     }
 
-    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager,  game_data: &GameData) {
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("outline mask pass"),
             color_attachments: &[
@@ -158,7 +158,7 @@ impl OutlinePass {
 
         outline_pass.set_pipeline(&self.outline_pipeline);
         outline_pass.set_bind_group(0, &self.mask_bind_group, &[]);
-        outline_pass.set_vertex_buffer(0, self.quad_vertex_buffer.slice(..));
+        outline_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         outline_pass.draw(0..6, 0..1);
     }
 

@@ -123,3 +123,22 @@ pub const QUAD_VERTEX_BUFFER_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBuff
                 1 => Float32x2
             ]
 };
+
+pub const UI_VERTICES: &[f32] = &[
+    0.0, 0.0,   0.0, 0.0,
+    1.0, 0.0,   1.0, 0.0,
+    1.0, 1.0,   1.0, 1.0,
+
+    0.0, 0.0,   0.0, 0.0,
+    1.0, 1.0,   1.0, 1.0,
+    0.0, 1.0,   0.0, 1.0,
+];
+
+pub const UI_VERTEX_BUFFER_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBufferLayout {
+            array_stride: (4 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &wgpu::vertex_attr_array![
+                0 => Float32x2,
+                1 => Float32x2
+            ]
+};

@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use cgmath::{InnerSpace, SquareMatrix, Vector2, Vector3, Vector4};
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
 
@@ -83,7 +84,7 @@ impl Engine {
         self.handle_dev_tools();
 
         // update wgpu renderer
-        match self.wgpu_renderer.render(&self.window, &mut self.game_data) {
+        match self.wgpu_renderer.render(&self.window, &mut self.game_data, &self.input) {
             Ok(_) => {},
             Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                 let size = self.window.inner_size();
@@ -149,5 +150,33 @@ impl Engine {
                 glb_model.set_current_animation(current_anim);
             }
         }
+    }
+
+    pub fn update_mouse_rays(&self) {
+        let camera = &self.game_data.camera;
+        let viewport_size = Vector2::<f32>::new(self.window.inner_size().width as f32, self.window.inner_size().height as f32);
+        
+        let mouse_x = self.input.mouse.delta_x as f32;
+        let mouse_y = self.input.mouse.delta_y as f32;
+
+        let x = (2.0 * mouse_x) / viewport_size.x - 1.0;
+        let y = 1.0 - (2.0 * mouse_y) / viewport_size.y;
+        let z = 1.0;
+        let ray_nds = Vector3::new(x, y, z);
+
+        let projection_matrix = camera.get_projection().calc_matrix();
+        let view_matrix = camera.calc_matrix();
+
+        
+        let ray_clip = Vector4::new(ray_nds.x, ray_nds.y, -1.0, 1.0);
+        if let Some((inverse_projection, inverse_view)) = projection_matrix.invert().zip(view_matrix.invert()) {
+            let mut ray_eye = inverse_projection * ray_clip;
+            ray_eye = Vector4::new(ray_eye.x, ray_eye.y, -1.0, 0.0);
+
+    
+            let mut ray_world = (inverse_view * ray_eye).truncate();
+            ray_world = ray_world.normalize();
+        }
+
     }
 }

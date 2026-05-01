@@ -33,6 +33,7 @@ impl DoorObjects {
                     if button.clicked() {
                         self.selected_id = door_object.id as i32;
                         self.add_object_selected = false;
+                        self.should_reset_other_states = true;
                     }
 
                     if door_object.id as i32 == self.selected_id {

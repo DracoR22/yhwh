@@ -2,7 +2,7 @@ use std::{sync::Arc};
 
 use winit::{window::Window};
 
-use crate::{common::enums::GameState, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager}, game::game_data::GameData,  render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, glass_pass::GlassPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, scene_pass::ScenePass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass, ui_pass::UiPass}, uniform_manager::UniformManager, wgpu_context::WgpuContext};
+use crate::{common::enums::GameState, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager}, game::game_data::GameData, input::input::Input, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, glass_pass::GlassPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, scene_pass::ScenePass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass, ui_pass::UiPass}, uniform_manager::UniformManager, wgpu_context::WgpuContext};
 
 pub struct WgpuRenderer {
     pub egui_renderer: EguiRenderer,
@@ -66,7 +66,7 @@ impl WgpuRenderer {
         };
     }
 
-    pub fn render(&mut self, window: &Window, game_data: &mut GameData) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, window: &Window, game_data: &mut GameData, input: &Input) -> Result<(), wgpu::SurfaceError> {
         // submit uniforms
         self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
         self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
@@ -102,7 +102,7 @@ impl WgpuRenderer {
 
        if game_data.game_state == GameState::Editor {
         self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, swapchain_view, |ui| {
-          self.ui_manager.scene_hierarchy_window.draw(ui, &self.ui_manager.materials, game_data, (window.inner_size().width, window.inner_size().height));
+          self.ui_manager.editor_layout.draw(ui, &self.ui_manager.materials, game_data, input, (window.inner_size().width, window.inner_size().height));
         });
        }
 

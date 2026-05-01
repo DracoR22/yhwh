@@ -7,6 +7,7 @@ pub struct Mouse {
     pub delta_y: f64,
     scroll_dx: f32,
     scroll_dy: f32,
+    pub position: (f64, f64),
     buttons: HashMap<YHWHMouseButton, bool>,
     buttons_changed: HashMap<YHWHMouseButton, bool>,
 }
@@ -18,6 +19,7 @@ impl Mouse {
             delta_y: 0.0,
             scroll_dx: 0.0,
             scroll_dy: 0.0,
+            position: (0.0, 0.0),
             buttons: HashMap::new(),
             buttons_changed: HashMap::new()
         }
@@ -32,6 +34,9 @@ impl Mouse {
 
                 self.buttons.insert(mapped_button.clone(), is_pressed);
                 self.buttons_changed.insert(mapped_button, prev_state != is_pressed);
+            }
+            WindowEvent::CursorMoved { device_id, position } => {
+                self.position = (position.x, position.y);
             }
             _ => {}
         }

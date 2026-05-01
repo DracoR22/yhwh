@@ -29,6 +29,16 @@ impl GameObjects {
         }
     }
 
+    pub fn apply_selection(&mut self, game_data: &mut GameData) {
+        for game_object in game_data.scene.game_objects.iter_mut() {
+            if game_object.id as i32 == self.selected_id {
+                game_object.set_selected(true);
+            } else {
+                game_object.set_selected(false);
+            }
+        }
+    }
+
     pub fn list(&mut self, ui: &mut Ui, game_data: &mut GameData) {
         ui.separator();
         ui.collapsing("Game Objects", |ui| {
@@ -38,12 +48,7 @@ impl GameObjects {
                     if button.clicked() {
                         self.selected_id = game_object.id as i32;
                         self.add_game_object_selected = false;
-                    }
-
-                    if game_object.id as i32 == self.selected_id {
-                        game_object.set_selected(true);
-                    } else {
-                        game_object.set_selected(false);
+                        self.should_reset_other_states = true;
                     }
                 }
 
@@ -269,8 +274,14 @@ impl GameObjects {
         }
     }
 
+    pub fn set_selected_id(&mut self, id: i32) {
+        self.selected_id = id;
+        self.should_reset_other_states = true;
+    }
+
     pub fn reset_states(&mut self) {
         self.selected_id = -1;
+        self.selected_model_index = 0;
         self.add_game_object_selected = false;
         self.material_window_open = false;
         self.scale_uniform = false;

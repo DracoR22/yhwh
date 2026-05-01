@@ -9,14 +9,14 @@ pub struct EguiMaterial {
 }
 
 pub struct UiManager {
-    pub scene_hierarchy_window: EditorLayout,
+    pub editor_layout: EditorLayout,
     pub materials: Vec<EguiMaterial>
 }
 
 impl UiManager {
     pub fn new() -> Self {
         Self {
-            scene_hierarchy_window: EditorLayout::new(),
+            editor_layout: EditorLayout::new(),
             materials: Vec::new()
         }
     }

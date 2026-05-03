@@ -46,7 +46,7 @@ impl UiPass {
 
         let mut render_data = HashMap::<usize, UiRenderData>::new();
 
-        let texture_bg_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]).unwrap();
+        let texture_bg_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]);
 
         for map_data in game_data.ui_map.iter() {
             let ui_element = map_data.1;
@@ -56,8 +56,7 @@ impl UiPass {
                     let bind_group = BindGroupManager::create_multi_texture_bind_group(
                         &ctx.device,
                         &texture_bg_layout,
-                        &[&texture])
-                    .unwrap();
+                        &[&texture]);
 
                     render_data.insert(ui_element.id, UiRenderData { 
                         uniform: Uniform::new(UiUniform::new(), &ctx.device),
@@ -69,8 +68,7 @@ impl UiPass {
                     let bind_group = BindGroupManager::create_multi_texture_bind_group(
                         &ctx.device,
                         &texture_bg_layout,
-                        &[&default_texture])
-                    .unwrap();
+                        &[&default_texture]);
 
                     render_data.insert(ui_element.id, UiRenderData { 
                         uniform: Uniform::new(UiUniform::new(), &ctx.device),
@@ -80,12 +78,13 @@ impl UiPass {
             }
         }
 
+        let swapchain_format = ctx.config.format;
         let pipeline = PipelineBuilder::new(
             "ui pipeline",
             &[&texture_bg_layout, &uniform_manager.bind_group_layout],
             &[UI_VERTEX_BUFFER_LAYOUT],
             &shader_module,
-            [wgpu::TextureFormat::Rgba8UnormSrgb]
+            [swapchain_format]
         ).build(&ctx.device);
 
         let vertex_buffer = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

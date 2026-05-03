@@ -227,7 +227,7 @@ fn generate_mips(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Tex
         source: wgpu::ShaderSource::Wgsl(shader_code.into())
     });
 
-    let bglayout = BindGroupManager::create_texture_bind_group_layout(device, [TL::Float]).unwrap();
+    let bglayout = BindGroupManager::create_texture_bind_group_layout(device, [TL::Float]);
 
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,

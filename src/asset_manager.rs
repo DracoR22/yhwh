@@ -68,7 +68,7 @@ impl AssetManager {
         let mut textures = Vec::<Texture>::new();
 
         for (index, data) in receiver.iter().enumerate() {
-             let is_normal_map = data.name.contains("_NRM");
+             let is_normal_map = data.name.contains("_NRM") || data.name.contains("_RMA");
              let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
              texture_index_map.insert(data.name, index);
              textures.push(texture);
@@ -207,7 +207,7 @@ impl AssetManager {
                            model_index_map.insert(model_name, models.len() -1);
                          },
                         Err(err) => {
-                            println!("AssetManager::load_models() error with file {:?} {}", path.file_name().unwrap(), err);
+                            println!("AssetManager::load_models() error with file {:?} {:?}", path.file_name().unwrap(), err);
                         }
                     }
                 }
@@ -227,12 +227,12 @@ impl AssetManager {
             }
         }
 
-        let cube_model = model::load_cube(&ctx.device, "Cube").unwrap();
+        let cube_model = model::load_cube(&ctx.device, "Cube");
         let cube_model_name = cube_model.name.clone();
         models.push(cube_model);
         model_index_map.insert(cube_model_name, models.len() -1);
 
-        let plane_model = model::load_plane(&ctx.device, "Plane").unwrap();
+        let plane_model = model::load_plane(&ctx.device, "Plane");
         let plane_model_name = plane_model.name.clone();
         models.push(plane_model);
         model_index_map.insert(plane_model_name, models.len() - 1);

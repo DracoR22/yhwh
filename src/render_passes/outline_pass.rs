@@ -39,8 +39,8 @@ impl OutlinePass {
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
         );
 
-        let bg_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]).unwrap();
-        let mask_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bg_layout, &mask_texture).unwrap();
+        let bg_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]);
+        let mask_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bg_layout, &mask_texture);
 
         let outline_pipeline = PipelineBuilder::new(
             "outline pipeline",

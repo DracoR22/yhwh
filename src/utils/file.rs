@@ -1,4 +1,6 @@
-pub async fn load_file_string_from_env(directory: &str, file_name: &str) -> anyhow::Result<String> {
+use std::io;
+
+pub async fn load_file_string_from_env(directory: &str, file_name: &str) -> io::Result<String> {
     let txt = {
         let path = std::path::Path::new(env!("OUT_DIR"))
             .join("res")
@@ -10,7 +12,7 @@ pub async fn load_file_string_from_env(directory: &str, file_name: &str) -> anyh
     Ok(txt)
 }
 
-pub async fn load_file_binary_from_env(directory: &str, file_name: &str) -> anyhow::Result<Vec<u8>> {
+pub async fn load_file_binary_from_env(directory: &str, file_name: &str) -> io::Result<Vec<u8>> {
     #[cfg(not(target_arch = "wasm32"))]
     let data = {
         let path = std::path::Path::new(env!("OUT_DIR"))
@@ -23,7 +25,7 @@ pub async fn load_file_binary_from_env(directory: &str, file_name: &str) -> anyh
     Ok(data)
 }
 
-pub fn load_file_string_from_dir(full_path: &str) -> anyhow::Result<String> {
+pub fn load_file_string_from_dir(full_path: &str) -> io::Result<String> {
     let path = std::path::Path::new(full_path);
     let txt = std::fs::read_to_string(path)?;
     Ok(txt)

@@ -25,15 +25,13 @@ where T: ToU8Slice {
         let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
             &device,
             wgpu::ShaderStages::VERTEX_FRAGMENT,
-            Some(format!("bind_group_layout for {}", std::any::type_name::<T>()).as_ref()))
-        .unwrap();
+            Some(format!("bind_group_layout for {}", std::any::type_name::<T>()).as_ref()));
 
         let bind_group = BindGroupManager::create_uniform_bind_group(
             &device,
             &bind_group_layout,
             &buffer,
-            Some(format!("bind_group for {}", std::any::type_name::<T>()).as_ref()))
-        .unwrap();
+            Some(format!("bind_group for {}", std::any::type_name::<T>()).as_ref()));
 
     Self {
         bind_group,

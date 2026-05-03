@@ -19,7 +19,7 @@ pub enum TL {
 pub struct BindGroupManager;
 
 impl BindGroupManager {
-    pub fn create_uniform_bind_group_layout(device: &wgpu::Device, visibility: wgpu::ShaderStages, label: Option<&str>) -> anyhow::Result<wgpu::BindGroupLayout> {
+    pub fn create_uniform_bind_group_layout(device: &wgpu::Device, visibility: wgpu::ShaderStages, label: Option<&str>) -> wgpu::BindGroupLayout {
        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -34,7 +34,7 @@ impl BindGroupManager {
                 label,
          });
 
-         Ok(bind_group_layout)
+        bind_group_layout
     }
 
     pub fn bindgroup_layout_entries(binding_offset: u32, it: impl Iterator<Item = TL>) -> impl Iterator<Item = wgpu::BindGroupLayoutEntry> {
@@ -83,7 +83,7 @@ impl BindGroupManager {
         })
     }
 
-    pub fn create_texture_bind_group_layout(device: &wgpu::Device, it: impl IntoIterator<Item = TL>) -> anyhow::Result<wgpu::BindGroupLayout> {
+    pub fn create_texture_bind_group_layout(device: &wgpu::Device, it: impl IntoIterator<Item = TL>) -> wgpu::BindGroupLayout {
         let entries: Vec<BindGroupLayoutEntry> = Self::bindgroup_layout_entries(0, it.into_iter()).collect();
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -91,10 +91,10 @@ impl BindGroupManager {
                 label: Some("Texture_Bind_Group_Layout"),
             });
 
-        Ok(bind_group_layout)
+        bind_group_layout
     }
 
-    pub fn create_uniform_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, buffer: &wgpu::Buffer, label: Option<&str>) -> anyhow::Result<wgpu::BindGroup> {
+    pub fn create_uniform_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, buffer: &wgpu::Buffer, label: Option<&str>) -> wgpu::BindGroup {
       let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             entries: &[wgpu::BindGroupEntry {
@@ -104,10 +104,10 @@ impl BindGroupManager {
             label,
         });
 
-        Ok(bind_group)
+        bind_group
     }
 
-    pub fn create_texture_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, texture: &texture::Texture) -> anyhow::Result<wgpu::BindGroup> {
+    pub fn create_texture_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, texture: &texture::Texture) -> wgpu::BindGroup {
       let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             entries: &[
@@ -123,7 +123,7 @@ impl BindGroupManager {
             label: Some("Texture_Bind_Group"),
         });
 
-        Ok(bind_group)
+        bind_group
     }
 
     pub fn multi_bindgroup_entries<'a>(binding_offset: u32, texs: &'a [&texture::Texture]) -> impl Iterator<Item = BindGroupEntry<'a>> {
@@ -160,7 +160,7 @@ impl BindGroupManager {
 // }
 
 
-     pub fn create_multi_texture_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, texs: &[&texture::Texture]) -> anyhow::Result<wgpu::BindGroup> {
+     pub fn create_multi_texture_bind_group(device: &wgpu::Device, layout: &wgpu::BindGroupLayout, texs: &[&texture::Texture]) -> wgpu::BindGroup {
       let entries = Self::multi_bindgroup_entries(0, texs).collect::<Vec<_>>();
        //let entries = Self::multi_bindgroup_entries(0, texs);
       let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -169,6 +169,6 @@ impl BindGroupManager {
             label: None,
         });
 
-        Ok(bind_group)
+        bind_group
     }
 }

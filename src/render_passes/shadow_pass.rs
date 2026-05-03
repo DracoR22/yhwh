@@ -20,8 +20,7 @@ impl ShadowPass {
         let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
             &ctx.device,
             wgpu::ShaderStages::VERTEX_FRAGMENT,
-            Some("shadow uniforms bind group layout"))
-        .unwrap();
+            Some("shadow uniforms bind group layout"));
 
         let pipeline = PipelineBuilder::new(
             "shadow cube map pipeline",

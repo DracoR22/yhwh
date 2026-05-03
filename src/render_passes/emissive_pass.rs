@@ -33,11 +33,11 @@ impl EmissivePass {
         let ping_texture = Texture::create_fbo(&ctx.device, (width, height), HDR_TEX_FORMAT, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
         let pong_texture = Texture::create_fbo(&ctx.device, (width, height), HDR_TEX_FORMAT, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]).unwrap();
+        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]);
 
-        let ping_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bind_group_layout, &ping_texture).unwrap();
-        let pong_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bind_group_layout, &pong_texture).unwrap();
-        let source_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bind_group_layout, &source_texture).unwrap();
+        let ping_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bind_group_layout, &ping_texture);
+        let pong_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bind_group_layout, &pong_texture);
+        let source_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bind_group_layout, &source_texture);
 
         let pipeline = PipelineBuilder::new(
             "blur pipeline",

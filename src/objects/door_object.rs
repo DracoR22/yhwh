@@ -26,12 +26,13 @@ pub struct DoorObject {
     pub current_angle: f32,
     pub target_angle: f32,
     pub is_selected: bool,
-    pub interacted: bool
+    pub interacted: bool,
+    pub closed_angle: f32
 }
 
 impl DoorObject {
    pub fn new(create_info: &DoorObjectCreateInfo, asset_manager: &AssetManager) -> Self {   
-        let model_name = "door";
+        let model_name = "door2";
 
         let transform = Transform {
             position: Vector3::new(create_info.position[0], create_info.position[1], create_info.position[2]),
@@ -46,6 +47,7 @@ impl DoorObject {
         Self {
             id: unique_id::next_id(),
             mesh_nodes,
+            closed_angle: transform.rotation.y,
             transform,
             model_name: String::from(model_name),
             state: DoorState::Closed,
@@ -58,21 +60,29 @@ impl DoorObject {
 
     pub fn update(&mut self, delta_time: f32) {
         self.target_angle = match self.state {
-            DoorState::Opened => 90.0,
-            DoorState::Closed => 0.0,
+            DoorState::Opened => self.closed_angle + 90.0,
+            DoorState::Closed => self.closed_angle,
         };
 
         let speed = 120.0;
-        let diff = self.target_angle - self.current_angle;
+        let diff = self.target_angle - self.transform.rotation.y;
 
         if diff.abs() > 0.01 {
             let step = speed * delta_time;
-            self.current_angle += diff.clamp(-step, step);
+            self.transform.rotation.y += diff.clamp(-step, step);
+        } else {
+            self.transform.rotation.y = self.target_angle;
         }
+
+        // let speed = 120.0;
+        // let diff = self.target_angle - self.current_angle;
+
+        // if diff.abs() > 0.01 {
+        //     let step = speed * delta_time;
+        //     self.current_angle += diff.clamp(-step, step);
+        // }
        
-        self.transform.rotation.y = self.current_angle;
-
-
+        // self.transform.rotation.y = self.current_angle;
     }
 
     pub fn get_model_matrix(&self) -> Matrix4<f32> {

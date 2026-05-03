@@ -78,8 +78,8 @@ impl CubeMap {
             pixel_data: Default::default()
         };
 
-        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]).unwrap();
-        let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &cube_tex).unwrap();
+        let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&device, [TL::Cube]);
+        let bind_group = BindGroupManager::create_texture_bind_group(&device, &bind_group_layout, &cube_tex);
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Cube_Vertex_Buffer"),

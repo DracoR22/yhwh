@@ -5,6 +5,7 @@ use std::{
 use cgmath::{Matrix4, Quaternion, SquareMatrix, Vector3, Zero};
 use gltf::buffer::Data;
 use gltf::mesh::Bounds;
+use tobj::LoadError;
 use yhwh_core::math::aabb::Aabb;
 use wgpu::util::DeviceExt;
 
@@ -17,6 +18,13 @@ use crate::{
     renderer_common::{CUBE_INDICES, CUBE_VERTICES, PLANE_INDICES, PLANE_VERTICES},
     vertex::Vertex,
 };
+
+#[derive(Debug)]
+pub enum ModelError {
+    ReadError,
+    NoNodes,
+    Error
+}
 
 #[derive(Clone)]
 pub struct Mesh {
@@ -39,11 +47,8 @@ pub struct Model {
     pub aabb: Option<Aabb<f32>>
 }
 
-pub fn load_obj_model_sync(
-    device: &wgpu::Device,
-    path: &str,
-) -> anyhow::Result<Model> {
-    let obj_text = load_file_string_from_dir(path)?;
+pub fn load_obj_model_sync(device: &wgpu::Device, path: &str) -> Result<Model, LoadError> {
+    let obj_text = load_file_string_from_dir(path).map_err(|e| LoadError::OpenFileFailed)?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
 
@@ -150,7 +155,7 @@ pub fn load_obj_model_sync(
     })
 }
 
-pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
+pub fn load_cube(device: &wgpu::Device, name: &str) -> Model {
     let mut meshes = Vec::new();
 
     let mut vertices = CUBE_VERTICES.to_vec();
@@ -182,7 +187,7 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
 
     meshes.push(cube_mesh);
 
-    Ok(Model {
+    Model {
         meshes,
         name: name.to_string(),
         animations: Default::default(),
@@ -190,10 +195,10 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         global_transform: cgmath::Matrix4::identity(),
         skins: Vec::new(),
         aabb: None
-    })
+    }
 }
 
-pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
+pub fn load_plane(device: &wgpu::Device, name: &str) -> Model {
     let mut meshes = Vec::new();
 
     let mut vertices = PLANE_VERTICES.to_vec();
@@ -225,7 +230,7 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
 
     meshes.push(plane_mesh);
 
-    Ok(Model {
+    Model {
         meshes,
         name: name.to_string(),
         animations: Default::default(),
@@ -233,11 +238,11 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> anyhow::Result<Model> {
         global_transform: cgmath::Matrix4::identity(),
         skins: Vec::new(),
         aabb: None
-    })
+    }
 }
 
-pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model> {
-    let file_stem = Path::new(path).file_stem().and_then(|f| f.to_str()).unwrap();
+pub fn load_glb_model(device: &wgpu::Device, path: &str) -> Result<Model, ModelError> {
+    let file_stem = Path::new(path).file_stem().and_then(|f| f.to_str()).ok_or(ModelError::ReadError)?;
 
     let (gltf, buffers, _images) = gltf::import(path).expect("Failed to import glTF/GLB file");
 
@@ -257,7 +262,7 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> anyhow::Result<Model
     let mut skins = create_skins_from_gltf(gltf.skins(), &buffers);
 
     // load nodes
-    let mut nodes = Nodes::from_gltf_nodes(gltf.nodes(), &gltf.default_scene().unwrap()); //TODO: REMOVE UNWRAP
+    let mut nodes = Nodes::from_gltf_nodes(gltf.nodes(), &gltf.default_scene().ok_or(ModelError::NoNodes)?);
 
     let global_transform = {
             let aabb = compute_aabb(&nodes, &meshes);

@@ -236,8 +236,7 @@ impl UniformManager {
       let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
         &ctx.device,
         wgpu::ShaderStages::VERTEX_FRAGMENT,
-        Some("Uniform_Bind_Group_Layout"))
-      .unwrap();
+        Some("uniform bind group layout"));
 
       Self {
         models: model_uniforms,

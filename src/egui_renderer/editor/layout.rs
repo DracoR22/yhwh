@@ -9,6 +9,10 @@ use crate::utils::ray_cast::ray_intersects_aabb;
 use crate::{
     egui_renderer::{editor::{door_objects::DoorObjects, game_objects::GameObjects, lights::Lights}, ui_manager::EguiMaterial}, game::game_data::GameData, utils::json::save_level
 };
+enum RayCastHit {
+    GameObject(i32),
+    DoorObject(i32)
+}
 
 pub struct EditorLayout {
     game_objects_panel: GameObjects,
@@ -78,10 +82,11 @@ impl EditorLayout {
             });
 
             self.game_objects_panel.apply_selection(game_data);
+            self.door_objects_panel.apply_selection(game_data);
 
             if !ui.wants_pointer_input() && !ui.is_pointer_over_area() && input.mouse.button_just_pressed(&YHWHMouseButton::Left) {
                 let mut closest_distance = f32::INFINITY;
-                let mut closest_id: Option<i32> = None;
+                let mut closest_hit: Option<RayCastHit> = None;
 
                 for game_object in game_data.scene.game_objects.iter_mut() {
                     if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
@@ -92,16 +97,46 @@ impl EditorLayout {
                             if let Some(distance) = ray_intersects_aabb(self.ray_origin, self.ray_direction, &world_aabb) {
                                 if distance < closest_distance {
                                     closest_distance = distance;
-                                    closest_id = Some(game_object.id as i32);
+                                    closest_hit = Some(RayCastHit::GameObject(game_object.id as i32));
                                 }
                             }
                          }
                     }
                 }
 
-                 if let Some(id) = closest_id {
+                for door_object in game_data.scene.door_objects.iter_mut() {
+                    if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+                        if let Some(aabb) = model.aabb {
+                            let model_matrix = door_object.get_model_matrix();
+                            let world_aabb = aabb.transform(model_matrix);
+
+                            if let Some(distance) = ray_intersects_aabb(self.ray_origin, self.ray_direction, &world_aabb) {
+                                if distance < closest_distance {
+                                    closest_distance = distance;
+                                    closest_hit = Some(RayCastHit::DoorObject(door_object.id as i32));
+                                }
+                            }
+                         }
+                    }
+                }
+
+                match closest_hit {
+                    Some(RayCastHit::GameObject(id)) => {
                         self.game_objects_panel.set_selected_id(id);
-                 }
+                    }
+                    Some(RayCastHit::DoorObject(id)) => {
+                        self.door_objects_panel.set_selected_id(id);
+                    }
+                    None => {}
+                }
+
+                //  if let Some(id) = closest_game_object_id {
+                //     self.game_objects_panel.set_selected_id(id);
+                //  }
+
+                //  if let Some(id) = closest_door_object_id {
+                //     self.door_objects_panel.set_selected_id(id);
+                //  }
             }
 
             self.update_mouse_rays((window_width as f32, window_height as f32), game_data, input);

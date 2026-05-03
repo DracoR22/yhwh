@@ -25,6 +25,16 @@ impl DoorObjects {
         }
     }
 
+    pub fn apply_selection(&mut self, game_data: &mut GameData) {
+        for door_object in game_data.scene.door_objects.iter_mut() {
+            if door_object.id as i32 == self.selected_id {
+                door_object.is_selected = true;
+            } else {
+                door_object.is_selected = false;
+            }
+        }
+    }
+
     pub fn list(&mut self, ui: &mut Ui, game_data: &mut GameData) {
         ui.collapsing("Door Objects", |ui| {
             for (index, door_object) in game_data.scene.door_objects.iter_mut().enumerate() {
@@ -34,12 +44,6 @@ impl DoorObjects {
                         self.selected_id = door_object.id as i32;
                         self.add_object_selected = false;
                         self.should_reset_other_states = true;
-                    }
-
-                    if door_object.id as i32 == self.selected_id {
-                        door_object.is_selected = true;
-                    } else {
-                        door_object.is_selected = false;
                     }
                 }
 
@@ -213,6 +217,11 @@ impl DoorObjects {
                 game_data.scene.add_door_object(&create_info, &game_data.asset_manager);
             }
         }
+    }
+
+    pub fn set_selected_id(&mut self, id: i32) {
+        self.selected_id = id;
+        self.should_reset_other_states = true;
     }
 
     pub fn reset_states(&mut self) {

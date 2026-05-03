@@ -17,8 +17,8 @@ impl PostProcessPass {
        let width = config.width;
        let height = config.height;
 
-       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float, TL::Float, TL::Float]).unwrap();
-       let bind_group = BindGroupManager::create_multi_texture_bind_group(&ctx.device, &bind_group_layout, &[&pbr_texture, &emissive_texture, &outline_texture, &glass_texure]).unwrap();
+       let bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float, TL::Float, TL::Float]);
+       let bind_group = BindGroupManager::create_multi_texture_bind_group(&ctx.device, &bind_group_layout, &[&pbr_texture, &emissive_texture, &outline_texture, &glass_texure]);
 
        let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Default_Shader"),
@@ -84,7 +84,7 @@ impl PostProcessPass {
             &ctx.device,
             &self.bind_group_layout,
             &[&scene_texture, &emissive_texture, &outline_texture, &glass_texure],
-        ).unwrap();
+        );
 
        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Post_Process::render()"),

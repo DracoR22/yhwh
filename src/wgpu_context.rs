@@ -25,7 +25,7 @@ impl WgpuContext {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -34,6 +34,7 @@ impl WgpuContext {
 
         let info = adapter.get_info();
         println!("Using Backend: {:?}", info.backend); 
+        println!("Using GPU: {:?}", info.name);
 
         let (device, queue) = adapter
             .request_device(
@@ -56,6 +57,8 @@ impl WgpuContext {
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
+
+        //println!("Available modes: {:?}", surface_caps.present_modes);
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,

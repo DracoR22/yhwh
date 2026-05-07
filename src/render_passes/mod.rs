@@ -7,3 +7,5 @@ pub mod emissive_pass;
 pub mod shadow_pass;
 pub mod glass_pass;
 pub mod ui_pass;
+pub mod geometry_pass;
+pub mod lighting_pass;

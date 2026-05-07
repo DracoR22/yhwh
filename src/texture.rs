@@ -32,11 +32,11 @@ impl Texture {
         return Self::allocate_gpu_from_image(device, queue, &image, is_normal_map);
     }
 
-    pub fn allocate_gpu_from_image(device: &wgpu::Device, queue: &wgpu::Queue, img: &image::DynamicImage, is_normal_map: bool) -> Self {
+    pub fn allocate_gpu_from_image(device: &wgpu::Device, queue: &wgpu::Queue, img: &image::DynamicImage, is_normal_or_rma: bool) -> Self {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
 
-         let format = if is_normal_map {
+         let format = if is_normal_or_rma {
            wgpu::TextureFormat::Rgba8Unorm
         } else {
            wgpu::TextureFormat::Rgba8UnormSrgb
@@ -99,16 +99,14 @@ impl Texture {
             }
     }
     
-    pub fn create_depth_texture(device: &wgpu::Device, label: &str, format: wgpu::TextureFormat) -> Self {
-        let width = 1920;
-        let height = 1080;
+    pub fn create_depth_texture(device: &wgpu::Device, (width, height): (u32, u32), format: wgpu::TextureFormat) -> Self {
         let size = wgpu::Extent3d {
             width: width,
             height: height,
             depth_or_array_layers: 1,
         };
         let desc = wgpu::TextureDescriptor {
-            label: Some(label),
+            label: Some("depth texture"),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -159,7 +157,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            label: Some("FBO_Texture"),
+            label: Some("fbo texture"),
             view_formats: &[]
          });
 

@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
@@ -24,9 +24,9 @@ impl AnimationPass {
             ],
             &[Vertex::desc()],
             &shader_module,
-            [HDR_TEX_FORMAT],
+            [wgpu::TextureFormat::Rgba16Float],
         )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
         .build(&ctx.device);
 

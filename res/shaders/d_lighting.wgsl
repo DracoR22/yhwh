@@ -1,20 +1,11 @@
 struct VertexInput {
-    @location(0) position: vec3<f32>,
+    @location(0) position: vec2<f32>,
     @location(1) tex_coords: vec2<f32>,
-    @location(2) normal: vec3<f32>,
-    @location(3) tangent: vec3<f32>,
-    @location(4) bitangent: vec3<f32>,
-    @location(5) joints: vec4<u32>,
-    @location(6) weights: vec4<f32>,
 }
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
-    @location(1) world_position: vec3<f32>,
-    @location(2) tangent: vec3<f32>,
-    @location(3) bitangent: vec3<f32>,
-    @location(4) normal: vec3<f32>, 
 }
 
 struct CameraUniform {
@@ -34,13 +25,6 @@ struct LightUniform {
     _pad3: u32
 }
 
-struct ModelUniform {
-    model_matrix: mat4x4<f32>,
-    normal_matrix: mat4x4<f32>,
-    tex_scale: vec2<f32>,
-    _padding_0: vec2<f32>
-}
-
 @group(0) @binding(0)
 var base_color_texture: texture_2d<f32>;
 @group(0) @binding(1)
@@ -56,20 +40,22 @@ var rma_texture: texture_2d<f32>;
 @group(0) @binding(5)
 var rma_sampler: sampler;
 
+@group(0) @binding(6)
+var world_position_texture: texture_2d<f32>;
+@group(0) @binding(7) 
+var world_position_sampler: sampler;
+
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
 
 @group(2) @binding(0)
-var<uniform> model: ModelUniform;
-
-@group(3) @binding(0)
 var<storage, read> lights: array<LightUniform>;
-@group(3) @binding(1)
+@group(2) @binding(1)
 var<uniform> light_count: u32;
 
-@group(3) @binding(2)
+@group(2) @binding(2)
 var shadow_maps: texture_depth_cube_array;
-@group(3) @binding(3)
+@group(2) @binding(3)
 var shadow_sampler: sampler_comparison;
 
 const gridSamplingDisk: array<vec3<f32>, 20> = array(
@@ -188,24 +174,12 @@ fn microfacet_brdf(l: vec3<f32>, v: vec3<f32>, n: vec3<f32>, base_color: vec3<f3
 }
 
 @vertex
-fn vs_main(vert_in: VertexInput) -> VertexOutput {
+fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
     var out: VertexOutput;
 
-    out.tex_coords = model.tex_scale * vert_in.tex_coords;
-    
-    let world_position: vec4<f32> = model.model_matrix * vec4<f32>(vert_in.position, 1.0);
-    out.world_position = world_position.xyz;
-
-    let N = normalize((model.normal_matrix * vec4<f32>(vert_in.normal, 0.0)).xyz);
-    var T = normalize((model.normal_matrix * vec4<f32>(vert_in.tangent, 0.0)).xyz);
-    T = normalize(T - dot(T, N) * N);
-    let B = cross(N, T);
-
-    out.tangent = T;
-    out.bitangent = B;
-    out.normal = N;
-
-    out.clip_position = camera.projection * camera.view * world_position;
+    out.tex_coords = vec2<f32>(f32((vi << 1u) & 2u), f32(vi & 2u));
+    out.clip_position = vec4<f32>(out.tex_coords * 2.0 - 1.0, 0.0, 1.0);
+    out.tex_coords.y = 1.0 - out.tex_coords.y;
 
     return out;
 }
@@ -225,10 +199,10 @@ fn get_spot_light_lighting(light_pos: vec3<f32>, light_color: vec3<f32>, light_s
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let base_color: vec3<f32> = pow(textureSample(base_color_texture, base_color_sampler, in.tex_coords).rgb, vec3<f32>(2.2)); // gamma correct only if format is not srgb
-    let tangent_normal: vec3<f32> = textureSample(normal_texture, normal_sampler, in.tex_coords).xyz * 2.0 - 1.0;
-    let world_normal = normalize(mat3x3<f32>(in.tangent, in.bitangent, in.normal) * tangent_normal);
+    let base_color: vec3<f32> = textureSample(base_color_texture, base_color_sampler, in.tex_coords).rgb;
+    let normal = textureSample(normal_texture, normal_sampler, in.tex_coords).rgb;
     let rma = textureSample(rma_texture, rma_sampler, in.tex_coords);
+    let world_position = textureSample(world_position_texture, world_position_sampler, in.tex_coords).xyz;
 
     let roughness = rma.r;
     let metallic = rma.g;
@@ -239,8 +213,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     for (var i: u32 = 0u; i < light_count; i = i + 1u) {
         let light = lights[i];
 
-        let lighting = get_spot_light_lighting(light.position, light.color, light.strength, light.radius, in.world_position, camera.view_position.xyz, world_normal, base_color, metallic, roughness);
-        let shadow = shadow_calculation(i, light.position, light.radius, in.world_position, camera.view_position.xyz, world_normal);
+        let lighting = get_spot_light_lighting(light.position, light.color, light.strength, light.radius, world_position, camera.view_position.xyz, normal, base_color, metallic, roughness);
+        let shadow = shadow_calculation(i, light.position, light.radius, world_position, camera.view_position.xyz, normal);
 
         final_color += lighting * shadow;
     }

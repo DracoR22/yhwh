@@ -71,7 +71,7 @@ impl ModelUniform {
 
         ];
        } else {
-        println!("NORMAL MATRIX FUCKED UP");
+        //println!("NORMAL MATRIX FUCKED UP");
         self.normal_matrix = [
           [1.0, 0.0, 0.0, 0.0],
           [0.0, 1.0, 0.0, 0.0],

@@ -902,7 +902,7 @@
       "position": [
         -9.4,
         1.0,
-        20.0
+        20.5
       ],
       "size": [
         0.03,
@@ -933,7 +933,7 @@
       "position": [
         -5.5,
         2.0,
-        20.0
+        20.5
       ],
       "size": [
         0.06,
@@ -1157,7 +1157,7 @@
       "position": [
         -8.4,
         1.8,
-        20.0
+        20.5
       ],
       "size": [
         0.1,
@@ -1285,7 +1285,7 @@
       ],
       "size": [
         1.0,
-        22.0,
+        46.0,
         12.0
       ],
       "rotation": [
@@ -1294,7 +1294,7 @@
         0.0
       ],
       "tex_scale": [
-        5.5,
+        6.5,
         1.7
       ],
       "shadows": false,
@@ -1373,7 +1373,7 @@
       "model_name": "Cube",
       "position": [
         1.0,
-        11.5,
+        11.0,
         20.0
       ],
       "size": [
@@ -1434,40 +1434,9 @@
     {
       "model_name": "Cube",
       "position": [
-        7.1,
-        5.0,
-        22.5
-      ],
-      "size": [
-        3.0,
-        1.0,
-        12.0
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "tex_scale": [
-        1.0,
-        3.4
-      ],
-      "shadows": false,
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Cube_Mesh",
-          "material_name": "PlasterGreen",
-          "emissive": false,
-          "glass": false
-        }
-      ]
-    },
-    {
-      "model_name": "Cube",
-      "position": [
-        -3.0,
+        -3.04,
         6.0,
-        33.0
+        32.5
       ],
       "size": [
         1.0,
@@ -1593,37 +1562,6 @@
       ]
     },
     {
-      "model_name": "Cube",
-      "position": [
-        6.5,
-        2.0,
-        38.0
-      ],
-      "size": [
-        1.0,
-        31.0,
-        20.0
-      ],
-      "rotation": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "tex_scale": [
-        1.0,
-        1.0
-      ],
-      "shadows": false,
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Cube_Mesh",
-          "material_name": "PlasterGreen",
-          "emissive": false,
-          "glass": false
-        }
-      ]
-    },
-    {
       "model_name": "door_frame2",
       "position": [
         1.75,
@@ -1690,27 +1628,27 @@
         0.7079415
       ],
       "position": [
+        4.0,
         3.0,
-        5.0,
         6.0
       ],
-      "strength": 5.0,
-      "radius": 4.0,
+      "strength": 4.0,
+      "radius": 3.0,
       "light_type": "Point",
       "shadows": true
     },
     {
       "color": [
         1.0,
-        1.0,
-        1.0
+        0.92247134,
+        0.87927294
       ],
       "position": [
         -6.0,
         4.0,
         20.0
       ],
-      "strength": 2.0,
+      "strength": 1.0,
       "radius": 7.0,
       "light_type": "Point",
       "shadows": true

@@ -2,13 +2,14 @@ use std::{sync::Arc};
 
 use winit::{window::Window};
 
-use crate::{common::enums::GameState, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager}, game::game_data::GameData, input::input::Input, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, glass_pass::GlassPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, scene_pass::ScenePass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass, ui_pass::UiPass}, uniform_manager::UniformManager, wgpu_context::WgpuContext};
+use crate::{common::enums::GameState, egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager}, game::game_data::GameData, input::input::Input, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, geometry_pass::GeometryPass, glass_pass::GlassPass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, scene_pass::ScenePass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass, ui_pass::UiPass}, uniform_manager::UniformManager, wgpu_context::WgpuContext};
 
 pub struct WgpuRenderer {
     pub egui_renderer: EguiRenderer,
     pub wgpu_context: WgpuContext,
+    geometry_pass: GeometryPass,
+    lighting_pass: LightingPass,
     postprocess_pass: PostProcessPass,
-    scene_pass: ScenePass,
     animation_pass: AnimationPass,
     skybox_pass: SkyboxPass,
     outline_pass: OutlinePass,
@@ -40,11 +41,13 @@ impl WgpuRenderer {
         let wgpu_uniforms = UniformManager::new(&context, &game_data.scene, &shadow_pass.shadow_cube_map_array.texture);
 
         // load render groups
+        let geometry_pass = GeometryPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
+        let lighting_pass = LightingPass::new(&context, &geometry_pass.textures, &wgpu_uniforms);
         let scene_pass = ScenePass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let animation_pass = AnimationPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let skybox_pass = SkyboxPass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
         let outline_pass = OutlinePass::new(&context, &wgpu_uniforms);
-        let emissive_pass = EmissivePass::new(&context, &wgpu_uniforms, &scene_pass.emissive_texture);
+        let emissive_pass = EmissivePass::new(&context, &wgpu_uniforms);
         let glass_pass = GlassPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let postprocess_pass = PostProcessPass::new(&context, &config, &scene_pass.pbr_texture, &emissive_pass.get_final_texture(), &outline_pass.get_outline_texture(), &glass_pass.texture);
         let ui_pass = UiPass::new(&context, &game_data, &wgpu_uniforms);
@@ -52,8 +55,9 @@ impl WgpuRenderer {
         return Self {
             wgpu_context: context,
             egui_renderer,
+            lighting_pass,
             shadow_pass,
-            scene_pass,
+            geometry_pass,
             postprocess_pass,
             animation_pass,
             skybox_pass,
@@ -91,13 +95,16 @@ impl WgpuRenderer {
         });
 
        self.shadow_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager, &game_data);
-       self.scene_pass.render(&mut encoder, &self.uniform_manager, &game_data);
-       self.animation_pass.render(&mut encoder, &self.uniform_manager, &game_data, &self.scene_pass.pbr_texture, &self.scene_pass.depth_texture);
-       self.skybox_pass.render(&mut encoder, &self.uniform_manager, &self.scene_pass.pbr_texture, &self.scene_pass.depth_texture);
+       self.geometry_pass.render(&mut encoder, &self.uniform_manager, &game_data);
+       self.lighting_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, &self.geometry_pass.textures);
+       
+       self.emissive_pass.render_mask(&mut encoder, &self.uniform_manager, &game_data, &self.lighting_pass.texture, &self.geometry_pass.textures.depth);
+       self.animation_pass.render(&mut encoder, &self.uniform_manager, &game_data, &self.lighting_pass.texture, &self.geometry_pass.textures.depth);
+       self.skybox_pass.render(&mut encoder, &self.uniform_manager, &self.lighting_pass.texture, &self.geometry_pass.textures.depth);
        self.outline_pass.render(&mut encoder, &self.uniform_manager, &game_data);
        self.emissive_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager);
-       self.glass_pass.render(&mut encoder, &self.uniform_manager, &self.scene_pass.depth_texture, &game_data);
-       self.postprocess_pass.render(&mut encoder, &swapchain_view, &self.wgpu_context, &self.scene_pass.pbr_texture, &self.emissive_pass.get_final_texture(), self.outline_pass.get_outline_texture(), &self.glass_pass.texture);
+       self.glass_pass.render(&mut encoder, &self.uniform_manager, &self.geometry_pass.textures.depth, &game_data);
+       self.postprocess_pass.render(&mut encoder, &swapchain_view, &self.wgpu_context, &self.lighting_pass.texture, &self.emissive_pass.get_final_texture(), self.outline_pass.get_outline_texture(), &self.glass_pass.texture);
        self.ui_pass.render(&self.wgpu_context, &mut encoder, &game_data, (window.inner_size().width as f32, window.inner_size().height as f32), &swapchain_view);
 
        if game_data.game_state == GameState::Editor {
@@ -128,9 +135,9 @@ impl WgpuRenderer {
     pub fn hot_load_shaders(&mut self) {
          self.outline_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
          self.postprocess_pass.hotload_shader(&self.wgpu_context);
-         self.scene_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
          self.emissive_pass.hotload_shader(&self.wgpu_context.device, &self.uniform_manager);
          self.glass_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
+         self.lighting_pass.hotload_shader(&self.wgpu_context, &self.uniform_manager);
          println!("Hot-Loaded shaders!");
     }
 }

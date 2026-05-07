@@ -1,10 +1,11 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 use wgpu::util::DeviceExt;
 
 pub struct OutlinePass {
     mask_pipeline: wgpu::RenderPipeline,
     mask_texture: Texture,
     mask_bind_group: wgpu::BindGroup,
+    mask_bind_group_layout: wgpu::BindGroupLayout,
     outline_pipeline: wgpu::RenderPipeline,
     outline_texture: Texture,
     vertex_buffer: wgpu::Buffer,
@@ -39,12 +40,12 @@ impl OutlinePass {
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
         );
 
-        let bg_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]);
-        let mask_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &bg_layout, &mask_texture);
+        let mask_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float]);
+        let mask_bind_group = BindGroupManager::create_texture_bind_group(&ctx.device, &mask_bind_group_layout, &mask_texture);
 
         let outline_pipeline = PipelineBuilder::new(
             "outline pipeline",
-            &[&bg_layout],
+            &[&mask_bind_group_layout],
             &[QUAD_VERTEX_BUFFER_LAYOUT],
             &outline_shader_module,
             [wgpu::TextureFormat::Rgba16Float],
@@ -70,7 +71,8 @@ impl OutlinePass {
             mask_bind_group,
             outline_pipeline,
             outline_texture,
-            vertex_buffer
+            vertex_buffer,
+            mask_bind_group_layout
         }
     }
 
@@ -163,25 +165,38 @@ impl OutlinePass {
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {
-    //   let shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
-    //   let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-    //         label: Some("Outline_Shader"),
-    //         source: wgpu::ShaderSource::Wgsl(shader_code.into()),
-    //    });
+        let mask_shader_code = std::fs::read_to_string("res/shaders/solid_color.wgsl").unwrap();
+        let mask_shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("mask solid color shader"),
+            source: wgpu::ShaderSource::Wgsl(mask_shader_code.into()),
+        });
 
-    // let new_pipeline = PipelineBuilder::new(
-    //         "outline pipeline",
-    //         &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
-    //         &[Vertex::desc()],
-    //         &shader_module,
-    //         [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
-    //     )
-    //     .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
-    //     .with_stencil_state(write_stencil)
-    //     .with_blend(wgpu::BlendState::REPLACE)
-    //     .build(&ctx.device);
+        let outline_shader_code = std::fs::read_to_string("res/shaders/outline.wgsl").unwrap();
+        let outline_shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("outline shader"),
+            source: wgpu::ShaderSource::Wgsl(outline_shader_code.into()),
+        });
 
-    //    self.mask_pipeline = new_pipeline;
+        let mask_pipeline = PipelineBuilder::new(
+                "outline mask pipeline",
+                &[&uniforms.camera.bind_group_layout, &uniforms.bind_group_layout],
+                &[Vertex::desc()],
+                &mask_shader_module,
+                [wgpu::TextureFormat::R8Unorm],
+            )
+            .build(&ctx.device);
+
+        let outline_pipeline = PipelineBuilder::new(
+            "outline pipeline",
+            &[&self.mask_bind_group_layout],
+            &[QUAD_VERTEX_BUFFER_LAYOUT],
+            &outline_shader_module,
+            [wgpu::TextureFormat::Rgba16Float],
+        )
+        .build(&ctx.device);
+
+        self.mask_pipeline = mask_pipeline;
+        self.outline_pipeline = outline_pipeline;
     }
 
     pub fn get_outline_texture(&self) -> &Texture {

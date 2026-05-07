@@ -5,17 +5,24 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
-    var tc: vec2<f32> = vec2(0.0, 0.0);
-    switch (vi) {
-        case 0u: {tc = vec2(0.0, 0.0);}
-        case 1u: {tc = vec2(2.0, 0.0);}
-        case 2u: {tc = vec2(0.0, 2.0);}
-        default: {}
-    }
-    let pos: vec2<f32> = tc * 2.0 - 1.0;
-    let gl_Position = vec4(pos.x, -pos.y, 0.5, 1.0);
+    // var tc: vec2<f32> = vec2(0.0, 0.0);
+    // switch (vi) {
+    //     case 0u: {tc = vec2(0.0, 0.0);}
+    //     case 1u: {tc = vec2(2.0, 0.0);}
+    //     case 2u: {tc = vec2(0.0, 2.0);}
+    //     default: {}
+    // }
+    // let pos: vec2<f32> = tc * 2.0 - 1.0;
+    // let gl_Position = vec4(pos.x, -pos.y, 0.5, 1.0);
 
-    return VertexOutput(tc, gl_Position);
+    // return VertexOutput(tc, gl_Position);
+    var out: VertexOutput;
+
+    out.v_TexCoord = vec2<f32>(f32((vi << 1u) & 2u), f32(vi & 2u));
+    out.member = vec4<f32>(out.v_TexCoord * 2.0 - 1.0, 0.0, 1.0);
+    out.v_TexCoord.y = 1.0 - out.v_TexCoord.y;
+
+    return out;
 }
 
 struct FragmentOutput {

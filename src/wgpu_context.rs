@@ -40,7 +40,7 @@ impl WgpuContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    required_features: wgpu::Features::DEPTH32FLOAT_STENCIL8,
+                    required_features: wgpu::Features::DEPTH32FLOAT_STENCIL8 | wgpu::Features::FLOAT32_FILTERABLE,
                     required_limits: wgpu::Limits::default(),
                     memory_hints: Default::default(),
                 },

@@ -14,7 +14,7 @@ impl GlassPass {
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 
-        let texture = Texture::create_fbo(&ctx.device, (SCR_RESOLUTION[0], SCR_RESOLUTION[1]), wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+        let texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
         let glass_material = asset_manager.get_material_by_name("WindowsGlass").unwrap();
 
@@ -32,8 +32,9 @@ impl GlassPass {
             &shader_module,
             [wgpu::TextureFormat::Rgba16Float]
         )
-        .with_depth(wgpu::TextureFormat::Depth32FloatStencil8)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
+        .with_blend(wgpu::BlendState::REPLACE)
         .build(&ctx.device);
 
         Self {
@@ -116,7 +117,7 @@ impl GlassPass {
             &shader_module,
             [wgpu::TextureFormat::Rgba16Float]
         )
-        .with_depth(wgpu::TextureFormat::Depth32FloatStencil8)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
         .build(&ctx.device);
 

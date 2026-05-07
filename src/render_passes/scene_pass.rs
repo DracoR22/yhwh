@@ -1,9 +1,11 @@
-use crate::{asset_manager::AssetManager, common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT}, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+// --------------------------------------- LEGACY FORWARD PASS NO LONGER USED ----------------------- //
+
+use crate::{asset_manager::AssetManager, common::constants::SCR_RESOLUTION, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct ScenePass {
     pbr_pipeline: wgpu::RenderPipeline,
     emissive_pipeline: wgpu::RenderPipeline,
-    texture_bg_layout: wgpu::BindGroupLayout,
+    material_bind_group_layout: wgpu::BindGroupLayout,
     pub pbr_texture: Texture,
     pub emissive_texture: Texture,
     pub depth_texture: Texture
@@ -23,25 +25,25 @@ impl ScenePass {
             source: wgpu::ShaderSource::Wgsl(emissive_shader_code.into()),
         });
 
-        let texture_bind_group_layout = &asset_manager.get_default_material().unwrap().bind_group_layout;
+        let material_bind_group_layout = &asset_manager.get_default_material().unwrap().bind_group_layout;
 
-        let pbr_texture = Texture::create_fbo(&ctx.device, (1920, 1080), wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-        let emissive_texture = Texture::create_fbo(&ctx.device, (1920, 1080), wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-        let depth_texture = Texture::create_depth_texture(&ctx.device, "scene depth texture", DEPTH_TEXTURE_STENCIL_FORMAT);
+        let pbr_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+        let emissive_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
+        let depth_texture = Texture::create_depth_texture(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Depth32Float);
 
         let pbr_pipeline = PipelineBuilder::new(
             "scene::pbr pipeline",
             &[
-              &texture_bind_group_layout,
+              &material_bind_group_layout,
               &uniforms.camera.bind_group_layout,
               &uniforms.bind_group_layout,
               &uniforms.lights_ssbo.bind_group_layout
             ],
             &[Vertex::desc()],
             &pbr_shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+            [wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba16Float],
         )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
         .with_cull_mode(wgpu::Face::Back)
         .build(&ctx.device);
@@ -54,9 +56,9 @@ impl ScenePass {
             ],
             &[Vertex::desc()],
             &emissive_shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+            [wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba16Float],
         )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
         .build(&ctx.device);
 
@@ -66,7 +68,7 @@ impl ScenePass {
         pbr_texture,
         depth_texture,
         emissive_texture,
-        texture_bg_layout: texture_bind_group_layout.clone()
+        material_bind_group_layout: material_bind_group_layout.clone()
      }
     }
 
@@ -245,16 +247,16 @@ impl ScenePass {
        let pipeline = PipelineBuilder::new(
             "lighting pipeline",
             &[
-              &self.texture_bg_layout,
+              &self.material_bind_group_layout,
               &uniforms.camera.bind_group_layout,
               &uniforms.bind_group_layout,
               &uniforms.lights_ssbo.bind_group_layout
             ],
             &[Vertex::desc()],
             &shader_module,
-            [HDR_TEX_FORMAT, HDR_TEX_FORMAT],
+            [wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba16Float],
         )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
         .with_cull_mode(wgpu::Face::Back)
         .build(&ctx.device);

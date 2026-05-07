@@ -1,5 +1,3 @@
-use crate::bind_group_manager::{BindGroupManager, TL};
-use crate::common::constants::{DEPTH_TEXTURE_STENCIL_FORMAT, HDR_TEX_FORMAT};
 use crate::cube_map::CubeMap;
 use crate::pipeline_builder::PipelineBuilder;
 use crate::renderer_common::SKYBOX_VERTICES;
@@ -46,9 +44,9 @@ impl SkyboxPass {
             &[&cubemap.texture_bind_group_layout, &uniforms.camera.bind_group_layout],
             &cubemap_buffers,
             &shader_module,
-            [HDR_TEX_FORMAT]
+            [wgpu::TextureFormat::Rgba16Float]
         )
-        .with_depth(DEPTH_TEXTURE_STENCIL_FORMAT)
+        .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_cull_mode(wgpu::Face::Back)
         .build(&ctx.device);
 

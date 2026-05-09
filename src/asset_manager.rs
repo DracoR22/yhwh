@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path, sync::mpsc, thread};
 use cgmath::Vector3;
 use yhwh_core::math::aabb::Aabb;
 
-use crate::{material::Material, model::{self, Mesh, Model}, texture::{Texture, TextureData}, wgpu_context::WgpuContext};
+use crate::{material::Material, model::{self, Mesh, Model}, texture::{Texture, TextureBuilder, TextureData}, wgpu_context::WgpuContext};
 
 pub struct AssetManager {
     model_index_map: HashMap<String, usize>,
@@ -68,8 +68,12 @@ impl AssetManager {
         let mut textures = Vec::<Texture>::new();
 
         for (index, data) in receiver.iter().enumerate() {
-             let is_normal_map = data.name.contains("_NRM") || data.name.contains("_RMA");
-             let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
+             let is_srgb = data.name.contains("_ALB");
+             let texture = TextureBuilder::from_img(data.image)
+             .with_srgb(is_srgb)
+             .build(&ctx.device, &ctx.queue);
+            //  let is_normal_map = data.name.contains("_NRM") || data.name.contains("_RMA");
+            //  let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
              texture_index_map.insert(data.name, index);
              textures.push(texture);
         }

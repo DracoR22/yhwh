@@ -1,26 +1,15 @@
 struct VertexOutput {
-    @location(0) v_TexCoord: vec2<f32>,
-    @builtin(position) member: vec4<f32>,
+    @location(0) tex_coords: vec2<f32>,
+    @builtin(position) clip_position: vec4<f32>,
 }
 
 @vertex
 fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
-    // var tc: vec2<f32> = vec2(0.0, 0.0);
-    // switch (vi) {
-    //     case 0u: {tc = vec2(0.0, 0.0);}
-    //     case 1u: {tc = vec2(2.0, 0.0);}
-    //     case 2u: {tc = vec2(0.0, 2.0);}
-    //     default: {}
-    // }
-    // let pos: vec2<f32> = tc * 2.0 - 1.0;
-    // let gl_Position = vec4(pos.x, -pos.y, 0.5, 1.0);
-
-    // return VertexOutput(tc, gl_Position);
     var out: VertexOutput;
 
-    out.v_TexCoord = vec2<f32>(f32((vi << 1u) & 2u), f32(vi & 2u));
-    out.member = vec4<f32>(out.v_TexCoord * 2.0 - 1.0, 0.0, 1.0);
-    out.v_TexCoord.y = 1.0 - out.v_TexCoord.y;
+    out.tex_coords = vec2<f32>(f32((vi << 1u) & 2u), f32(vi & 2u));
+    out.clip_position = vec4<f32>(out.tex_coords * 2.0 - 1.0, 0.0, 1.0);
+    out.tex_coords.y = 1.0 - out.tex_coords.y;
 
     return out;
 }
@@ -33,7 +22,7 @@ struct FragmentOutput {
 @group(0) @binding(1) var s_Color: sampler;
 
 @fragment
-fn fs_main(@location(0) v_TexCoord: vec2<f32>) -> FragmentOutput {
-    let o_Target = textureSampleLevel(t_Color, s_Color, v_TexCoord, 0.0);
+fn fs_main(@location(0) tex_coords: vec2<f32>) -> FragmentOutput {
+    let o_Target = textureSampleLevel(t_Color, s_Color, tex_coords, 0.0);
     return FragmentOutput(o_Target);
 }

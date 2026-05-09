@@ -64,7 +64,7 @@ impl ShadowCubeMapArray {
             capacity: light_count.next_power_of_two() as usize,
             size: size as usize,
             texture: Texture {
-                texture: cube_texture,
+                gpu_texture: cube_texture,
                 sampler,
                 view: cube_array_view,
                 dimensions: Default::default(),

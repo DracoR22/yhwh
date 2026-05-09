@@ -1,4 +1,4 @@
-// --------------------------------------- LEGACY FORWARD PASS NO LONGER USED ----------------------- //
+// ---------------------------------------------------------------- LEGACY FORWARD LIGHTING PASS NO LONGER USED ----------------------------------------------------------------- //
 
 use crate::{asset_manager::AssetManager, common::constants::SCR_RESOLUTION, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 

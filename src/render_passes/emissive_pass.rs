@@ -39,7 +39,7 @@ impl EmissivePass {
         let mask_shader_module = ctx
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("blur shader"),
+                label: Some("mask bloom shader"),
                 source: wgpu::ShaderSource::Wgsl(mask_shader_code.into()),
             });
 
@@ -199,7 +199,7 @@ impl EmissivePass {
     pub fn hotload_shader(&mut self, device: &wgpu::Device, uniforms: &UniformManager) {
         let shader_code = std::fs::read_to_string("res/shaders/blur.wgsl").unwrap();
         let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Blur_Shader"),
+            label: Some("blur shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 

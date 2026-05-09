@@ -17,7 +17,7 @@ Rust and WGPU based renderer
 - Skybox
 
 ### Controls
-`WASD` movement
-`f1` Toggle editor
-`G` Interact
-`2` Hotload shaders
+`WASD` movement<br>
+`f1` Toggle editor<br>
+`G` Interact<br>
+`2` Hotload shaders<br>

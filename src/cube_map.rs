@@ -73,7 +73,7 @@ impl CubeMap {
          let cube_tex = Texture { 
             sampler: texture_sampler.clone(),
             view: texture_view.clone(),
-            texture: texture.clone(),
+            gpu_texture: texture.clone(),
             dimensions: Default::default(),
             pixel_data: Default::default()
         };

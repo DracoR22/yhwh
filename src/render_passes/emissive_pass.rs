@@ -144,9 +144,7 @@ impl EmissivePass {
 
             let direction = if horizontal { [1.0, 0.0] } else { [0.0, 1.0] };
 
-            uniforms.blurs[i]
-                .value_mut()
-                .update(direction, sample_distance);
+            uniforms.blurs[i].value_mut().update(direction, sample_distance);
             uniforms.blurs[i].update(&ctx.queue);
 
             let target_texture = if horizontal {

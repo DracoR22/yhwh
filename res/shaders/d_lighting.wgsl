@@ -45,6 +45,11 @@ var world_position_texture: texture_2d<f32>;
 @group(0) @binding(7) 
 var world_position_sampler: sampler;
 
+@group(0) @binding(8)
+var ssao_texture: texture_2d<f32>;
+@group(0) @binding(9)
+var ssao_sampler: sampler;
+
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
 
@@ -203,6 +208,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let normal = textureSample(normal_texture, normal_sampler, in.tex_coords).rgb;
     let rma = textureSample(rma_texture, rma_sampler, in.tex_coords);
     let world_position = textureSample(world_position_texture, world_position_sampler, in.tex_coords).xyz;
+    let ssao = textureSample(ssao_texture, ssao_sampler, in.tex_coords).r;
 
     let roughness = rma.r;
     let metallic = rma.g;
@@ -219,8 +225,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         final_color += lighting * shadow;
     }
 
-    let ambient = 0.01 * base_color;
-    final_color += ambient * ao;
+    let ambient = 0.05 * base_color * ao * ssao;
+    final_color += ambient;
 
     return vec4<f32>(final_color, 1.0);
 }

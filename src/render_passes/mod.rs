@@ -9,4 +9,4 @@ pub mod glass_pass;
 pub mod ui_pass;
 pub mod geometry_pass;
 pub mod lighting_pass;
-pub mod ssao;
+pub mod ssao_pass;

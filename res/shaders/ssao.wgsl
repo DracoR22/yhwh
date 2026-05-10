@@ -9,8 +9,8 @@ struct CameraUniform {
     view_position: vec4<f32>,
 };
 
-struct KernelSamples {
-    samples: array<vec4<f32>, 64>,
+struct SSAOUniform {
+    kernel_samples: array<vec4<f32>, 16>,
 };
 
 @group(0) @binding(0)
@@ -32,9 +32,9 @@ var noise_sampler: sampler;
 var<uniform> camera: CameraUniform;
 
 @group(2) @binding(0)
-var<uniform> kernel_samples: KernelSamples;
+var<uniform> ssao: SSAOUniform;
 
-const KERNEL_SIZE: i32 = 64;
+const KERNEL_SIZE: i32 = 16;
 const RADIUS: f32 = 0.5;
 const BIAS: f32 = 0.025;
 const NOISE_SCALE = vec2<f32>(1920.0 / 4.0, 1080.0 / 4.0);
@@ -51,10 +51,14 @@ fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let position = textureSample(position_texture, position_sampler, in.tex_coords).xyz;
-    let normal = textureSample(normal_texture, normal_sampler, in.tex_coords).rgb;
+fn fs_main(in: VertexOutput) -> @location(0) f32 {
+    let world_position = textureSample(position_texture, position_sampler, in.tex_coords).xyz;
+    let world_normal = textureSample(normal_texture, normal_sampler, in.tex_coords).xyz;
+    let normal = normalize((camera.view * vec4<f32>(world_normal, 0.0)).xyz);
+
     let random_vec = textureSample(noise_texture, noise_sampler, in.tex_coords * NOISE_SCALE).xyz;
+
+    let position = (camera.view * vec4<f32>(world_position, 1.0)).xyz;
 
     let tangent = normalize(random_vec - normal * dot(random_vec, normal));
     let bitangent = cross(normal, tangent);
@@ -62,15 +66,20 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var occlusion = 0.0;
     for (var i = 0; i < KERNEL_SIZE; i++) {
-        var sample_position = tbn * kernel_samples.samples[i].xyz;
+        var sample_position = tbn * ssao.kernel_samples[i].xyz;
         sample_position = position + sample_position * RADIUS;
 
         let offset = camera.projection * vec4<f32>(sample_position, 1.0);
         let projected = offset.xyz / offset.w;
-        let sample_uv = projected.xy * 0.5 + 0.5;
-        // let sample_uv = projected.xy * vec2<f32>(0.5, -0.5) + 0.5;
+        // let sample_uv = projected.xy * 0.5 + 0.5; // opengl coords
+        let sample_uv = projected.xy * vec2<f32>(0.5, -0.5) + 0.5; // wgpu coords
 
-        let sample_depth = textureSample(position_texture, position_sampler, sample_uv).z;
+        if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
+          continue;
+        }
+        
+        let sample_world_position = textureSample(position_texture, position_sampler, sample_uv).xyz;
+        let sample_depth =  (camera.view * vec4<f32>(sample_world_position, 1.0)).z;
         let range_check = smoothstep(0.0, 1.0, RADIUS / abs(position.z - sample_depth));
 
         if (sample_depth >= sample_position.z + BIAS) {
@@ -81,5 +90,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     occlusion = 1.0 - (occlusion / f32(KERNEL_SIZE));
-    return vec4<f32>(occlusion);
+    
+    let strength = 8.0;
+    occlusion = pow(occlusion, strength);
+    return occlusion;
 }

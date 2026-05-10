@@ -10,7 +10,7 @@ pub struct LightingPass {
 }
 
 impl LightingPass {
-    pub fn new(ctx: &WgpuContext, gbuffer_textures: &GBufferTextures, uniforms: &UniformManager) -> Self {
+    pub fn new(ctx: &WgpuContext, gbuffer_textures: &GBufferTextures, ssao_texture: &Texture, uniforms: &UniformManager) -> Self {
         let shader_code = std::fs::read_to_string("res/shaders/d_lighting.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("lighting shader"),
@@ -25,7 +25,8 @@ impl LightingPass {
                 TL::Float, // basecolor
                 TL::Float, // normal
                 TL::Float, // rma
-                TL::Float // world position
+                TL::Float ,// world position
+                TL::Float // ssao
             ]
         );
 
@@ -36,7 +37,8 @@ impl LightingPass {
                &gbuffer_textures.base_color,
                &gbuffer_textures.normal,
                &gbuffer_textures.rma,
-               &gbuffer_textures.world_position
+               &gbuffer_textures.world_position,
+               &ssao_texture
             ],
         );
 

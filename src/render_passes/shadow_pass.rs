@@ -83,7 +83,7 @@ impl ShadowPass {
                 // draw scene
                 for game_object in game_data.scene.game_objects.iter() {
                     // skip distant objects TODO: compare also bounding boxes
-                    if (cgmath::MetricSpace::distance2(game_object.get_position(), light.position)) > light.radius * light.radius {
+                    if (cgmath::MetricSpace::distance2(game_object.transform.position, light.position)) > light.radius * light.radius {
                         continue;
                     }
 

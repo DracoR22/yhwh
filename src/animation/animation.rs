@@ -74,6 +74,14 @@ impl AnimationState {
             self.current = index;
         }
     }
+
+    pub fn progress(&self) -> f32 {
+        if self.total_time <= 0.0 {
+            0.0
+        } else {
+            self.time / self.total_time
+        }
+    }
 }
 
 pub struct Animations {

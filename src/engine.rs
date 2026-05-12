@@ -135,7 +135,23 @@ impl Engine {
           self.wgpu_renderer.hot_load_shaders();
         }
 
-        if let Some(glb_model) = self.game_data.asset_manager.get_model_by_name_mut("glock") {
+        // if let Some(glb_model) = self.game_data.asset_manager.get_model_by_name_mut("untitled2") {
+        //     let anim_len = glb_model.animations.as_ref().unwrap().animations().len();
+        //     if self.input.keyboard.key_just_pressed(KeyCode::KeyR) {
+        //         let play_back_state = glb_model.get_animation_playback_state().unwrap();
+        //         let mut current_anim = play_back_state.current;
+
+        //         if current_anim + 1 < anim_len {
+        //           current_anim += 1;
+        //         } else {
+        //           current_anim = 0;
+        //         }
+
+        //         glb_model.set_current_animation(current_anim);
+        //     }
+        // }
+
+         for glb_model in self.game_data.scene.animated_game_objects.iter_mut() {
             let anim_len = glb_model.animations.as_ref().unwrap().animations().len();
             if self.input.keyboard.key_just_pressed(KeyCode::KeyR) {
                 let play_back_state = glb_model.get_animation_playback_state().unwrap();

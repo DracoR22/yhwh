@@ -19,8 +19,8 @@ impl AnimationPass {
             &[
               &texture_bind_group_layout,
               &uniforms.camera.bind_group_layout,
-              &uniforms.bind_group_layout,
-              &uniforms.animation.bind_group_layout
+              &uniforms.bind_group_layout, // model
+              &uniforms.bind_group_layout // animation
             ],
             &[Vertex::desc()],
             &shader_module,
@@ -64,13 +64,19 @@ impl AnimationPass {
         render_pass.set_pipeline(&self.pipeline);
 
         for animated_game_object in game_data.scene.animated_game_objects.iter() {
-          let Some(model_uniform) = uniforms.models.get(&animated_game_object.object_id) else {
-            println!("No model bind group for object {:?}, skipping draw", &animated_game_object.object_id);
+          let Some(model_uniform) = uniforms.models.get(&animated_game_object.id) else {
+            println!("No model bind group for object {:?}, skipping draw", &animated_game_object.id);
             return
           };
+
+          let Some(animation_uniform) = uniforms.animations.get(&animated_game_object.id) else {
+            println!("No animation bind group for object {:?}, skipping draw", &animated_game_object.id);
+            return
+          };
+
           render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
           render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
-          render_pass.set_bind_group(3, &uniforms.animation.bind_group, &[]);
+          render_pass.set_bind_group(3, &animation_uniform.bind_group, &[]);
 
           if let Some(model) = game_data.asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
            for mesh in &model.meshes {

@@ -7,6 +7,7 @@ use cgmath::Vector2;
 use crate::asset_manager::AssetManager;
 use crate::bind_group_manager::BindGroupManager;
 use crate::common::constants::MAX_LIGHTS;
+use crate::game::game_data::GameData;
 use crate::scene::Scene;
 use crate::ssbo::SSBO;
 use crate::texture::Texture;
@@ -196,7 +197,7 @@ pub struct UniformManager {
     pub camera: Uniform<CameraUniform>,
     pub models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
-    pub animation: Uniform<AnimationUniform>,
+    pub animations: HashMap<usize, Uniform<AnimationUniform>>,
     pub blurs: Vec<Uniform<BlurUniform>>,
     pub shadow_cube_maps: Vec<Uniform<ShadowCubeMapUniform>>,
     pub lights_ssbo: SSBO
@@ -205,13 +206,15 @@ pub struct UniformManager {
 impl UniformManager {
     pub fn new(ctx: &WgpuContext, scene: &Scene, shadow_texture: &Texture) -> Self {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
+      let mut animation_uniforms: HashMap<usize, Uniform<AnimationUniform>> = HashMap::new();
 
       for game_object in scene.game_objects.iter() {
         model_uniforms.insert(game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
       }
 
       for animated_game_object in scene.animated_game_objects.iter() {
-        model_uniforms.insert(animated_game_object.object_id, Uniform::new(ModelUniform::new(), &ctx.device));
+        model_uniforms.insert(animated_game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
+        animation_uniforms.insert(animated_game_object.id, Uniform::new(AnimationUniform::new(), &ctx.device));
       }
 
       for door_object in scene.door_objects.iter() {
@@ -240,7 +243,7 @@ impl UniformManager {
 
       Self {
         models: model_uniforms,
-        animation: Uniform::new(AnimationUniform::new(), &ctx.device),
+        animations: animation_uniforms,
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
         blurs,
         bind_group_layout,
@@ -255,10 +258,10 @@ impl UniformManager {
 
     pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene) {
       for animated_game_object in scene.animated_game_objects.iter() {
-        if !self.models.contains_key(&animated_game_object.object_id) {
-           self.create_model(&ctx, animated_game_object.object_id);
+        if !self.models.contains_key(&animated_game_object.id) {
+           self.create_model(&ctx, animated_game_object.id);
         }
-        if let Some(model_uniform) = self.models.get_mut(&animated_game_object.object_id) {
+        if let Some(model_uniform) = self.models.get_mut(&animated_game_object.id) {
           model_uniform.value_mut().update(&animated_game_object.get_model_matrix(), &animated_game_object.tex_scale);
           model_uniform.update(&ctx.queue);
         }
@@ -288,24 +291,44 @@ impl UniformManager {
       }
     }
 
-    pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, asset_manager: &mut AssetManager, delta_time: std::time::Duration) {
-         if let Some(glb_model) = asset_manager.get_model_by_name_mut("glock") {
-          glb_model.update(delta_time.as_secs_f32());
-          let skin_uniform = self.animation.value_mut();
+    pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, game_data: &mut GameData) {
+        // if let Some(glb_model) = asset_manager.get_model_by_name_mut("untitled2") {
+        //     glb_model.update(delta_time.as_secs_f32());
+        //     let skin_uniform = self.animation.value_mut();
 
-          if let Some(skin) = glb_model.skins.get(0) {
-           for (i, joint) in skin.joints().iter().enumerate() {
-            if i >= MAX_JOINTS_PER_MESH {
-             break; 
-            }
+        //     if let Some(skin) = glb_model.skins.get(0) {
+        //       for (i, joint) in skin.joints().iter().enumerate() {
+        //         if i >= MAX_JOINTS_PER_MESH {
+        //         break; 
+        //         }
 
-           // Convert cgmath::Matrix4 to [[f32; 4]; 4]
-           skin_uniform.joint_matrices[i] = joint.matrix().into();
-         }
-       }
-      }
+        //       // Convert cgmath::Matrix4 to [[f32; 4]; 4]
+        //       skin_uniform.joint_matrices[i] = joint.matrix().into();
+        //     }
+        //   }
+        // }
 
-      self.animation.update(&ctx.queue);
+        // TODO! CREATE A NEW UNIFORM IN RUNTIME LIKE WITH MODELS
+        for animated_game_object in game_data.scene.animated_game_objects.iter_mut() {
+            if let Some(animation_uniform) = self.animations.get_mut(&animated_game_object.id) {
+              animated_game_object.update(&game_data.asset_manager, game_data.delta_time.as_secs_f32());
+              let skin_uniform = animation_uniform.value_mut();
+
+              if let Some(skin) = animated_game_object.skins.get(0) {
+                  for (i, joint) in skin.joints().iter().enumerate() {
+                        if i >= MAX_JOINTS_PER_MESH {
+                           break; 
+                        }
+
+                      skin_uniform.joint_matrices[i] = joint.matrix().into();
+                  }
+              }
+
+              animation_uniform.update(&ctx.queue);
+           }
+        }
+
+      // self.animations.update(&ctx.queue);
     }
 
     pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene, shadow_texture: &Texture) {

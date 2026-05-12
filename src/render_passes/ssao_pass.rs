@@ -9,20 +9,12 @@ const KERNEL_SIZE: usize = 16;
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct SSAOUniform {
     kernel_samples:[[f32; 4]; KERNEL_SIZE],
-    kernel_size: u32,
-    _padding0: u32,
-    _padding1: u32,
-    _padding2: u32
 }
 
 impl SSAOUniform {
     pub fn new() -> Self {
         Self {
             kernel_samples: generate_kernel(),
-            kernel_size: KERNEL_SIZE as u32,
-            _padding0: 0,
-            _padding1: 0,
-            _padding2: 0
         }
     }
 }
@@ -92,14 +84,14 @@ impl SSAOPass{
 
         let color_texture = Texture::create_fbo(
             &ctx.device,
-            SCR_RESOLUTION,
+            (SCR_RESOLUTION.0 / 2, SCR_RESOLUTION.1 / 2),
             wgpu::TextureFormat::R8Unorm,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
         );
 
         let blur_texture = Texture::create_fbo(
             &ctx.device,
-            SCR_RESOLUTION,
+             (SCR_RESOLUTION.0 / 2, SCR_RESOLUTION.1 / 2),
             wgpu::TextureFormat::R8Unorm,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
         );

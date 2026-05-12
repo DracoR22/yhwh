@@ -40,11 +40,13 @@ pub struct Mesh {
 pub struct Model {
     pub name: String,
     pub meshes: Vec<Mesh>,
-    pub animations: Option<Animations>,
-    pub nodes: Nodes,
+    // pub animations: Option<Animations>,
+    // pub nodes: Nodes,
     pub global_transform: cgmath::Matrix4<f32>,
-    pub skins: Vec<Skin>,
-    pub aabb: Option<Aabb<f32>>
+    // pub skins: Vec<Skin>,
+    pub aabb: Option<Aabb<f32>>,
+    pub gltf: Option<gltf::Document>,
+    pub gltf_buffers: Option<Vec<Data>>,
 }
 
 pub fn load_obj_model_sync(device: &wgpu::Device, path: &str) -> Result<Model, LoadError> {
@@ -147,11 +149,13 @@ pub fn load_obj_model_sync(device: &wgpu::Device, path: &str) -> Result<Model, L
     Ok(Model {
         meshes,
         name: file_stem.to_string(),
-        animations: Default::default(),
-        nodes: Default::default(),
+        // animations: Default::default(),
+        // nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
-        skins: Vec::new(),
-        aabb: None
+        // skins: Vec::new(),
+        aabb: None,
+        gltf: None,
+        gltf_buffers: None
     })
 }
 
@@ -190,11 +194,13 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> Model {
     Model {
         meshes,
         name: name.to_string(),
-        animations: Default::default(),
-        nodes: Default::default(),
+        // animations: Default::default(),
+        // nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
-        skins: Vec::new(),
-        aabb: None
+        // skins: Vec::new(),
+        aabb: None,
+        gltf: None,
+        gltf_buffers: None
     }
 }
 
@@ -233,11 +239,13 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> Model {
     Model {
         meshes,
         name: name.to_string(),
-        animations: Default::default(),
-        nodes: Default::default(),
+        // animations: Default::default(),
+        // nodes: Default::default(),
         global_transform: cgmath::Matrix4::identity(),
-        skins: Vec::new(),
-        aabb: None
+        // skins: Vec::new(),
+        aabb: None,
+        gltf: None,
+        gltf_buffers: None
     }
 }
 
@@ -255,8 +263,8 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> Result<Model, ModelE
         }
     }   
 
-    // load animations
-    let animations = load_animations(gltf.animations(), &buffers);
+    // // load animations
+    // let animations = load_animations(gltf.animations(), &buffers);
 
     // load skins
     let mut skins = create_skins_from_gltf(gltf.skins(), &buffers);
@@ -278,14 +286,22 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> Result<Model, ModelE
             transform
     };
 
+    // for a in animations.iter() {
+    //     for d in a.animations().iter() {
+    //         println!("LOADED ANIM: {}", d.get_name());
+    //     }
+    // }
+
     Ok(Model {
         name: file_stem.to_string(),
         meshes,
-        animations,
-        nodes,
+        // animations,
+        // nodes,
         global_transform,
-        skins,
-        aabb: None
+        // skins,
+        aabb: None,
+        gltf: Some(gltf),
+        gltf_buffers: Some(buffers)
     })
 }
 
@@ -414,68 +430,68 @@ impl Model {
     }
 }
 
-impl Model {
-    pub fn update(&mut self, delta_time: f32) -> bool {
-        let updated = if let Some(animations) = self.animations.as_mut() {
-            animations.update(&mut self.nodes, delta_time)
-        } else {
-            false
-        };
+// impl Model {
+//     pub fn update(&mut self, delta_time: f32) -> bool {
+//         let updated = if let Some(animations) = self.animations.as_mut() {
+//             animations.update(&mut self.nodes, delta_time)
+//         } else {
+//             false
+//         };
 
-        if updated {
-            self.nodes.transform(Some(self.global_transform));
-            self.nodes
-                .get_skins_transform()
-                .iter()
-                .for_each(|(index, transform)| {
-                    let skin = &mut self.skins[*index];
-                    skin.compute_joints_matrices(*transform, self.nodes.nodes());
-                });
-        }
+//         if updated {
+//             self.nodes.transform(Some(self.global_transform));
+//             self.nodes
+//                 .get_skins_transform()
+//                 .iter()
+//                 .for_each(|(index, transform)| {
+//                     let skin = &mut self.skins[*index];
+//                     skin.compute_joints_matrices(*transform, self.nodes.nodes());
+//                 });
+//         }
 
-        updated
-    }
-}
+//         updated
+//     }
+// }
 
 // animations stuff
-impl Model {
-    pub fn get_animation_playback_state(&self) -> Option<AnimationState> {
-        self.animations
-            .as_ref()
-            .map(Animations::get_playback_state)
-            .copied()
-    }
+// impl Model {
+//     pub fn get_animation_playback_state(&self) -> Option<AnimationState> {
+//         self.animations
+//             .as_ref()
+//             .map(Animations::get_playback_state)
+//             .copied()
+//     }
 
-    pub fn set_current_animation(&mut self, animation_index: usize) {
-        if let Some(animations) = self.animations.as_mut() {
-            animations.set_current(animation_index);
-        }
-    }
+//     pub fn set_current_animation(&mut self, animation_index: usize) {
+//         if let Some(animations) = self.animations.as_mut() {
+//             animations.set_current(animation_index);
+//         }
+//     }
 
-    pub fn set_animation_playback_mode(&mut self, playback_mode: PlaybackMode) {
-        if let Some(animations) = self.animations.as_mut() {
-            animations.set_playback_mode(playback_mode);
-        }
-    }
+//     pub fn set_animation_playback_mode(&mut self, playback_mode: PlaybackMode) {
+//         if let Some(animations) = self.animations.as_mut() {
+//             animations.set_playback_mode(playback_mode);
+//         }
+//     }
 
-    pub fn toggle_animation(&mut self) {
-        if let Some(animations) = self.animations.as_mut() {
-            animations.toggle();
-        }
-    }
+//     pub fn toggle_animation(&mut self) {
+//         if let Some(animations) = self.animations.as_mut() {
+//             animations.toggle();
+//         }
+//     }
 
-    pub fn stop_animation(&mut self) {
-        if let Some(animations) = self.animations.as_mut() {
-            animations.stop();
-        }
-    }
+//     pub fn stop_animation(&mut self) {
+//         if let Some(animations) = self.animations.as_mut() {
+//             animations.stop();
+//         }
+//     }
 
-    pub fn reset_animation(&mut self) {
-        if let Some(animations) = self.animations.as_mut() {
-            animations.reset();
-        }
-    }
-}
+//     pub fn reset_animation(&mut self) {
+//         if let Some(animations) = self.animations.as_mut() {
+//             animations.reset();
+//         }
+//     }
+// }
 
 fn compute_aabb(nodes: &Nodes, meshes: &[Mesh]) -> Aabb<f32> {
     let aabbs = nodes

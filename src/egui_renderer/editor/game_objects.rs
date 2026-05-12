@@ -71,17 +71,17 @@ impl GameObjects {
                 for game_object in game_data.scene.game_objects.iter_mut() {
                     if game_object.is_selected {
                         ui.label("Position X");
-                        ui.add(egui::DragValue::new(&mut game_object.get_position_mut().x));
+                        ui.add(egui::DragValue::new(&mut game_object.transform.position.x));
 
                         ui.label("Position Y");
-                        ui.add(egui::DragValue::new(&mut game_object.get_position_mut().y));
+                        ui.add(egui::DragValue::new(&mut game_object.transform.position.y));
 
                         ui.label("Position Z");
-                        ui.add(egui::DragValue::new(&mut game_object.get_position_mut().z));
+                        ui.add(egui::DragValue::new(&mut game_object.transform.position.z));
 
                         ui.checkbox(&mut self.scale_uniform, "Scale Uniform");
 
-                        let mut size = game_object.get_size();
+                        let mut size = game_object.transform.size;
 
                         let changed_x = ui
                             .add(egui::Slider::new(&mut size.x, 0.0..=100.0).text("Size X"))
@@ -105,13 +105,13 @@ impl GameObjects {
                                     size.z
                                 };
 
-                                game_object.set_size(cgmath::Vector3::new(new_value, new_value, new_value));
+                                game_object.transform.size = cgmath::Vector3::new(new_value, new_value, new_value);
                             } else {
-                                game_object.set_size(size);
+                                game_object.transform.size = size;
                             }
                         }
                         ui.label("Rotation X");
-                        let mut rotation = game_object.get_rotation();
+                        let mut rotation = game_object.transform.rotation;
                         let slider_rot_x = ui.add(egui::Slider::new(&mut rotation.x, 0.0..=360.0).suffix("°"));
                         ui.label("Rotation Y");
                         let slider_rot_y = ui.add(egui::Slider::new(&mut rotation.y, 0.0..=360.0).suffix("°"));
@@ -122,7 +122,7 @@ impl GameObjects {
                             || slider_rot_y.changed()
                             || slider_rot_z.changed()
                             || slider_rot_x.changed() {
-                            game_object.set_rotation(rotation);
+                            game_object.transform.rotation = rotation;
                         }
 
                         ui.label("Texture Scale");

@@ -81,7 +81,7 @@ impl WgpuRenderer {
 
     pub fn render(&mut self, window: &Window, game_data: &mut GameData, input: &Input) -> Result<(), wgpu::SurfaceError> {
         // submit uniforms
-        self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, &mut game_data.asset_manager, game_data.delta_time);
+        self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, game_data);
         self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.active_camera());
         self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data.scene, &self.render_passes.shadow_pass.shadow_cube_map_array.texture);

@@ -9,6 +9,7 @@ Rust and WGPU based renderer
 - Dynamic scenes and level Editor
 - Bloom
 - Deferred renderer architecture
+- SSAO
 - Skeletal animation
 - Inverted-hull outlining
 - Custom mesh materials

@@ -74,9 +74,9 @@ fn fs_main(in: VertexOutput) -> @location(0) f32 {
         // let sample_uv = projected.xy * 0.5 + 0.5; // opengl coords
         let sample_uv = projected.xy * vec2<f32>(0.5, -0.5) + 0.5; // wgpu coords
 
-        if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
-          continue;
-        }
+        // if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
+        //   continue;
+        // }
         
         let sample_world_position = textureSample(position_texture, position_sampler, sample_uv).xyz;
         let sample_depth =  (camera.view * vec4<f32>(sample_world_position, 1.0)).z;
@@ -91,7 +91,8 @@ fn fs_main(in: VertexOutput) -> @location(0) f32 {
 
     occlusion = 1.0 - (occlusion / f32(KERNEL_SIZE));
     
-    let strength = 8.0;
+    let strength = 16.0;
     occlusion = pow(occlusion, strength);
+    
     return occlusion;
 }

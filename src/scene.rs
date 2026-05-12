@@ -22,16 +22,27 @@ impl Scene {
 
         // todo: serialize animated game objects into json instead
          let glock_create_info = GameObjectCreateInfo {
-            model_name: "glock".to_string(),
+            model_name: "untitled2".to_string(),
             position: [10.0, 2.0, 0.0],
             rotation: [1.0, 1.0, 1.0],
-            size: [1.5, 1.5, 1.5],
+            size: [0.08, 0.08, 0.08],
+            tex_scale: [1.0, 1.0],
+            shadows: false,
+            mesh_rendering_info: vec![]
+        };
+
+          let glock_create_info2 = GameObjectCreateInfo {
+            model_name: "untitled2".to_string(),
+            position: [10.0, 2.0, 10.0],
+            rotation: [0.0, 0.0, 0.0],
+            size: [0.08, 0.08, 0.08],
             tex_scale: [1.0, 1.0],
             shadows: false,
             mesh_rendering_info: vec![]
         };
 
         animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
+        animated_game_objects.push(AnimatedGameObject::new(&glock_create_info2, &asset_manager));
 
         for create_info in level.door_objects {
             door_objects.push(DoorObject::new(&create_info, asset_manager));

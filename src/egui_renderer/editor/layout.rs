@@ -50,6 +50,7 @@ impl EditorLayout {
            .show(&ui, |ui| {
                 self.game_objects_panel.update(ui, game_data, materials, (window_width, window_height));
                 self.door_objects_panel.update(ui, game_data, materials, (window_width, window_height));
+                self.animated_game_objects.update(ui, game_data, materials, (window_width, window_height));
                 self.lights_panel.update(ui, game_data);
 
                 // reset states
@@ -82,6 +83,7 @@ impl EditorLayout {
             });
 
             self.game_objects_panel.apply_selection(game_data);
+            self.animated_game_objects.apply_selection(game_data);
             self.door_objects_panel.apply_selection(game_data);
 
             if !ui.wants_pointer_input() && !ui.is_pointer_over_area() && input.mouse.button_just_pressed(&YHWHMouseButton::Left) {

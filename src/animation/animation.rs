@@ -75,6 +75,12 @@ impl AnimationState {
         }
     }
 
+    fn restart_current(&mut self, index: usize, animation: &Animation) {
+        self.time = 0.0;
+        self.total_time = animation.total_time;
+        self.current = index;
+    }
+
     pub fn progress(&self) -> f32 {
         if self.total_time <= 0.0 {
             0.0
@@ -112,6 +118,14 @@ impl Animations {
         if index < self.animations.len() {
             if let Some(animation) = self.animations.get(index) {
                 self.animation_state.set_current(index, animation);
+            }
+        }
+    }
+
+    pub fn restart_current(&mut self, index: usize) {
+        if index < self.animations.len() {
+            if let Some(animation) = self.animations.get(index) {
+                self.animation_state.restart_current(index, animation);
             }
         }
     }
@@ -317,7 +331,7 @@ impl Animation {
         !translations.is_empty() || !rotations.is_empty() || !scale.is_empty()
     }
 
-     fn sample(&self, t: f32) -> NodesKeyFrame {
+    fn sample(&self, t: f32) -> NodesKeyFrame {
         NodesKeyFrame(
             self.translation_channels
                 .iter()

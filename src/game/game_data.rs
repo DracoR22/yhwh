@@ -4,7 +4,7 @@ use cgmath::Vector2;
 use rapier3d::na::Vector;
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::ui::{UiElement, UiElementKind}, input::input::Input, player::Player, scene::Scene};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::{player::Player, ui::{UiElement, UiElementKind}}, input::input::Input, scene::Scene};
 
 pub struct GameData {
     pub camera: Camera,
@@ -25,7 +25,7 @@ impl GameData {
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
         let camera_controller = CameraController::new(8.0, 0.4);
 
-        let scene = Scene::new(&asset_manager);
+        let mut scene = Scene::new(&asset_manager);
 
         let mut ui_map = HashMap::<UiElementKind, UiElement>::new();
         let crosshair_pos = Vector2::new(w_width * 0.5, w_height * 0.5);
@@ -35,6 +35,8 @@ impl GameData {
         let key_g_pos = Vector2::new(crosshair_pos.x + 60.0, crosshair_pos.y);
         let key_g_scale = 50.0;
         ui_map.insert(UiElementKind::KeyG, UiElement::new(key_g_pos, key_g_scale, "Key_G.png"));
+
+        let player = Player::new(&mut scene, &asset_manager);
 
         Self {
             asset_manager,
@@ -46,7 +48,7 @@ impl GameData {
             delta_time: std::time::Duration::new(0, 0),
             last_redraw: std::time::Instant::now(),
             game_state: GameState::Playing,
-            player: Player::new(),
+            player,
             ui_map
         }
     }
@@ -78,7 +80,7 @@ impl GameData {
     
         match self.game_state {
             GameState::Playing => {
-                self.player.update(&input, self.delta_time, audio_manager);
+                self.player.update(&input, self.delta_time, audio_manager, &mut self.scene);
             },
             GameState::Editor => {
                 self.camera_controller.update_movement_editor(&input);

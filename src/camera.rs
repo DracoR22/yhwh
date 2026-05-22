@@ -17,10 +17,10 @@ const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
 #[derive(Debug)]
 pub struct Camera {
     pub position: Point3<f32>,
-    yaw: Rad<f32>,
-    pitch: Rad<f32>,
+    pub frustum: Frustum,
+    pub yaw: Rad<f32>,
+    pub pitch: Rad<f32>,
     projection: Projection,
-    pub frustum: Frustum
 }
 
 impl Camera {
@@ -58,6 +58,18 @@ impl Camera {
             sin_pitch,
             cos_pitch * sin_yaw,
         ).normalize()
+    }
+
+    pub fn right(&self) -> Vector3<f32> {
+        self.forward()
+        .cross(Vector3::unit_y())
+        .normalize()
+    }
+
+    pub fn up(&self) -> Vector3<f32> {
+        self.right()
+            .cross(self.forward())
+            .normalize()
     }
 
     pub fn get_projection(&self) -> &Projection {

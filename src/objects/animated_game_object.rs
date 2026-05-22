@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, common::{create_info::GameObjectCreateInfo, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
-use cgmath::{Rotation3, Vector3};
+use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, common::{create_info::{AnimatedGameObjectCreateInfo, GameObjectCreateInfo}, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
+use cgmath::{Matrix4, Rotation3, SquareMatrix, Vector3};
 
 pub struct AnimatedGameObject {
     pub id: usize,
@@ -18,6 +18,7 @@ pub struct AnimatedGameObject {
     pub animations: Option<Animations>,
     pub nodes: Nodes,
     pub skins: Vec<Skin>,
+    pub model_matrix: Matrix4<f32>
 }
 
 #[derive(Debug)]
@@ -28,7 +29,7 @@ pub enum AnimatedGameObjectError {
 }
 
 impl AnimatedGameObject {
-    pub fn new(create_info: &GameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
+    pub fn new(create_info: &AnimatedGameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
         let model = asset_manager.get_model_by_name(&create_info.model_name).unwrap();
         let gltf = model.gltf.as_ref().unwrap();
         let buffers = model.gltf_buffers.as_ref().unwrap();
@@ -59,6 +60,12 @@ impl AnimatedGameObject {
             size: Vector3::new(create_info.size[0], create_info.size[1], create_info.size[2])
         };
 
+        // if let Some(animations) = &animations {
+        //     for (i, a) in animations.animations().iter().enumerate() {
+        //         println!("ANIN NAME: {} INDEX: {}", a.get_name(), i);
+        //     }
+        // }
+
         Self { 
             model_name: create_info.model_name.clone(),
             transform,
@@ -68,7 +75,8 @@ impl AnimatedGameObject {
             mesh_nodes: MeshNodes::new(&create_info.model_name, &create_info.mesh_rendering_info, asset_manager),
             animations,
             nodes, 
-            skins
+            skins,
+            model_matrix: Matrix4::identity()
         }
     }
 
@@ -134,6 +142,12 @@ impl AnimatedGameObject {
     pub fn set_current_animation(&mut self, animation_index: usize) {
         if let Some(animations) = self.animations.as_mut() {
             animations.set_current(animation_index);
+        }
+    }
+
+    pub fn restart_current_animation(&mut self, animation_index: usize) {
+        if let Some(animations) = self.animations.as_mut() {
+            animations.restart_current(animation_index);
         }
     }
 

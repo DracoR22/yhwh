@@ -4,7 +4,7 @@ use cgmath::{InnerSpace, SquareMatrix, Vector2, Vector3, Vector4};
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::{game_data::GameData}, input::input::Input, physics::physics::Physics, player::Player, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::{game_data::GameData}, input::input::Input, physics::physics::Physics, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
 
 
 pub struct Engine {

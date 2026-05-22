@@ -263,9 +263,6 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> Result<Model, ModelE
         }
     }   
 
-    // // load animations
-    // let animations = load_animations(gltf.animations(), &buffers);
-
     // load skins
     let mut skins = create_skins_from_gltf(gltf.skins(), &buffers);
 
@@ -286,19 +283,10 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> Result<Model, ModelE
             transform
     };
 
-    // for a in animations.iter() {
-    //     for d in a.animations().iter() {
-    //         println!("LOADED ANIM: {}", d.get_name());
-    //     }
-    // }
-
     Ok(Model {
         name: file_stem.to_string(),
         meshes,
-        // animations,
-        // nodes,
         global_transform,
-        // skins,
         aabb: None,
         gltf: Some(gltf),
         gltf_buffers: Some(buffers)

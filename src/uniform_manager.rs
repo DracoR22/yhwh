@@ -292,22 +292,6 @@ impl UniformManager {
     }
 
     pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, game_data: &mut GameData) {
-        // if let Some(glb_model) = asset_manager.get_model_by_name_mut("untitled2") {
-        //     glb_model.update(delta_time.as_secs_f32());
-        //     let skin_uniform = self.animation.value_mut();
-
-        //     if let Some(skin) = glb_model.skins.get(0) {
-        //       for (i, joint) in skin.joints().iter().enumerate() {
-        //         if i >= MAX_JOINTS_PER_MESH {
-        //         break; 
-        //         }
-
-        //       // Convert cgmath::Matrix4 to [[f32; 4]; 4]
-        //       skin_uniform.joint_matrices[i] = joint.matrix().into();
-        //     }
-        //   }
-        // }
-
         // TODO! CREATE A NEW UNIFORM IN RUNTIME LIKE WITH MODELS
         for animated_game_object in game_data.scene.animated_game_objects.iter_mut() {
             if let Some(animation_uniform) = self.animations.get_mut(&animated_game_object.id) {
@@ -329,6 +313,10 @@ impl UniformManager {
         }
 
       // self.animations.update(&ctx.queue);
+    }
+
+    pub fn create_animation(&mut self, ctx: &WgpuContext, id: usize) {
+      self.animations.insert(id, Uniform::new(AnimationUniform::new(), &ctx.device));
     }
 
     pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, scene: &Scene, shadow_texture: &Texture) {

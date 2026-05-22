@@ -10,3 +10,4 @@ pub mod ui_pass;
 pub mod geometry_pass;
 pub mod lighting_pass;
 pub mod ssao_pass;
+pub mod candle_flames_pass;

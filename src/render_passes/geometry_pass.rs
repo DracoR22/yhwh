@@ -135,7 +135,7 @@ impl GeometryPass {
                     for mesh in &model.meshes {
                         match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                         Some(mesh_node) => {
-                            if mesh_node.emissive || mesh_node.glass {
+                            if mesh_node.emissive || mesh_node.glass || mesh_node.candle_flame {
                             continue;
                             }
                         },

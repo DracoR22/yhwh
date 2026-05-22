@@ -2,14 +2,16 @@ use std::collections::HashMap;
 
 use cgmath::{Matrix4};
 
-use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo}};
+use crate::{asset_manager::AssetManager, common::create_info::MeshNodeCreateInfo, utils::unique_id};
 
 pub struct MeshNode {
+   pub id: usize,
    pub mesh_index: usize,
    pub material_index: usize,
    pub emissive: bool,
    pub glass: bool,
-   pub transform_matrix: Matrix4<f32>
+   pub candle_flame: bool,
+   pub transform_matrix: Matrix4<f32>,
 }
 
 pub struct MeshNodes {
@@ -25,14 +27,20 @@ impl MeshNodes {
 
         if create_info.is_empty() {
             if let Some(model) = asset_manager.get_model_by_name(model_name) {
+
             for mesh in &model.meshes {
+                 let candle_flame = model_name == "candles" && Self::is_candle_flame(&mesh.name);
+
                  let mesh_index = asset_manager.get_mesh_index_by_name(&mesh.name);
                  let material_index = asset_manager.get_material_index_by_name("Default");
+
                  mesh_rendering_info.push(MeshNode {
+                 id: unique_id::next_id(),
                  mesh_index,
                  material_index,
                  emissive: false,
                  glass: false,
+                 candle_flame,
                  transform_matrix: mesh.transform_matrix
                 });
                 mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
@@ -45,11 +53,15 @@ impl MeshNodes {
             let mesh_index = asset_manager.get_mesh_index_by_name(&info.mesh_name);
             let material_index = asset_manager.get_material_index_by_name(&info.material_name);
 
+            let candle_flame = model_name == "candles" && Self::is_candle_flame(&mesh.name);
+
             mesh_rendering_info.push(MeshNode {
+                id: unique_id::next_id(),
                 mesh_index,
                 material_index,
                 emissive: info.emissive,
                 glass: info.glass,
+                candle_flame,
                 transform_matrix: mesh.transform_matrix
             });
             mesh_rendering_info_index_map.insert(mesh.name.clone(), mesh_rendering_info.len() - 1);
@@ -107,5 +119,13 @@ impl MeshNodes {
 
     pub fn get_mesh_nodes(&self) -> &Vec<MeshNode> {
         &self.mesh_nodes
+    }
+
+    fn is_candle_flame(mesh_name: &str) -> bool {
+        if mesh_name.contains("Sphere") {
+            return true;
+        }
+
+        false
     }
 }

@@ -12,11 +12,11 @@ use crate::{
 use wgpu::util::DeviceExt;
 
 pub struct EmissivePass {
+    pub mask_texture: Texture,
+    pub ping_texture: Texture,
+    pub pong_texture: Texture,
     mask_pipeline: wgpu::RenderPipeline,
     blur_pipeline: wgpu::RenderPipeline,
-    mask_texture: Texture,
-    ping_texture: Texture,
-    pong_texture: Texture,
     bind_group_layout: wgpu::BindGroupLayout,
     ping_bind_group: wgpu::BindGroup,
     pong_bind_group: wgpu::BindGroup,

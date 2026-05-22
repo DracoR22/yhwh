@@ -139,6 +139,27 @@ impl OutlinePass {
             }
         }
 
+        // animated game objects
+        // for animated_game_object in game_data.scene.animated_game_objects.iter() {
+        //    if animated_game_object.is_selected {
+        //        let Some(model_uniform) = uniforms.models.get(&animated_game_object.id) else {
+        //             println!("No model bind group for object {:?}, skipping draw", animated_game_object.id);
+        //             continue;
+        //         };
+
+        //         render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+
+        //         if let Some(model) = game_data.asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
+        //             for mesh in model.meshes.iter() {
+        //                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //                 render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        //                 render_pass.set_stencil_reference(1);
+        //                 render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //             }
+        //         }
+        //     }
+        // }
+
         drop(render_pass);
 
         let mut outline_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

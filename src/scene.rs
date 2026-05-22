@@ -32,7 +32,7 @@ impl Scene {
         // };
 
           let glock_create_info2 = AnimatedGameObjectCreateInfo {
-            model_name: "untitled5".to_string(),
+            model_name: "untitled2".to_string(),
             position: [10.0, 2.0, 10.0],
             rotation: [0.0, 0.0, 0.0],
             size: [0.08, 0.08, 0.08],

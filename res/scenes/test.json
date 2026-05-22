@@ -438,7 +438,7 @@
     {
       "model_name": "door_wall",
       "position": [
-        4.19,
+        4.6,
         2.5,
         35.0
       ],
@@ -599,7 +599,7 @@
     {
       "model_name": "door_frame2",
       "position": [
-        1.75,
+        2.2,
         5.8,
         29.2
       ],
@@ -1095,7 +1095,7 @@
         1.0
       ],
       "shadows": false,
-     "mesh_rendering_info": [
+      "mesh_rendering_info": [
         {
           "mesh_name": "Wick_2.004_Extra_for_candles_0.001",
           "material_name": "WindowsGlass",
@@ -1746,7 +1746,7 @@
   "door_objects": [
     {
       "position": [
-        3.5,
+        3.95,
         5.0,
         32.0
       ],

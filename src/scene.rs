@@ -1,6 +1,8 @@
-use crate::{asset_manager::AssetManager, common::create_info::{AnimatedGameObjectCreateInfo, DoorObjectCreateInfo, GameObjectCreateInfo, LightObjectCreateInfo, MeshNodeCreateInfo}, objects::{animated_game_object::AnimatedGameObject, door_object::DoorObject, game_object::GameObject, light_object::LightObject}, utils::json::load_level};
+use crate::{asset_manager::AssetManager, common::create_info::{AnimatedGameObjectCreateInfo, DoorObjectCreateInfo, GameObjectCreateInfo, LightObjectCreateInfo, MeshNodeCreateInfo, SceneCreateInfo}, objects::{animated_game_object::AnimatedGameObject, door_object::DoorObject, game_object::GameObject, light_object::LightObject}};
 
 pub struct Scene {
+    pub file_name: String,
+    pub name: String,
     pub game_objects: Vec<GameObject>,
     pub animated_game_objects: Vec<AnimatedGameObject>,
     pub door_objects: Vec<DoorObject>,
@@ -8,30 +10,20 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(asset_manager: &AssetManager) -> Self {
+    pub fn new(create_info: &SceneCreateInfo, asset_manager: &AssetManager) -> Self {
         let mut game_objects = Vec::<GameObject>::new();
         let mut animated_game_objects = Vec::<AnimatedGameObject>::new();  
         let mut door_objects = Vec::<DoorObject>::new();
         let mut lights = Vec::<LightObject>::new();
 
-        let level = load_level().expect("Could not load level!!");
+        //let scene = load_level().expect("Could not load level!!");
 
-        for create_info in level.game_objects {
-            game_objects.push(GameObject::new(&create_info, &asset_manager));
+        for game_object_create_info in create_info.game_objects.iter() {
+            game_objects.push(GameObject::new(&game_object_create_info, &asset_manager));
         }
 
-        // todo: serialize animated game objects into json instead
-        //  let glock_create_info = GameObjectCreateInfo {
-        //     model_name: "untitled2".to_string(),
-        //     position: [10.0, 2.0, 0.0],
-        //     rotation: [1.0, 1.0, 1.0],
-        //     size: [0.08, 0.08, 0.08],
-        //     tex_scale: [1.0, 1.0],
-        //     shadows: false,
-        //     mesh_rendering_info: vec![]
-        // };
-
-          let glock_create_info2 = AnimatedGameObjectCreateInfo {
+        // TODO: stop doing this please!!!!
+        let glock_create_info2 = AnimatedGameObjectCreateInfo {
             model_name: "untitled2".to_string(),
             position: [10.0, 2.0, 10.0],
             rotation: [0.0, 0.0, 0.0],
@@ -42,17 +34,21 @@ impl Scene {
         };
 
         //animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
-        animated_game_objects.push(AnimatedGameObject::new(&glock_create_info2, &asset_manager));
+        //animated_game_objects.push(AnimatedGameObject::new(&glock_create_info2, &asset_manager));
 
-        for create_info in level.door_objects {
-            door_objects.push(DoorObject::new(&create_info, asset_manager));
+        for door_create_info in create_info.door_objects.iter() {
+            door_objects.push(DoorObject::new(&door_create_info, asset_manager));
         }
 
-        for create_info in level.lights {
-            lights.push(LightObject::new(&create_info));
+        for light_create_info in create_info.lights.iter() {
+            lights.push(LightObject::new(&light_create_info));
         }
+
+        let file_name = format!("{}{}", create_info.name, ".json");
 
         Self {
+            file_name,
+            name: create_info.name.clone(),
             game_objects,
             animated_game_objects,
             lights,
@@ -64,6 +60,10 @@ impl Scene {
         self.game_objects.push(GameObject::new(&create_info, asset_manager));
     }
 
+    pub fn remove_game_object_by_id(&mut self, id: usize) {
+        self.game_objects.retain(|g| g.id != id);
+    }
+
     pub fn add_animated_game_object(&mut self, create_info: &AnimatedGameObjectCreateInfo, asset_manager: &AssetManager) -> usize {
         let animated_game_object = AnimatedGameObject::new(create_info, asset_manager);
         let id = animated_game_object.id;
@@ -72,8 +72,13 @@ impl Scene {
         id
     }
 
-    pub fn remove_game_object_by_id(&mut self, id: usize) {
-        self.game_objects.retain(|g| g.id != id);
+    pub fn get_create_info(&self, asset_manager: &AssetManager) -> SceneCreateInfo {
+        SceneCreateInfo {
+            name: self.name.clone(),
+            game_objects: self.game_objects.iter().map(|o| o.get_create_info(asset_manager)).collect(),
+            door_objects: self.door_objects.iter().map(|o| o.get_create_info(asset_manager)).collect(),
+            lights: self.lights.iter().map(|o| o.get_create_info()).collect(),
+        }
     }
 }
 

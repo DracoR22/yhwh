@@ -29,3 +29,5 @@ pub mod pipeline_builder;
 pub mod shadow_cube_map_array;
 pub mod frustum;
 pub mod game;
+pub mod scene_manager;
+pub mod world;

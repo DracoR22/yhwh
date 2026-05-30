@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{common::{create_info::LightObjectCreateInfo, enums::LightType}, game::game_data::GameData};
+use crate::{common::{create_info::LightObjectCreateInfo, enums::LightType}, game::game_data::GameData, scene::Scene};
 
 pub struct Lights {
     selected_id: i32,
@@ -13,9 +13,9 @@ impl Lights {
             selected_id: -1
         }
     }
-    pub fn list(&mut self, ui: &mut Ui, game_data: &mut GameData) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene) {
         ui.collapsing("Lights", |ui| {
-            for (index, light) in game_data.scene.lights.iter().enumerate() {
+            for (index, light) in chunk.lights.iter().enumerate() {
                 let button = ui.button("Light (".to_string() + &index.to_string() + ")");
 
                 if button.clicked() {
@@ -34,16 +34,16 @@ impl Lights {
                     radius: 10.0,
                     strength: 50.0,
                     light_type: LightType::Point,
-                    shadows: false
+                    shadows: true
                 };
 
-               game_data.scene.add_light(&create_info);
+               chunk.add_light(&create_info);
             } 
         });
     }
-    pub fn update(&mut self, ui: &mut Ui, game_data: &mut GameData) {
+    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Scene) {
         if self.selected_id > 0 {
-            for light in game_data.scene.lights.iter_mut() {
+            for light in chunk.lights.iter_mut() {
                 if light.id as i32 == self.selected_id {
                     ui.label("Position X");
                     ui.add(egui::DragValue::new(&mut light.position.x));

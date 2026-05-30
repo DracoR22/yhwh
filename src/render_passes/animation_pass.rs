@@ -69,34 +69,35 @@ impl AnimationPass {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
 
-        for animated_game_object in game_data.scene.animated_game_objects.iter() {
-          let Some(model_uniform) = uniforms.models.get(&animated_game_object.id) else {
-            println!("No model bind group for object {:?}, skipping draw", &animated_game_object.id);
-            return
-          };
+        game_data.world.for_each_chunk(|chunk| {
+           for animated_game_object in chunk.animated_game_objects.iter() {
+              let Some(model_uniform) = uniforms.models.get(&animated_game_object.id) else {
+                println!("No model bind group for object {:?}, skipping draw", &animated_game_object.id);
+                return
+              };
 
-          let Some(animation_uniform) = uniforms.animations.get(&animated_game_object.id) else {
-            println!("No animation bind group for object {:?}, skipping draw", &animated_game_object.id);
-            return
-          };
+              let Some(animation_uniform) = uniforms.animations.get(&animated_game_object.id) else {
+                println!("No animation bind group for object {:?}, skipping draw", &animated_game_object.id);
+                return
+              };
 
-          render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
-          render_pass.set_bind_group(3, &animation_uniform.bind_group, &[]);
+              render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+              render_pass.set_bind_group(3, &animation_uniform.bind_group, &[]);
 
-          if let Some(model) = game_data.asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
-           for mesh in &model.meshes {
-             let mesh_material_index = animated_game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
-             let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+              if let Some(model) = game_data.asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
+              for mesh in &model.meshes {
+                let mesh_material_index = animated_game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+                let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
 
-             render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+                render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
 
-             render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-             render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-             render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                }
+              }
             }
-          }
-        }
-
+        });
 
         // draw player weapons
         let has_weapon = game_data.player.weapon_manager.desert_eagle_info.has;

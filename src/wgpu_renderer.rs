@@ -44,7 +44,7 @@ impl WgpuRenderer {
 
         // load uniforms
         let shadow_pass = ShadowPass::new(&context, &game_data);
-        let mut wgpu_uniforms = UniformManager::new(&context, &game_data.scene, &shadow_pass.shadow_cube_map_array.texture);
+        let mut wgpu_uniforms = UniformManager::new(&context, &game_data, &shadow_pass.shadow_cube_map_array.texture);
 
         // load render groups
         let geometry_pass = GeometryPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
@@ -85,9 +85,9 @@ impl WgpuRenderer {
     pub fn render(&mut self, window: &Window, game_data: &mut GameData, input: &Input) -> Result<(), wgpu::SurfaceError> {
         // submit uniforms
         self.uniform_manager.submit_animation_uniforms(&self.wgpu_context, game_data);
-        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data.scene);
+        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.active_camera());
-        self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data.scene, &self.render_passes.shadow_pass.shadow_cube_map_array.texture);
+        self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data, &self.render_passes.shadow_pass.shadow_cube_map_array.texture);
         
         window.request_redraw();
 

@@ -72,8 +72,9 @@ impl GameObject {
             let create_info = MeshNodeCreateInfo {
                 material_name: material.name.clone(),
                 mesh_name: mesh.name.clone(),
-                emissive: mesh_node.emissive,
-                glass: mesh_node.glass
+                rendering_mode: mesh_node.rendering_mode
+                // emissive: mesh_node.emissive,
+                // glass: mesh_node.glass
             };
 
             mesh_nodes_create_infos.push(create_info);

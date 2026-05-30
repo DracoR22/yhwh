@@ -122,28 +122,6 @@ impl SSBO {
           usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
           mapped_at_creation: false,
         });
-
-        // self.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor { 
-        //     layout: &self.bind_group_layout,
-        //     entries: &[wgpu::BindGroupEntry {
-        //          binding: 0,
-        //          resource: self.value_buffer.as_entire_binding(),
-        //      }, wgpu::BindGroupEntry { 
-        //         binding: 1,
-        //         resource: self.count_buffer.as_entire_binding() 
-        //       },
-        //        wgpu::BindGroupEntry {
-        //             binding: 2,
-        //             resource: wgpu::BindingResource::TextureView(&shadow_texture.view),
-        //         },
-        //         wgpu::BindGroupEntry {
-        //             binding: 3,
-        //             resource: wgpu::BindingResource::Sampler(&shadow_texture.sampler),
-        //         },
-        //     ],
-        //     label: Some("SSBO uniform bind group"),
-        // });
-
     }
 
     pub fn rebuild_bind_group(&mut self, device: &wgpu::Device, texture: &Texture) {

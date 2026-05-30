@@ -1,13 +1,20 @@
+use std::fmt;
 use serde::{Deserialize, Serialize};
-
 use crate::common::enums::LightType;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MeshRenderingMode {
+    Pbr,
+    Emissive,
+    Glass,
+    Flame
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MeshNodeCreateInfo {
     pub mesh_name: String,
     pub material_name: String,
-    pub emissive: bool,
-    pub glass: bool
+    pub rendering_mode: MeshRenderingMode
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,9 +58,37 @@ pub struct DoorObjectCreateInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LevelCreateInfo {
+pub struct CandleObjectCreateInfo {
+    pub model_name: String,
+    pub position: [f32; 3],
+    pub size: [f32; 3],
+    pub rotation: [f32; 3],
+    pub flame_color: [f32; 3],
+    pub extinguished: bool,
+    pub mesh_rendering_info: Vec<MeshNodeCreateInfo>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SceneCreateInfo {
     pub name: String,
     pub game_objects: Vec<GameObjectCreateInfo>,
     pub door_objects: Vec<DoorObjectCreateInfo>,
     pub lights: Vec<LightObjectCreateInfo>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MapCreateInfo {
+    pub name: String,
+    pub chunks: Vec<String>
+}
+
+impl fmt::Display for MeshRenderingMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MeshRenderingMode::Pbr => write!(f, "Pbr"),
+            MeshRenderingMode::Emissive => write!(f, "Emissive"),
+            MeshRenderingMode::Glass => write!(f, "Glass"),
+            MeshRenderingMode::Flame => write!(f, "Flame"),
+        }
+    }
 }

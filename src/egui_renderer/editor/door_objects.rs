@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use egui::{Id, Sense, Ui, Vec2, load::SizedTexture};
 
-use crate::{common::create_info::DoorObjectCreateInfo, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData};
+use crate::{asset_manager::AssetManager, common::create_info::DoorObjectCreateInfo, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData, scene::Scene};
 
 pub struct DoorObjects {
     selected_id: i32,
@@ -25,8 +25,8 @@ impl DoorObjects {
         }
     }
 
-    pub fn apply_selection(&mut self, game_data: &mut GameData) {
-        for door_object in game_data.scene.door_objects.iter_mut() {
+    pub fn apply_selection(&mut self, chunk: &mut Scene) {
+        for door_object in chunk.door_objects.iter_mut() {
             if door_object.id as i32 == self.selected_id {
                 door_object.is_selected = true;
             } else {
@@ -35,9 +35,9 @@ impl DoorObjects {
         }
     }
 
-    pub fn list(&mut self, ui: &mut Ui, game_data: &mut GameData) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene) {
         ui.collapsing("Door Objects", |ui| {
-            for (index, door_object) in game_data.scene.door_objects.iter_mut().enumerate() {
+            for (index, door_object) in chunk.door_objects.iter_mut().enumerate() {
                 let button = ui.button(door_object.model_name.to_string() + " (" + &index.to_string() + ")");
 
                     if button.clicked() {
@@ -49,7 +49,7 @@ impl DoorObjects {
 
                 ui.separator();
                 if ui.button("New Door Object").clicked() {
-                    for game_object in game_data.scene.game_objects.iter_mut() {
+                    for game_object in chunk.game_objects.iter_mut() {
                         game_object.set_selected(false);
                     }
                     self.selected_id = -1;
@@ -60,8 +60,8 @@ impl DoorObjects {
         });
     }
 
-    pub fn update(&mut self, ui: &mut Ui, game_data: &mut GameData, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
-        for door_object in game_data.scene.door_objects.iter_mut() {
+    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Scene, asset_manager: &AssetManager, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
+        for door_object in chunk.door_objects.iter_mut() {
             if door_object.is_selected {
                 ui.label("Position X");
                 ui.add(egui::DragValue::new(&mut door_object.transform.position.x));
@@ -125,7 +125,7 @@ impl DoorObjects {
                     door_object.transform.rotation = rotation;
                 }
 
-                if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+                if let Some(model) = asset_manager.get_model_by_name(&door_object.model_name) {
                     if !model.meshes.is_empty() {
                         let selected_index = self
                             .selected_mesh_index_map
@@ -181,7 +181,7 @@ impl DoorObjects {
 
                                             if button.clicked() {
                                                 door_object.get_mesh_nodes_mut().set_mesh_material(
-                                                    &game_data.asset_manager,
+                                                    &asset_manager,
                                                     &model.meshes[*selected_index].name,
                                                     &material.material_name,
                                                 );
@@ -201,10 +201,10 @@ impl DoorObjects {
             }
         }
 
-        self.add_new(ui, game_data);
+        self.add_new(ui, chunk, asset_manager);
     }
 
-    pub fn add_new(&mut self, ui: &mut Ui, game_data: &mut GameData) {
+    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Scene, asset_manager: &AssetManager) {
         if self.add_object_selected {
             let create_info = DoorObjectCreateInfo {
                     position: [1.0, 5.0, 1.0],
@@ -214,7 +214,7 @@ impl DoorObjects {
                 };
 
             if ui.button("Add").clicked() {
-                game_data.scene.add_door_object(&create_info, &game_data.asset_manager);
+                chunk.add_door_object(&create_info, &asset_manager);
             }
         }
     }

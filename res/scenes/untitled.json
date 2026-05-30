@@ -1,0 +1,37 @@
+{
+  "name": "untitled",
+  "game_objects": [
+    {
+      "model_name": "wooden_table",
+      "position": [
+        1.0,
+        5.0,
+        18.0
+      ],
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rotation": [
+        0.0,
+        80.0,
+        180.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Desk_LP_01 - Default_0",
+          "material_name": "Door",
+          "rendering_mode": "Pbr"
+        }
+      ]
+    }
+  ],
+  "door_objects": [],
+  "lights": []
+}

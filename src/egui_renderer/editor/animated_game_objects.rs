@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use egui::{load::SizedTexture, Ui, Vec2};
 
 use crate::{
-    animation::animation::PlaybackMode, egui_renderer::ui_manager::EguiMaterial,
-    game::game_data::GameData, objects::animated_game_object::AnimatedGameObject,
+    animation::animation::PlaybackMode, asset_manager::AssetManager, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData, objects::animated_game_object::AnimatedGameObject, scene::Scene
 };
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -34,8 +33,8 @@ impl AnimatedGameObjects {
         }
     }
 
-    pub fn apply_selection(&mut self, game_data: &mut GameData) {
-        for animated_game_object in game_data.scene.animated_game_objects.iter_mut() {
+    pub fn apply_selection(&mut self, chunk: &mut Scene) {
+        for animated_game_object in chunk.animated_game_objects.iter_mut() {
             if animated_game_object.id as i32 == self.selected_id {
                 animated_game_object.is_selected = true;
             } else {
@@ -44,10 +43,10 @@ impl AnimatedGameObjects {
         }
     }
 
-    pub fn list(&mut self, ui: &mut Ui, game_data: &mut GameData, materials: &Vec<EguiMaterial>) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene, materials: &Vec<EguiMaterial>) {
         ui.collapsing("Animated Game Objects", |ui| {
             for (index, animated_game_object) in
-                game_data.scene.animated_game_objects.iter().enumerate()
+                chunk.animated_game_objects.iter().enumerate()
             {
                 let button = ui.button(
                     animated_game_object.get_model_name().to_string()
@@ -67,12 +66,12 @@ impl AnimatedGameObjects {
     pub fn update(
         &mut self,
         ui: &mut Ui,
-        game_data: &mut GameData,
+        chunk: &mut Scene,
         materials: &Vec<EguiMaterial>,
         (window_width, window_height): (u32, u32),
     ) {
         if self.selected_id != -1 {
-            for animated_game_object in game_data.scene.animated_game_objects.iter_mut() {
+            for animated_game_object in chunk.animated_game_objects.iter_mut() {
                 if animated_game_object.id as i32 == self.selected_id {
                     ui.horizontal(|ui| {
                         ui.selectable_value(&mut self.edit_mode, EditMode::Transform, "Transform");

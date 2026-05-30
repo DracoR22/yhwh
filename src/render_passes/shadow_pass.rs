@@ -1,10 +1,39 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::{MAX_LIGHTS, SHADOW_MAP_RES_SIZE}, game::game_data::GameData, pipeline_builder::PipelineBuilder, shadow_cube_map_array::ShadowCubeMapArray, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::{MAX_LIGHTS, SHADOW_MAP_RES_SIZE}, game::game_data::GameData, pipeline_builder::PipelineBuilder, shadow_cube_map_array::ShadowCubeMapArray, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ShadowCubeMapUniform {
+  pub light_matrix: [[f32; 4]; 4],
+  pub light_pos_x: f32,
+  pub light_pos_y: f32,
+  pub light_pos_z: f32,
+  pub far_plane: f32
+}
+
+impl ShadowCubeMapUniform {
+  pub fn new() -> Self {
+    Self {
+       light_matrix: Default::default(),
+       light_pos_x: 0.0,
+       light_pos_y: 0.0,
+       light_pos_z: 0.0,
+       far_plane: 0.0
+    }
+  }
+
+  pub fn update(&mut self, light_matrix: cgmath::Matrix4<f32>, light_pos: cgmath::Vector3<f32>, far_plane: f32) {
+    self.light_matrix = light_matrix.into();
+    self.light_pos_x = light_pos.x;
+    self.light_pos_y = light_pos.y;
+    self.light_pos_z = light_pos.z;
+    self.far_plane = far_plane;
+  }
+}
 
 pub struct ShadowPass {
     pub shadow_cube_map_array: ShadowCubeMapArray,
+    shadow_cube_map_uniforms: Vec<Uniform<ShadowCubeMapUniform>>,
     pipeline: wgpu::RenderPipeline,
-    // bind_group_layout: wgpu::BindGroupLayout,
-    // bind_group: wgpu::BindGroup
 }
 
 impl ShadowPass {
@@ -15,16 +44,21 @@ impl ShadowPass {
             source: wgpu::ShaderSource::Wgsl(shader_code.into())
         });
 
-        let shadow_cube_map_array = ShadowCubeMapArray::new(ctx, SHADOW_MAP_RES_SIZE as u32, game_data.scene.lights.len() as u32);
+        let shadow_cube_map_array = ShadowCubeMapArray::new(ctx, SHADOW_MAP_RES_SIZE as u32, MAX_LIGHTS as u32);
 
-        let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
-            &ctx.device,
-            wgpu::ShaderStages::VERTEX_FRAGMENT,
-            Some("shadow uniforms bind group layout"));
+        let mut shadow_cube_map_uniforms: Vec<Uniform<ShadowCubeMapUniform>> = Vec::new();
+        for _ in 0..MAX_LIGHTS {
+            for _ in 0..6 {
+            shadow_cube_map_uniforms.push(Uniform::new(ShadowCubeMapUniform::new(), &ctx.device));
+            }
+        }
 
         let pipeline = PipelineBuilder::new(
             "shadow cube map pipeline",
-            &[&bind_group_layout, &bind_group_layout],
+            &[
+                &shadow_cube_map_uniforms[0].bind_group_layout, // shadow
+                &shadow_cube_map_uniforms[0].bind_group_layout // model
+            ],
             &[Vertex::desc()],
             &shader_module,
             []
@@ -36,89 +70,70 @@ impl ShadowPass {
         Self {
             pipeline,
             shadow_cube_map_array,
+            shadow_cube_map_uniforms
         }
     }
 
     pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, ctx: &WgpuContext, uniforms: &mut UniformManager, game_data: &GameData) {
-        let active_lights = game_data.scene.lights.len().min(MAX_LIGHTS as usize);
+       let mut global_index = 0; 
 
-        if active_lights > self.shadow_cube_map_array.capacity {
-            self.shadow_cube_map_array = ShadowCubeMapArray::new(ctx, SHADOW_MAP_RES_SIZE as u32, active_lights as u32);
-            uniforms.lights_ssbo.rebuild_bind_group(&ctx.device, &self.shadow_cube_map_array.texture);
-        }
+       game_data.world.for_each_chunk(|chunk| {
+            for light in chunk.lights.iter() {
+                for face in 0..6 {
+                    let index = global_index * 6 + face;
 
-        for light_index in 0..active_lights {
-            let light = &game_data.scene.lights[light_index];
+                    self.shadow_cube_map_uniforms[index].value_mut().update(light.projection_transforms[face], light.position, light.radius);
+                    self.shadow_cube_map_uniforms[index].update(&ctx.queue);
 
-            if !light.shadows {
-                continue;
-            }
+                    let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("shadow cube pass"),
+                        color_attachments: &[],
+                        depth_stencil_attachment: Some(
+                            wgpu::RenderPassDepthStencilAttachment {
+                                view: &self.shadow_cube_map_array.face_views[index],
+                                depth_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(1.0),
+                                    store: wgpu::StoreOp::Store,
+                                }),
+                                stencil_ops: None,
+                            }
+                        ),
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
 
-            for face in 0..6 {
-                let index = light_index * 6 + face;
+                    pass.set_pipeline(&self.pipeline);
+                    pass.set_bind_group(0, &self.shadow_cube_map_uniforms[index].bind_group, &[]);
 
-                uniforms.shadow_cube_maps[index].value_mut().update(light.projection_transforms[face], light.position, light.radius);
-                uniforms.shadow_cube_maps[index].update(&ctx.queue);
-
-                let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("shadow cube pass"),
-                    color_attachments: &[],
-                    depth_stencil_attachment: Some(
-                        wgpu::RenderPassDepthStencilAttachment {
-                            view: &self.shadow_cube_map_array.face_views[index],
-                            depth_ops: Some(wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(1.0),
-                                store: wgpu::StoreOp::Store,
-                            }),
-                            stencil_ops: None,
+                    // draw scene
+                    for game_object in chunk.game_objects.iter() {
+                        // skip distant objects TODO: compare also bounding boxes
+                        if (cgmath::MetricSpace::distance2(game_object.transform.position, light.position)) > light.radius * light.radius {
+                            continue;
                         }
-                    ),
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
 
-                pass.set_pipeline(&self.pipeline);
-                pass.set_bind_group(0, &uniforms.shadow_cube_maps[index].bind_group, &[]);
+                        if !game_object.shadows {
+                            continue;
+                        }
 
-                // draw scene
-                for game_object in game_data.scene.game_objects.iter() {
-                    // skip distant objects TODO: compare also bounding boxes
-                    if (cgmath::MetricSpace::distance2(game_object.transform.position, light.position)) > light.radius * light.radius {
-                        continue;
-                    }
+                        let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+                            println!("No model bind group for object {:?}, skipping draw", game_object.id);
+                            continue;
+                        };
 
-                    if !game_object.shadows {
-                        continue;
-                    }
-
-                    let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-                        println!("No model bind group for object {:?}, skipping draw", game_object.id);
-                        continue;
-                    };
-
-                    if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
-                        pass.set_bind_group(1, &model_uniform.bind_group, &[]);
-                        for mesh in model.meshes.iter() {
-                            pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                            pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                            pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                        if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+                            pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+                            for mesh in model.meshes.iter() {
+                                pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                                pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                            }
                         }
                     }
                 }
+
+                global_index += 1;
             }
-        }
+       });
     }
-
-    // pub fn get_bind_group(&self) -> &wgpu::BindGroup {
-    //     &self.bind_group
-    // }
-
-    // fn update_bind_group(&mut self, ctx: &WgpuContext) {
-    //     match BindGroupManager::create_texture_bind_group(&ctx.device, &self.bind_group_layout, &self.shadow_cube_map_array.texture) {
-    //         Ok(bind_group) => {
-    //             self.bind_group = bind_group
-    //         },
-    //         Err(_err) => {}
-    //     }
-    // }
 }

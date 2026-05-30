@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{common::create_info::MeshRenderingMode, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -60,20 +60,29 @@ impl CandleFlamesPass {
 
         // store a random seed per flame mesh node
         let mut flame_uniforms = HashMap::<usize, Uniform<FlameParamsUniform>>::new();
-        for game_object in game_data.scene.game_objects.iter() {
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.model_name) {
-                for mesh in model.meshes.iter() {
-                    match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-                        Some(mesh_node) => {
-                            if mesh_node.candle_flame {
-                                flame_uniforms.insert(mesh_node.id, Uniform::new(FlameParamsUniform::new(), &ctx.device));
-                            }
-                        },
-                        None => ()
+        game_data.world.for_each_chunk(|chunk| {
+            for game_object in chunk.game_objects.iter() {
+                if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.model_name) {
+                    for mesh in model.meshes.iter() {
+                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                            Some(mesh_node) => {
+                                // if mesh_node.flame {
+                                //     flame_uniforms.insert(mesh_node.id, Uniform::new(FlameParamsUniform::new(), &ctx.device));
+                                // }
+
+                                match mesh_node.rendering_mode {
+                                    MeshRenderingMode::Flame => {
+                                        flame_uniforms.insert(mesh_node.id, Uniform::new(FlameParamsUniform::new(), &ctx.device));
+                                    },
+                                    _ => ()
+                                }
+                            },
+                            None => ()
+                        }
                     }
                 }
-            }
-        }
+           }
+        });
 
         let pipeline = PipelineBuilder::new(
             "candle flames pipeline",
@@ -143,43 +152,45 @@ impl CandleFlamesPass {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.global_uniform.bind_group, &[]);
         pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
-        
-        for game_object in game_data.scene.game_objects.iter() {
-            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-             println!("No model bind group for object {:?}, skipping draw", game_object.id);
-             continue;
-            };
 
-            pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+        game_data.world.for_each_chunk(|chunk| {
+            for game_object in chunk.game_objects.iter() {
+                let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+                println!("No model bind group for object {:?}, skipping draw", game_object.id);
+                continue;
+                };
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.model_name) {
-                for mesh in model.meshes.iter() {
-                    match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-                        Some(mesh_node) => {
-                            if !mesh_node.candle_flame {
-                              continue;
-                            }
+                pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-                            // TODO: MOVE OUT OF HERE!! 
-                            if !self.flame_uniforms.contains_key(&mesh_node.id) {
-                                self.flame_uniforms.insert(mesh_node.id, Uniform::new(FlameParamsUniform::new(), &ctx.device));
-                            }
-
-                            let Some(flame_uniform) = self.flame_uniforms.get(&mesh_node.id) else {
-                                println!("No flame bind group for model {:?}, skipping draw", game_object.id);
+                if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.model_name) {
+                    for mesh in model.meshes.iter() {
+                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                            Some(mesh_node) => {
+                                if mesh_node.rendering_mode != MeshRenderingMode::Flame {
                                 continue;
-                            };
+                                }
 
-                             pass.set_bind_group(3, &flame_uniform.bind_group, &[]);
-                        },
-                        None => ()
-                    } 
-                    pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                    pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                    pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                                // TODO: MOVE OUT OF HERE!! 
+                                if !self.flame_uniforms.contains_key(&mesh_node.id) {
+                                    self.flame_uniforms.insert(mesh_node.id, Uniform::new(FlameParamsUniform::new(), &ctx.device));
+                                }
+
+                                let Some(flame_uniform) = self.flame_uniforms.get(&mesh_node.id) else {
+                                    println!("No flame bind group for model {:?}, skipping draw", game_object.id);
+                                    continue;
+                                };
+
+                                pass.set_bind_group(3, &flame_uniform.bind_group, &[]);
+                            },
+                            None => ()
+                        } 
+                        pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                        pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                    }
                 }
             }
-        }
+        });
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext) {

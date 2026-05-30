@@ -1,10 +1,10 @@
 use crate::{
     bind_group_manager::{BindGroupManager, TL},
-    common::constants::SCR_RESOLUTION,
+    common::{constants::SCR_RESOLUTION, create_info::MeshRenderingMode},
     game::game_data::GameData,
     pipeline_builder::PipelineBuilder,
     renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES},
-    texture::{Texture},
+    texture::Texture,
     uniform_manager::UniformManager,
     vertex::Vertex,
     wgpu_context::WgpuContext,
@@ -258,39 +258,38 @@ impl EmissivePass {
         pass.set_pipeline(&self.mask_pipeline);
         pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
 
-        for game_object in game_data.scene.game_objects.iter() {
-            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-                println!(
-                    "No model bind group for object {:?}, skipping draw",
-                    game_object.id
-                );
-                continue;
-            };
+        game_data.world.for_each_chunk(|chunk| {
+            for game_object in chunk.game_objects.iter() {
+                let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+                    println!(
+                        "No model bind group for object {:?}, skipping draw",
+                        game_object.id
+                    );
+                    continue;
+                };
 
-            if let Some(model) = game_data
-                .asset_manager
-                .get_model_by_name(&game_object.get_model_name())
-            {
-                pass.set_bind_group(1, &model_uniform.bind_group, &[]);
-                for mesh in model.meshes.iter() {
-                    match game_object
-                        .get_mesh_nodes()
-                        .get_mesh_node_by_mesh_name(&mesh.name)
-                    {
-                        Some(mesh_node) => {
-                            if mesh_node.emissive {
-                                pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                pass.set_index_buffer(
-                                    mesh.index_buffer.slice(..),
-                                    wgpu::IndexFormat::Uint32,
-                                );
-                                pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                if let Some(model) = game_data
+                    .asset_manager
+                    .get_model_by_name(&game_object.get_model_name())
+                {
+                    pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+                    for mesh in model.meshes.iter() {
+                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                            Some(mesh_node) => {
+                                if mesh_node.rendering_mode == MeshRenderingMode::Emissive {
+                                    pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                    pass.set_index_buffer(
+                                        mesh.index_buffer.slice(..),
+                                        wgpu::IndexFormat::Uint32,
+                                    );
+                                    pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                                }
                             }
+                            None => (),
                         }
-                        None => (),
                     }
                 }
             }
-        }
+        });
     }
 }

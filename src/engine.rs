@@ -4,7 +4,7 @@ use cgmath::{InnerSpace, SquareMatrix, Vector2, Vector3, Vector4};
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::{game_data::GameData}, input::input::Input, physics::physics::Physics, scene::Scene, utils::json::load_level, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::{game_data::GameData}, input::input::Input, physics::physics::Physics, scene::Scene, wgpu_renderer::WgpuRenderer};
 
 
 pub struct Engine {
@@ -150,22 +150,6 @@ impl Engine {
         //         glb_model.set_current_animation(current_anim);
         //     }
         // }
-
-         for glb_model in self.game_data.scene.animated_game_objects.iter_mut() {
-            let anim_len = glb_model.animations.as_ref().unwrap().animations().len();
-            if self.input.keyboard.key_just_pressed(KeyCode::KeyR) {
-                let play_back_state = glb_model.get_animation_playback_state().unwrap();
-                let mut current_anim = play_back_state.current;
-
-                if current_anim + 1 < anim_len {
-                  current_anim += 1;
-                } else {
-                  current_anim = 0;
-                }
-
-                glb_model.set_current_animation(current_anim);
-            }
-        }
     }
 
     pub fn update_mouse_rays(&self) {

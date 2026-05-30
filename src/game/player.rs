@@ -26,7 +26,7 @@ pub struct Player {
 }
 
 impl<'a> Player {
-    pub fn new(scene: &mut Scene, asset_manager: &AssetManager) -> Self {
+    pub fn new(asset_manager: &AssetManager) -> Self {
         let pos = cgmath::Vector3::new(4.0, 6.0, 20.0);
         let speed = 6.0;
         let sensitivity = 0.4;
@@ -57,7 +57,7 @@ impl<'a> Player {
         }
     }
 
-    pub fn update(&mut self, input: &Input, delta_time: Duration, audio_manager: &mut AudioManager, scene: &mut Scene) {
+    pub fn update(&mut self, input: &Input, delta_time: Duration, audio_manager: &mut AudioManager) {
         self.camera_controller.update_movement_player(input);
         self.camera_controller.update_camera(&mut self.camera, delta_time);
         self.update_audio(audio_manager, delta_time);

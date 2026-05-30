@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::SCR_RESOLUTION, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::{constants::SCR_RESOLUTION, create_info::MeshRenderingMode}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct GlassPass {
     pub texture: Texture,
@@ -76,29 +76,31 @@ impl GlassPass {
         pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
         pass.set_bind_group(3, &uniforms.lights_ssbo.bind_group, &[]);
 
-        for game_object in game_data.scene.game_objects.iter() {
-            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-                println!("No model bind group for object {:?}, skipping draw", game_object.id);
-                continue;
-            };
+        game_data.world.for_each_chunk(|chunk| {
+              for game_object in chunk.game_objects.iter() {
+                let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+                    println!("No model bind group for object {:?}, skipping draw", game_object.id);
+                    continue;
+                };
 
-            pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+                pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
-                for mesh in model.meshes.iter() {
-                    match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-                        Some(mesh_node)=> {
-                            if mesh_node.glass {
-                                pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                                pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                            }
-                        },
-                        None => ()
+                if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
+                    for mesh in model.meshes.iter() {
+                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                            Some(mesh_node)=> {
+                                if mesh_node.rendering_mode == MeshRenderingMode::Glass {
+                                    pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                    pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                                    pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                                }
+                            },
+                            None => ()
+                        }
                     }
                 }
             }
-        }
+        });
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {

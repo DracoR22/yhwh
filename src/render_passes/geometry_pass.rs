@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::constants::SCR_RESOLUTION, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::{constants::SCR_RESOLUTION, create_info::MeshRenderingMode}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct GBufferTextures {
     pub base_color: Texture,
@@ -113,50 +113,53 @@ impl GeometryPass {
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
 
-        // game objects
-        for game_object in game_data.scene.game_objects.iter() {
-            let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-             println!("No model bind group for object {:?}, skipping draw", game_object.id);
-             continue;
-            };
+        game_data.world.for_each_chunk(|chunk| {
+            for game_object in chunk.game_objects.iter() {
+                let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+                println!("No model bind group for object {:?}, skipping draw", game_object.id);
+                continue;
+                };
 
-           pass.set_bind_group(2, &model_uniform.bind_group, &[]);
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
-                    // frustum culling
-                    if let Some(model_aabb) = model.aabb {
-                        let model_matrix = game_object.get_model_matrix();
-                        let world_aabb = model_aabb.transform(model_matrix);
+                pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+                    if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+                            // frustum culling
+                            if let Some(model_aabb) = model.aabb {
+                                let model_matrix = game_object.get_model_matrix();
+                                let world_aabb = model_aabb.transform(model_matrix);
 
-                        if !frustum.intersects_aabb(&world_aabb) {
-                            continue;
-                        }
-                    }
-
-                    for mesh in &model.meshes {
-                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-                        Some(mesh_node) => {
-                            if mesh_node.emissive || mesh_node.glass || mesh_node.candle_flame {
-                            continue;
+                                if !frustum.intersects_aabb(&world_aabb) {
+                                    continue;
+                                }
                             }
-                        },
-                        None => ()
-                        }
 
-                        let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
-                        let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+                            for mesh in &model.meshes {
+                                match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                                Some(mesh_node) => {
+                                    let is_emissive = mesh_node.rendering_mode == MeshRenderingMode::Emissive;
+                                    let is_glass = mesh_node.rendering_mode == MeshRenderingMode::Glass;
+                                    let is_flame = mesh_node.rendering_mode == MeshRenderingMode::Flame;
+                                    
+                                    if is_emissive || is_glass || is_flame {
+                                    continue;
+                                    }
+                                },
+                                None => ()
+                                }
 
-                        pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+                                let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+                                let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
 
-                        pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                        pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                        pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                    }
+                                pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+
+                                pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                                pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+                            }
+                }  
             }
-        }
 
-        // door objects
-        for door_object in game_data.scene.door_objects.iter() {
-            let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
+            for door_object in chunk.door_objects.iter() {
+                let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
              println!("No model bind group for object {:?}, skipping draw", door_object.id);
              continue;
             };
@@ -176,7 +179,10 @@ impl GeometryPass {
                     for mesh in &model.meshes {
                         match door_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                         Some(mesh_node) => {
-                            if mesh_node.emissive || mesh_node.glass {
+                            let is_emissive = mesh_node.rendering_mode == MeshRenderingMode::Emissive;
+                            let is_glass = mesh_node.rendering_mode == MeshRenderingMode::Glass;
+                            let is_flame = mesh_node.rendering_mode == MeshRenderingMode::Flame;
+                            if is_emissive || is_glass || is_flame {
                             continue;
                             }
                         },
@@ -193,6 +199,96 @@ impl GeometryPass {
                         pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
                     }
             }
-        }
+            }
+        });
+
+        // game objects
+        // for game_object in game_data.scene.game_objects.iter() {
+        //     let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+        //      println!("No model bind group for object {:?}, skipping draw", game_object.id);
+        //      continue;
+        //     };
+
+        //    pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+        //     if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+        //             // frustum culling
+        //             if let Some(model_aabb) = model.aabb {
+        //                 let model_matrix = game_object.get_model_matrix();
+        //                 let world_aabb = model_aabb.transform(model_matrix);
+
+        //                 if !frustum.intersects_aabb(&world_aabb) {
+        //                     continue;
+        //                 }
+        //             }
+
+        //             for mesh in &model.meshes {
+        //                 match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+        //                 Some(mesh_node) => {
+        //                     let is_emissive = mesh_node.rendering_mode == MeshRenderingMode::Emissive;
+        //                     let is_glass = mesh_node.rendering_mode == MeshRenderingMode::Glass;
+        //                     let is_flame = mesh_node.rendering_mode == MeshRenderingMode::Flame;
+                            
+        //                     if is_emissive || is_glass || is_flame {
+        //                       continue;
+        //                     }
+        //                 },
+        //                 None => ()
+        //                 }
+
+        //                 let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+        //                 let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+
+        //                 pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+
+        //                 pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //                 pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        //                 pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //             }
+        //     }
+        // }
+
+        // door objects
+        // for door_object in game_data.scene.door_objects.iter() {
+        //     let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
+        //      println!("No model bind group for object {:?}, skipping draw", door_object.id);
+        //      continue;
+        //     };
+
+        //    pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+        //     if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+        //             // frustum culling
+        //             if let Some(model_aabb) = model.aabb {
+        //                 let model_matrix = door_object.get_model_matrix();
+        //                 let world_aabb = model_aabb.transform(model_matrix);
+
+        //                 if !frustum.intersects_aabb(&world_aabb) {
+        //                     continue;
+        //                 }
+        //             }
+
+        //             for mesh in &model.meshes {
+        //                 match door_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+        //                 Some(mesh_node) => {
+        //                     let is_emissive = mesh_node.rendering_mode == MeshRenderingMode::Emissive;
+        //                     let is_glass = mesh_node.rendering_mode == MeshRenderingMode::Glass;
+        //                     let is_flame = mesh_node.rendering_mode == MeshRenderingMode::Flame;
+        //                     if is_emissive || is_glass || is_flame {
+        //                     continue;
+        //                     }
+        //                 },
+        //                 None => ()
+        //                 }
+
+        //                 let mesh_material_index = door_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+        //                 let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+
+        //                 pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
+
+        //                 pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //                 pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        //                 pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //             }
+        //     }
+        // }
     }
 }

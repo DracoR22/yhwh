@@ -1,0 +1,127 @@
+{
+  "name": "first_hallway",
+  "game_objects": [
+    {
+      "model_name": "Cube",
+      "position": [
+        6.0,
+        6.0,
+        43.0
+      ],
+      "size": [
+        1.0,
+        21.0,
+        13.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        2.0,
+        3.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "rendering_mode": "Pbr"
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        -2.0,
+        6.0,
+        48.6
+      ],
+      "size": [
+        1.0,
+        32.0,
+        13.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        2.5,
+        1.8
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "rendering_mode": "Pbr"
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        1.0,
+        6.0,
+        73.0
+      ],
+      "size": [
+        36.0,
+        1.0,
+        13.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        3.1,
+        2.6
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "rendering_mode": "Pbr"
+        }
+      ]
+    },
+    {
+      "model_name": "Cube",
+      "position": [
+        1.0,
+        11.0,
+        66.0
+      ],
+      "size": [
+        47.0,
+        50.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        4.1,
+        4.8
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Cube_Mesh",
+          "material_name": "Ceiling",
+          "rendering_mode": "Pbr"
+        }
+      ]
+    }
+  ],
+  "door_objects": [],
+  "lights": []
+}

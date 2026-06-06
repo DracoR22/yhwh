@@ -125,7 +125,7 @@ impl DoorObjects {
                     door_object.transform.rotation = rotation;
                 }
 
-                if let Some(model) = asset_manager.get_model_by_name(&door_object.model_name) {
+                if let Some(model) = asset_manager.model_by_name(&door_object.model_name) {
                     if !model.meshes.is_empty() {
                         let selected_index = self
                             .selected_mesh_index_map
@@ -180,8 +180,9 @@ impl DoorObjects {
                                             }
 
                                             if button.clicked() {
-                                                door_object.get_mesh_nodes_mut().set_mesh_material(
+                                                door_object.mesh_nodes_mut().set_mesh_material(
                                                     &asset_manager,
+                                                    &model.name,
                                                     &model.meshes[*selected_index].name,
                                                     &material.material_name,
                                                 );

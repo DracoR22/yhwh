@@ -12,3 +12,11 @@ pub enum LightType {
     Directional,
     Spot
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MeshRenderingMode {
+    Pbr,
+    Emissive,
+    Glass,
+    Flame
+}

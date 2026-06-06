@@ -22,10 +22,10 @@ impl UiManager {
     }
 
     pub fn register_textures(&mut self, ctx: &WgpuContext, renderer: &mut egui_wgpu::Renderer, asset_manager: &AssetManager) {
-        for material in asset_manager.get_all_materials().iter() {
+        for material in asset_manager.materials().iter() {
              let material_name = material.name.clone();
-             let material_index = asset_manager.get_material_index_by_name(&material_name);
-             if let Some(texture) = asset_manager.get_texture_by_name(&format!("{material_name}_ALB.png")) {
+             let material_index = asset_manager.material_index_by_name(&material_name);
+             if let Some(texture) = asset_manager.texture_by_name(&format!("{material_name}_ALB.png")) {
                 let texture_id = renderer.register_native_texture(&ctx.device, &texture.view, wgpu::FilterMode::Linear);
 
                 let egui_material = EguiMaterial {

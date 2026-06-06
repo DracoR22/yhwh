@@ -31,3 +31,4 @@ pub mod frustum;
 pub mod game;
 pub mod scene_manager;
 pub mod world;
+pub mod render_core;

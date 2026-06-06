@@ -1,14 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, common::{create_info::{AnimatedGameObjectCreateInfo, GameObjectCreateInfo}, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, common::{create_info::{AnimatedGameObjectCreateInfo, GameObjectCreateInfo}, types::{RenderItem, Transform}}, mesh_nodes::MeshNodes, utils::unique_id};
 use cgmath::{Matrix4, Rotation3, SquareMatrix, Vector3};
 
 pub struct AnimatedGameObject {
     pub id: usize,
     pub model_name: String,
-    // pub position: cgmath::Vector3<f32>,
-    // pub size: cgmath::Vector3<f32>,
-    // pub euler_rotation: cgmath::Vector3<f32>,
     pub transform: Transform,
     pub tex_scale: cgmath::Vector2<f32>,
     pub is_selected: bool,
@@ -18,7 +15,9 @@ pub struct AnimatedGameObject {
     pub animations: Option<Animations>,
     pub nodes: Nodes,
     pub skins: Vec<Skin>,
-    pub model_matrix: Matrix4<f32>
+    pub model_matrix: Matrix4<f32>,
+
+    render_items: Vec<RenderItem>
 }
 
 #[derive(Debug)]
@@ -30,7 +29,7 @@ pub enum AnimatedGameObjectError {
 
 impl AnimatedGameObject {
     pub fn new(create_info: &AnimatedGameObjectCreateInfo, asset_manager: &AssetManager) -> Self {
-        let model = asset_manager.get_model_by_name(&create_info.model_name).unwrap();
+        let model = asset_manager.model_by_name(&create_info.model_name).unwrap();
         let gltf = model.gltf.as_ref().unwrap();
         let buffers = model.gltf_buffers.as_ref().unwrap();
         let model_transform = &model.global_transform;
@@ -76,12 +75,32 @@ impl AnimatedGameObject {
             animations,
             nodes, 
             skins,
-            model_matrix: Matrix4::identity()
+            model_matrix: Matrix4::identity(),
+            render_items: Vec::new()
         }
     }
 
     pub fn update(&mut self, asset_manager: &AssetManager, delta_time: f32) -> bool {
-        let model = asset_manager.get_model_by_name(&self.model_name);
+        // update render items
+        self.render_items.clear();
+
+        let model = asset_manager.model_by_name(&self.model_name).expect(&format!("AnimatedGameObject error: no model for {}", self.model_name.clone()));
+        for node in self.mesh_nodes.get_nodes().iter() {
+            let render_item = RenderItem {
+                rendering_mode: node.rendering_mode,
+                texture_scale: self.tex_scale,
+                mesh_index: node.mesh_index,
+                material_index: node.material_index,
+                model_matrix: self.model_matrix(),
+                object_id: self.id,
+                aabb: model.aabb
+            };
+
+            self.render_items.push(render_item);
+        }
+
+        // update animation nodes
+        let model = asset_manager.model_by_name(&self.model_name);
         if model.is_none() {
             return false
         }
@@ -110,7 +129,7 @@ impl AnimatedGameObject {
         &self.model_name
     }
 
-    pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {
+    pub fn model_matrix(&self) -> cgmath::Matrix4<f32> {
         let translation = cgmath::Matrix4::from_translation(self.transform.position);
         let rotation = cgmath::Matrix4::from(
             cgmath::Quaternion::from_angle_x(cgmath::Deg(self.transform.rotation.x))
@@ -128,6 +147,10 @@ impl AnimatedGameObject {
 
     pub fn get_mesh_nodes_mut(&mut self) -> &mut MeshNodes {
         &mut self.mesh_nodes
+    }
+
+    pub fn render_items(&self) -> &Vec<RenderItem> {
+        &self.render_items
     }
 }
 

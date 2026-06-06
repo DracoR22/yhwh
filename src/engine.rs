@@ -1,15 +1,14 @@
 use std::{collections::HashMap, sync::Arc};
-
-use cgmath::{InnerSpace, SquareMatrix, Vector2, Vector3, Vector4};
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::{game_data::GameData}, input::input::Input, physics::physics::Physics, scene::Scene, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::game_data::GameData, input::input::Input, physics::physics::Physics, render_core::render_data_manager::RenderDataManager, scene::Scene, wgpu_renderer::WgpuRenderer};
 
 
 pub struct Engine {
     window: Arc<Window>,
     wgpu_renderer: WgpuRenderer,
+    render_data_manager: RenderDataManager,
     physics: Physics,
     game_data: GameData,
     input: Input,
@@ -24,33 +23,10 @@ impl Engine {
         window.set_cursor_visible(show_cursor);
         let _res = window.set_cursor_grab(CursorGrabMode::Confined).or_else(|_e| window.set_cursor_grab(CursorGrabMode::Locked));
 
-        // load camera
-        // let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
-        // let camera_controller = CameraController::new(8.0, 0.4);
-
-        // load physics
-
         // load resources
         let wgpu_context = WgpuRenderer::create_context(&window).await;
         let mut asset_manager = AssetManager::new(&wgpu_context);
         asset_manager.build_materials(&wgpu_context.device);
-    
-        // load scene
-        // let scene = Scene::new(&asset_manager);
-
-        // let game_data = GameData {
-        //     asset_manager,
-        //     scene,
-        //     camera,
-        //     camera_controller,
-        //     avg_fps: 0.0,
-        //     fps_accum: Default::default(),
-        //     delta_time: std::time::Duration::new(0, 0),
-        //     last_redraw: std::time::Instant::now(),
-        //     game_state: GameState::Playing,
-        //     player: Player::new(),
-        //     ui_elements: HashMap::new()
-        // };
         
         let game_data = GameData::new(asset_manager, (window.inner_size().width as f32, window.inner_size().height as f32));
 
@@ -63,6 +39,7 @@ impl Engine {
         Self {
             physics: Physics::new(),
             wgpu_renderer,
+            render_data_manager: RenderDataManager::new(),
             window,
             input: Input::new(),
             show_cursor,
@@ -76,7 +53,7 @@ impl Engine {
         //self.physics.step_simulation(self.game_data.delta_time);
 
         // update game
-        self.game_data.update(&self.input, &mut self.audio_manager);
+        self.game_data.update(&self.input, &mut self.audio_manager, &mut self.render_data_manager);
 
         self.window.set_title(&format!("FPS: {:.1}", self.game_data.avg_fps));
         self.toggle_cursor();
@@ -84,7 +61,7 @@ impl Engine {
         self.handle_dev_tools();
 
         // update wgpu renderer
-        match self.wgpu_renderer.render(&self.window, &mut self.game_data, &self.input) {
+        match self.wgpu_renderer.render(&self.window, &mut self.game_data, &mut self.render_data_manager, &self.input) {
             Ok(_) => {},
             Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                 let size = self.window.inner_size();
@@ -134,49 +111,5 @@ impl Engine {
         if self.input.keyboard.key_just_pressed(KeyCode::Digit2) {
           self.wgpu_renderer.hot_load_shaders();
         }
-
-        // if let Some(glb_model) = self.game_data.asset_manager.get_model_by_name_mut("untitled2") {
-        //     let anim_len = glb_model.animations.as_ref().unwrap().animations().len();
-        //     if self.input.keyboard.key_just_pressed(KeyCode::KeyR) {
-        //         let play_back_state = glb_model.get_animation_playback_state().unwrap();
-        //         let mut current_anim = play_back_state.current;
-
-        //         if current_anim + 1 < anim_len {
-        //           current_anim += 1;
-        //         } else {
-        //           current_anim = 0;
-        //         }
-
-        //         glb_model.set_current_animation(current_anim);
-        //     }
-        // }
-    }
-
-    pub fn update_mouse_rays(&self) {
-        let camera = &self.game_data.camera;
-        let viewport_size = Vector2::<f32>::new(self.window.inner_size().width as f32, self.window.inner_size().height as f32);
-        
-        let mouse_x = self.input.mouse.delta_x as f32;
-        let mouse_y = self.input.mouse.delta_y as f32;
-
-        let x = (2.0 * mouse_x) / viewport_size.x - 1.0;
-        let y = 1.0 - (2.0 * mouse_y) / viewport_size.y;
-        let z = 1.0;
-        let ray_nds = Vector3::new(x, y, z);
-
-        let projection_matrix = camera.get_projection().calc_matrix();
-        let view_matrix = camera.calc_matrix();
-
-        
-        let ray_clip = Vector4::new(ray_nds.x, ray_nds.y, -1.0, 1.0);
-        if let Some((inverse_projection, inverse_view)) = projection_matrix.invert().zip(view_matrix.invert()) {
-            let mut ray_eye = inverse_projection * ray_clip;
-            ray_eye = Vector4::new(ray_eye.x, ray_eye.y, -1.0, 0.0);
-
-    
-            let mut ray_world = (inverse_view * ray_eye).truncate();
-            ray_world = ray_world.normalize();
-        }
-
     }
 }

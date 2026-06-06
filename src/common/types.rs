@@ -1,4 +1,7 @@
-use cgmath::Vector3;
+use cgmath::{Matrix4, Vector2, Vector3};
+use yhwh_core::math::aabb::Aabb;
+
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, common::enums::MeshRenderingMode};
 
 pub struct Transform {
     pub position: Vector3<f32>,
@@ -24,6 +27,22 @@ impl Transform  {
     }
 }
 
+#[derive(Clone)]
 pub struct RenderItem {
+    pub model_matrix: Matrix4<f32>,
     
+    pub object_id: usize,
+    pub mesh_index: usize,
+    pub material_index: usize,
+
+    pub aabb: Option<Aabb<f32>>,
+
+    pub rendering_mode: MeshRenderingMode,
+    pub texture_scale: Vector2<f32>
+}
+
+#[derive(Clone)]
+pub struct AnimatedRenderData {
+    pub object_id: usize,
+    pub joint_matrices: [Matrix4<f32>; MAX_JOINTS_PER_MESH],
 }

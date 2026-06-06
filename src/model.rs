@@ -2,7 +2,7 @@ use std::path::Path;
 use std::{
     io::{BufReader, Cursor},
 };
-use cgmath::{Matrix4, Quaternion, SquareMatrix, Vector3, Zero};
+use cgmath::{Matrix4, SquareMatrix, Zero};
 use gltf::buffer::Data;
 use gltf::mesh::Bounds;
 use tobj::LoadError;
@@ -34,7 +34,8 @@ pub struct Mesh {
     pub num_elements: u32,
     pub aabb: Aabb<f32>,
     pub vertices: Vec<Vertex>,
-    pub transform_matrix: Matrix4<f32>
+    pub transform_matrix: Matrix4<f32>,
+    pub global_index: usize
 }
 
 pub struct Model {
@@ -141,7 +142,8 @@ pub fn load_obj_model_sync(device: &wgpu::Device, path: &str) -> Result<Model, L
                 num_elements: m.mesh.indices.len() as u32,
                 aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
                 vertices,
-                transform_matrix: Matrix4::identity()
+                transform_matrix: Matrix4::identity(),
+                global_index: 0
             }
         })
         .collect::<Vec<_>>();
@@ -186,7 +188,8 @@ pub fn load_cube(device: &wgpu::Device, name: &str) -> Model {
         num_elements: indices.len() as u32,
         aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
         vertices,
-        transform_matrix: Matrix4::identity()
+        transform_matrix: Matrix4::identity(),
+        global_index: 0
     };
 
     meshes.push(cube_mesh);
@@ -231,7 +234,8 @@ pub fn load_plane(device: &wgpu::Device, name: &str) -> Model {
         num_elements: indices.len() as u32,
         aabb: Aabb::new(cgmath::Vector3::zero(), cgmath::Vector3::zero()),
         vertices,
-        transform_matrix: Matrix4::identity()
+        transform_matrix: Matrix4::identity(),
+        global_index: 0
     };
 
     meshes.push(plane_mesh);
@@ -402,7 +406,8 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                         num_elements: indices.len() as u32,
                         aabb,
                         vertices,
-                        transform_matrix: Matrix4::from(transform_matrix)
+                        transform_matrix: Matrix4::from(transform_matrix),
+                        global_index: 0
                     });
                 }
             }

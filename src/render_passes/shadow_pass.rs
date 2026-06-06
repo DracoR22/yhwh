@@ -121,7 +121,7 @@ impl ShadowPass {
                             continue;
                         };
 
-                        if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+                        if let Some(model) = game_data.asset_manager.model_by_name(&game_object.model_name()) {
                             pass.set_bind_group(1, &model_uniform.bind_group, &[]);
                             for mesh in model.meshes.iter() {
                                 pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));

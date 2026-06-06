@@ -1,4 +1,4 @@
-use cgmath::{Deg, Matrix4, Quaternion, Vector3};
+use cgmath::{Deg, Matrix4, Quaternion, Vector2, Vector3};
 use cgmath::Rotation3;
 use winit::keyboard::KeyCode;
 use yhwh_audio::audio_manager::AudioManager;
@@ -6,6 +6,7 @@ use yhwh_core::math::aabb::Aabb;
 
 use crate::camera::Camera;
 use crate::common::create_info::DoorObjectCreateInfo;
+use crate::common::types::RenderItem;
 use crate::input::input::Input;
 use crate::utils::ray_cast::ray_intersects_aabb;
 use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
@@ -27,7 +28,8 @@ pub struct DoorObject {
     pub target_angle: f32,
     pub is_selected: bool,
     pub interacted: bool,
-    pub closed_angle: f32
+    pub closed_angle: f32,
+    render_items: Vec<RenderItem>
 }
 
 impl DoorObject {
@@ -54,11 +56,30 @@ impl DoorObject {
             current_angle: 0.0,
             target_angle: 0.0,
             is_selected: false,
-            interacted: false
+            interacted: false,
+            render_items: Vec::new()
         }
     }
 
-    pub fn update(&mut self, delta_time: f32) {
+    pub fn update(&mut self, asset_manager: &AssetManager, delta_time: f32) {
+         // update render items
+        self.render_items.clear();
+        let model = asset_manager.model_by_name(&self.model_name).expect(&format!("GameObject error: no model for {}", self.model_name.clone()));
+        for node in self.mesh_nodes.get_nodes().iter() {
+            let render_item = RenderItem {
+                rendering_mode: node.rendering_mode,
+                texture_scale: Vector2::new(1.0, 1.0),
+                mesh_index: node.mesh_index,
+                material_index: node.material_index,
+                model_matrix: self.model_matrix(),
+                object_id: self.id,
+                aabb: model.aabb
+            };
+
+            self.render_items.push(render_item);
+        }
+
+        // open/closed
         self.target_angle = match self.state {
             DoorState::Opened => self.closed_angle + 90.0,
             DoorState::Closed => self.closed_angle,
@@ -73,19 +94,9 @@ impl DoorObject {
         } else {
             self.transform.rotation.y = self.target_angle;
         }
-
-        // let speed = 120.0;
-        // let diff = self.target_angle - self.current_angle;
-
-        // if diff.abs() > 0.01 {
-        //     let step = speed * delta_time;
-        //     self.current_angle += diff.clamp(-step, step);
-        // }
-       
-        // self.transform.rotation.y = self.current_angle;
     }
 
-    pub fn get_model_matrix(&self) -> Matrix4<f32> {
+    pub fn model_matrix(&self) -> Matrix4<f32> {
         let translation = Matrix4::from_translation(self.transform.position);
         let rotation = Matrix4::from(
             Quaternion::from_angle_x(Deg(self.transform.rotation.x))
@@ -95,14 +106,6 @@ impl DoorObject {
         let scale = Matrix4::from_nonuniform_scale(self.transform.size.x, self.transform.size.z, self.transform.size.y);
 
         translation * rotation * scale
-    }
-
-    pub fn get_mesh_nodes(&self) -> &MeshNodes {
-        &self.mesh_nodes
-    }
-
-    pub fn get_mesh_nodes_mut(&mut self) -> &mut MeshNodes {
-        &mut self.mesh_nodes
     }
 
     pub fn toggle_state(&mut self, audio_manager: &mut AudioManager, input: &Input) {
@@ -132,10 +135,10 @@ impl DoorObject {
     }   
 
     pub fn interact(&self, asset_manager: &AssetManager, camera: &Camera) -> bool {
-        match asset_manager.get_model_by_name(&self.model_name) {
+        match asset_manager.model_by_name(&self.model_name) {
             Some(model) => {
                 if let Some(aabb) = model.aabb {
-                    let model_matrix = self.get_model_matrix();
+                    let model_matrix = self.model_matrix();
                     let world_aabb = aabb.transform(model_matrix);
 
                     let ray_origin = Vector3::<f32>::new(camera.position.x, camera.position.y, camera.position.z);
@@ -155,12 +158,13 @@ impl DoorObject {
     }
 }
 
+// Getters
 impl DoorObject {
     pub fn get_create_info(&self, asset_manager: &AssetManager) -> DoorObjectCreateInfo {
         let mut mesh_nodes_create_infos: Vec<MeshNodeCreateInfo> = Vec::new();
 
-        for mesh_node in self.get_mesh_nodes().get_mesh_nodes() {
-          if let Some((mesh, material)) = asset_manager.get_mesh_by_index(mesh_node.mesh_index).zip(asset_manager.get_material_by_index(mesh_node.material_index)) {
+        for mesh_node in self.mesh_nodes().get_nodes() {
+          if let Some((mesh, material)) = asset_manager.mesh_by_index(mesh_node.mesh_index).zip(asset_manager.material_by_index(mesh_node.material_index)) {
             let create_info = MeshNodeCreateInfo {
                 material_name: material.name.clone(),
                 mesh_name: mesh.name.clone(),
@@ -182,5 +186,17 @@ impl DoorObject {
         };
 
         create_info
+    }
+
+    pub fn mesh_nodes(&self) -> &MeshNodes {
+        &self.mesh_nodes
+    }
+
+    pub fn mesh_nodes_mut(&mut self) -> &mut MeshNodes {
+        &mut self.mesh_nodes
+    }
+
+    pub fn render_items(&self) -> &Vec<RenderItem> {
+        &self.render_items
     }
 }

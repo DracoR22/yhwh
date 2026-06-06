@@ -1,4 +1,4 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::{constants::SCR_RESOLUTION, create_info::MeshRenderingMode}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct GlassPass {
     pub texture: Texture,
@@ -16,7 +16,7 @@ impl GlassPass {
 
         let texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
-        let glass_material = asset_manager.get_material_by_name("WindowsGlass").unwrap();
+        let glass_material = asset_manager.material_by_name("WindowsGlass").unwrap();
 
         // let texture_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float, TL::Float]).unwrap();
         // let texture_bind_group = BindGroupManager::create_multi_texture_bind_group(
@@ -69,7 +69,7 @@ impl GlassPass {
             timestamp_writes: None,
         });
 
-        let glass_material = game_data.asset_manager.get_material_by_name("WindowsGlass").unwrap();
+        let glass_material = game_data.asset_manager.material_by_name("WindowsGlass").unwrap();
 
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &glass_material.bind_group, &[]);
@@ -85,9 +85,9 @@ impl GlassPass {
 
                 pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-                if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
+                if let Some(model) = game_data.asset_manager.model_by_name(game_object.model_name()) {
                     for mesh in model.meshes.iter() {
-                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                        match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                             Some(mesh_node)=> {
                                 if mesh_node.rendering_mode == MeshRenderingMode::Glass {
                                     pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));

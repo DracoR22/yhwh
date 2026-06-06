@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------- LEGACY FORWARD LIGHTING PASS NO LONGER USED ----------------------------------------------------------------- //
 
-use crate::{asset_manager::AssetManager, common::{constants::SCR_RESOLUTION, create_info::MeshRenderingMode}, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode}, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct ScenePass {
     pbr_pipeline: wgpu::RenderPipeline,
@@ -25,7 +25,7 @@ impl ScenePass {
             source: wgpu::ShaderSource::Wgsl(emissive_shader_code.into()),
         });
 
-        let material_bind_group_layout = &asset_manager.get_default_material().unwrap().bind_group_layout;
+        let material_bind_group_layout = &asset_manager.default_material().unwrap().bind_group_layout;
 
         let pbr_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
         let emissive_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
@@ -124,10 +124,10 @@ impl ScenePass {
 
             render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+            if let Some(model) = game_data.asset_manager.model_by_name(&game_object.model_name()) {
               // frustum culling
               if let Some(model_aabb) = model.aabb {
-                let model_matrix = game_object.get_model_matrix();
+                let model_matrix = game_object.model_matrix();
                 let world_aabb = model_aabb.transform(model_matrix);
 
                 if !frustum.intersects_aabb(&world_aabb) {
@@ -136,7 +136,7 @@ impl ScenePass {
               }
 
               for mesh in &model.meshes {
-                  match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                  match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                     Some(mesh_node) => {
                               let is_emissive = mesh_node.rendering_mode == MeshRenderingMode::Emissive;
                               let is_glass = mesh_node.rendering_mode == MeshRenderingMode::Glass;
@@ -148,8 +148,8 @@ impl ScenePass {
                     None => ()
                   }
 
-                  let mesh_material_index = game_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
-                  let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+                  let mesh_material_index = game_object.mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+                  let mesh_material = game_data.asset_manager.material_by_index(mesh_material_index);
 
                   render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
 
@@ -170,10 +170,10 @@ impl ScenePass {
 
             render_pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+            if let Some(model) = game_data.asset_manager.model_by_name(&door_object.model_name) {
               // frustum culling
               if let Some(model_aabb) = model.aabb {
-                let model_matrix = door_object.get_model_matrix();
+                let model_matrix = door_object.model_matrix();
                 let world_aabb = model_aabb.transform(model_matrix);
 
                 if !frustum.intersects_aabb(&world_aabb) {
@@ -182,7 +182,7 @@ impl ScenePass {
               }
 
               for mesh in &model.meshes {
-                  match door_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                  match door_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                     Some(mesh_node) => {
                               let is_emissive = mesh_node.rendering_mode == MeshRenderingMode::Emissive;
                               let is_glass = mesh_node.rendering_mode == MeshRenderingMode::Glass;
@@ -194,8 +194,8 @@ impl ScenePass {
                     None => ()
                   }
 
-                  let mesh_material_index = door_object.get_mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
-                  let mesh_material = game_data.asset_manager.get_material_by_index(mesh_material_index);
+                  let mesh_material_index = door_object.mesh_nodes().get_mesh_material_index_by_mesh_name(&mesh.name);
+                  let mesh_material = game_data.asset_manager.material_by_index(mesh_material_index);
 
                   render_pass.set_bind_group(0, &mesh_material.unwrap().bind_group, &[]);
 
@@ -217,10 +217,10 @@ impl ScenePass {
               continue;
             };
 
-            if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
+            if let Some(model) = game_data.asset_manager.model_by_name(&game_object.model_name()) {
                 render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
                   for mesh in model.meshes.iter() {
-                    match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                    match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                       Some(mesh_node) => {
                         if mesh_node.rendering_mode == MeshRenderingMode::Emissive {
                           render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));

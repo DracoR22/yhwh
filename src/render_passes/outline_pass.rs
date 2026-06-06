@@ -1,4 +1,4 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, render_core::render_data_manager::RenderDataManager, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 use wgpu::util::DeviceExt;
 
 pub struct OutlinePass {
@@ -76,8 +76,8 @@ impl OutlinePass {
         }
     }
 
-    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData) {
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData, render_data: &RenderDataManager) {
+        let mut mask_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("outline mask pass"),
             color_attachments: &[
               Some(wgpu::RenderPassColorAttachment {
@@ -94,75 +94,21 @@ impl OutlinePass {
             timestamp_writes: None,
         });
 
-        render_pass.set_pipeline(&self.mask_pipeline);
-        render_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
+        mask_pass.set_pipeline(&self.mask_pipeline);
+        mask_pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
 
-        game_data.world.for_each_chunk(|chunk| {
-             for game_object in chunk.game_objects.iter() {
-                    // game objects
-                if game_object.is_selected {
-                    let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-                            println!("No model bind group for object {:?}, skipping draw", game_object.id);
-                            continue;
-                        };
+        for render_item in render_data.render_items_outlined().iter() {
+            let mesh = game_data.asset_manager.mesh_by_index(render_item.mesh_index).unwrap();
+            let model_uniform = uniforms.models.get(&render_item.object_id).unwrap();
 
-                        render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+            mask_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+            mask_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            mask_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            mask_pass.set_stencil_reference(1);
+            mask_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
 
-                        if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.get_model_name()) {
-                            for mesh in model.meshes.iter() {
-                                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                                render_pass.set_stencil_reference(1);
-                                render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                            }
-                        }
-                    }
-                }
-
-                // doors
-                for door_object in chunk.door_objects.iter() {
-                    if door_object.is_selected {
-                        let Some(model_uniform) = uniforms.models.get(&door_object.id) else {
-                            println!("No model bind group for object {:?}, skipping draw", door_object.id);
-                            continue;
-                    };
-
-                        render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
-
-                        if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
-                            for mesh in model.meshes.iter() {
-                                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                                render_pass.set_stencil_reference(1);
-                                render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                            }
-                        }
-                    }
-                }
-        });
-
-        // animated game objects
-        // for animated_game_object in game_data.scene.animated_game_objects.iter() {
-        //    if animated_game_object.is_selected {
-        //        let Some(model_uniform) = uniforms.models.get(&animated_game_object.id) else {
-        //             println!("No model bind group for object {:?}, skipping draw", animated_game_object.id);
-        //             continue;
-        //         };
-
-        //         render_pass.set_bind_group(1, &model_uniform.bind_group, &[]);
-
-        //         if let Some(model) = game_data.asset_manager.get_model_by_name(&animated_game_object.get_model_name()) {
-        //             for mesh in model.meshes.iter() {
-        //                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        //                 render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        //                 render_pass.set_stencil_reference(1);
-        //                 render_pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-        //             }
-        //         }
-        //     }
-        // }
-
-        drop(render_pass);
+        drop(mask_pass);
 
         let mut outline_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("outline pass"),

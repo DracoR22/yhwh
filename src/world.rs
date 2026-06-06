@@ -1,7 +1,9 @@
-use std::{collections::HashMap, fs::{self, File}};
+use std::{arch::naked_asm, collections::HashMap, fs::{self, File}};
 use std::io::Write;
 
-use crate::{asset_manager::AssetManager, common::create_info::{DoorObjectCreateInfo, GameObjectCreateInfo, LightObjectCreateInfo, MapCreateInfo, SceneCreateInfo}, objects::game_object::GameObject, scene::Scene};
+use cgmath::{Matrix4, SquareMatrix};
+
+use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, common::{create_info::{AnimatedGameObjectCreateInfo, DoorObjectCreateInfo, GameObjectCreateInfo, LightObjectCreateInfo, MapCreateInfo, SceneCreateInfo}, types::AnimatedRenderData}, frustum::Frustum, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject, light_object::LightObject}, render_core::render_data_manager::RenderDataManager, scene::Scene};
 
 pub struct World {
     chunks: HashMap<String, Scene>
@@ -24,30 +26,22 @@ impl World {
             chunks.insert(chunk_file.to_string(), chunk);
         }
 
+        // hard coded!!
+        let create_info = AnimatedGameObjectCreateInfo {
+            model_name: "untitled2".to_string(),
+            position: [10.0, 2.0, 10.0],
+            rotation: [0.0, 0.0, 0.0],
+            size: [0.08, 0.08, 0.08],
+            tex_scale: [1.0, 1.0],
+            loop_anim: true,
+            mesh_rendering_info: vec![]
+        };
+
+        chunks.get_mut("test3.json").unwrap().add_animated_game_object(&create_info, asset_manager);
+
         Self {
             chunks
         }
-    }
-
-    pub fn for_each_chunk_mut<F: FnMut(&mut Scene)>(&mut self, mut f: F) {
-        for chunk in self.chunks.values_mut() {
-           f(chunk)
-        }
-    }
-
-    pub fn for_each_chunk<F: FnMut(&Scene)>(&self, mut f: F) {
-        for chunk in self.chunks.values() {
-            f(chunk)
-        }
-    }
-
-    pub fn light_count(&self) -> usize {
-        let mut count = 0;
-        for chunk in self.chunks.values() {
-           count += chunk.lights.len();
-        }
-
-        count
     }
 
     pub fn add_chunk(&mut self, create_info: &SceneCreateInfo, asset_manager: &AssetManager) {
@@ -82,5 +76,94 @@ impl World {
             Ok(_msg) => { println!("Chunk saved!") },
             Err(err) => { println!("Could not save chunk. Error: {}", err) }
         }
+    }
+
+    pub fn submit_render_items(&self, render_data_manager: &mut RenderDataManager, frustum: &Frustum) {
+        render_data_manager.clear();
+        
+        self.for_each_chunk(|chunk| {
+            for game_object in chunk.game_objects.iter() {
+                render_data_manager.submit_render_items(game_object.render_items(), frustum);
+
+                if game_object.is_selected {
+                    render_data_manager.submit_outlined_render_items(game_object.render_items());
+                }
+            }
+
+            for door_object in chunk.door_objects.iter() {
+                render_data_manager.submit_render_items(door_object.render_items(), frustum);
+
+                if door_object.is_selected {
+                    render_data_manager.submit_outlined_render_items(door_object.render_items());
+                }
+            }
+  
+            for animated_object in chunk.animated_game_objects.iter() {
+                let mut joint_matrices = [Matrix4::identity(); MAX_JOINTS_PER_MESH];
+
+                if let Some(skin) = animated_object.skins.get(0) {
+                    for (i, joint) in skin.joints().iter().enumerate() {
+                        if i >= MAX_JOINTS_PER_MESH {
+                            break;
+                        }
+
+                        joint_matrices[i] = joint.matrix();
+                    }
+                }
+
+                render_data_manager.submit_animated_render_data(AnimatedRenderData {
+                    object_id: animated_object.id,
+                    joint_matrices
+                });
+                render_data_manager.submit_animated_render_items(animated_object.render_items());
+            }
+        }); 
+    }
+}
+
+// iterators
+impl World {
+    pub fn for_each_chunk_mut<F: FnMut(&mut Scene)>(&mut self, mut f: F) {
+        for chunk in self.chunks.values_mut() {
+           f(chunk)
+        }
+    }
+
+    pub fn for_each_chunk<F: FnMut(&Scene)>(&self, mut f: F) {
+        for chunk in self.chunks.values() {
+            f(chunk)
+        }
+    }
+
+    pub fn for_each_light<F: FnMut(&LightObject)>(&self, mut f: F) {
+        for chunk in self.chunks.values() {
+            for light in chunk.lights.iter() {
+                f(light)
+            }
+        }
+    }
+
+    pub fn light_count(&self) -> usize {
+        let mut count = 0;
+        for chunk in self.chunks.values() {
+           count += chunk.lights.len();
+        }
+
+        count
+    }
+}
+
+// getters
+impl World {
+    pub fn animated_game_object(&self, id: usize) -> Option<&AnimatedGameObject> {
+        for chunk in self.chunks.values() {
+            for object in chunk.animated_game_objects.iter() {
+                if object.id == id {
+                    return Some(object)
+                }
+            }
+        };
+
+        None
     }
 }

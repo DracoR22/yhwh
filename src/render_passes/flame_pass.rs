@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-use crate::{common::create_info::MeshRenderingMode, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{common::enums::MeshRenderingMode, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct CandleFlamesUniform {
+struct FlameUniform {
     pub time: f32,
     pub pad_0: f32,
     pub pad_1: f32,
     pub pad_2: f32
 }
 
-impl CandleFlamesUniform {
+impl FlameUniform {
     pub fn new() -> Self {
         Self { 
             time: 0.0,
@@ -42,29 +42,29 @@ impl FlameParamsUniform {
     }
 }
 
-pub struct CandleFlamesPass {
+pub struct FlamePass {
     pipeline: wgpu::RenderPipeline,
-    global_uniform: Uniform<CandleFlamesUniform>,
+    global_uniform: Uniform<FlameUniform>,
     flame_uniforms: HashMap<usize, Uniform<FlameParamsUniform>>
 }
 
-impl CandleFlamesPass {
+impl FlamePass {
     pub fn new(ctx: &WgpuContext, game_data: &GameData) -> Self {
-        let shader_code = std::fs::read_to_string("res/shaders/candle_flames.wgsl").unwrap();
+        let shader_code = std::fs::read_to_string("res/shaders/flame.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("candle flames shader"),
+            label: Some("flames shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 
-        let global_uniform = Uniform::new(CandleFlamesUniform::new(), &ctx.device);
+        let global_uniform = Uniform::new(FlameUniform::new(), &ctx.device);
 
         // store a random seed per flame mesh node
         let mut flame_uniforms = HashMap::<usize, Uniform<FlameParamsUniform>>::new();
         game_data.world.for_each_chunk(|chunk| {
             for game_object in chunk.game_objects.iter() {
-                if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.model_name) {
+                if let Some(model) = game_data.asset_manager.model_by_name(&game_object.model_name) {
                     for mesh in model.meshes.iter() {
-                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                        match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                             Some(mesh_node) => {
                                 // if mesh_node.flame {
                                 //     flame_uniforms.insert(mesh_node.id, Uniform::new(FlameParamsUniform::new(), &ctx.device));
@@ -85,7 +85,7 @@ impl CandleFlamesPass {
         });
 
         let pipeline = PipelineBuilder::new(
-            "candle flames pipeline",
+            "flame pipeline",
             &[
                 &global_uniform.bind_group_layout, // global
                 &global_uniform.bind_group_layout, // camera
@@ -118,7 +118,7 @@ impl CandleFlamesPass {
         }
 
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("candle flames pass"),
+            label: Some("flame pass"),
             color_attachments: &[
               Some(wgpu::RenderPassColorAttachment {
                 view: &out_color.view,
@@ -162,9 +162,9 @@ impl CandleFlamesPass {
 
                 pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-                if let Some(model) = game_data.asset_manager.get_model_by_name(&game_object.model_name) {
+                if let Some(model) = game_data.asset_manager.model_by_name(&game_object.model_name) {
                     for mesh in model.meshes.iter() {
-                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                        match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                             Some(mesh_node) => {
                                 if mesh_node.rendering_mode != MeshRenderingMode::Flame {
                                 continue;
@@ -194,14 +194,14 @@ impl CandleFlamesPass {
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext) {
-        let shader_code = std::fs::read_to_string("res/shaders/candle_flames.wgsl").unwrap();
+        let shader_code = std::fs::read_to_string("res/shaders/flame.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("candle flames shader"),
+            label: Some("flame shader"),
             source: wgpu::ShaderSource::Wgsl(shader_code.into()),
         });
 
         let pipeline = PipelineBuilder::new(
-            "candle flames pipeline",
+            "flame pipeline",
             &[
                 &self.global_uniform.bind_group_layout, // global
                 &self.global_uniform.bind_group_layout, // camera

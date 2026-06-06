@@ -4,7 +4,7 @@ use cgmath::Vector2;
 use rapier3d::na::Vector;
 use yhwh_audio::audio_manager::AudioManager;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::{create_info::SceneCreateInfo, enums::GameState}, game::{player::Player, ui::{UiElement, UiElementKind}}, input::input::Input, scene::Scene, scene_manager::SceneManager, world::World};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::{create_info::SceneCreateInfo, enums::GameState}, game::{player::Player, ui::{UiElement, UiElementKind}}, input::input::Input, render_core::render_data_manager::RenderDataManager, scene::Scene, scene_manager::SceneManager, world::World};
 
 pub struct GameData {
     pub camera: Camera,
@@ -26,10 +26,10 @@ impl GameData {
         let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
         let camera_controller = CameraController::new(8.0, 0.4);
 
-        let path = "res/scenes/test3.json";
-        let json = fs::read_to_string(&path).expect("Could not open file");
-        let scene_create_info: SceneCreateInfo = serde_json::from_str(&json).expect("could not deserialize scene");
-        let scene = Scene::new(&scene_create_info, &asset_manager);
+        // let path = "res/scenes/test3.json";
+        // let json = fs::read_to_string(&path).expect("Could not open file");
+        // let scene_create_info: SceneCreateInfo = serde_json::from_str(&json).expect("could not deserialize scene");
+        // let scene = Scene::new(&scene_create_info, &asset_manager);
         // let mut scene_manager = SceneManager::new();
         // scene_manager.load_scene(&asset_manager, "test3.json");
         // scene_manager.activate_scene("test3.json");
@@ -63,16 +63,24 @@ impl GameData {
         }
     }
 
-    pub fn update(&mut self, input: &Input, audio_manager: &mut AudioManager) {
+    pub fn update(&mut self, input: &Input, audio_manager: &mut AudioManager, render_data_manager: &mut RenderDataManager) {
         self.update_fps();
 
         self.world.for_each_chunk_mut(|chunk| {
-             for light in chunk.lights.iter_mut() {
+            for light in chunk.lights.iter_mut() {
                 light.update();
             }
 
+            for game_object in chunk.game_objects.iter_mut() {
+                game_object.update(&self.asset_manager);
+            }
+
+            for animated_object in chunk.animated_game_objects.iter_mut() {
+                animated_object.update(&self.asset_manager, self.delta_time.as_secs_f32());
+            }
+
             for door in chunk.door_objects.iter_mut() {
-                door.update(self.delta_time.as_secs_f32());
+                door.update(&self.asset_manager, self.delta_time.as_secs_f32());
                 if door.interact(&self.asset_manager, &self.player.camera) {
                     door.toggle_state(audio_manager, &input);
                     self.player.can_interact = true;
@@ -81,6 +89,8 @@ impl GameData {
                 }
             }
         });
+        
+        self.world.submit_render_items(render_data_manager, &self.active_camera().frustum);
 
         if let Some(crosshair) = self.ui_map.get_mut(&UiElementKind::Crosshair) {
             crosshair.visible = self.player.can_interact;

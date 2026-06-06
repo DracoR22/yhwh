@@ -1,6 +1,6 @@
 use crate::{
     bind_group_manager::{BindGroupManager, TL},
-    common::{constants::SCR_RESOLUTION, create_info::MeshRenderingMode},
+    common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode},
     game::game_data::GameData,
     pipeline_builder::PipelineBuilder,
     renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES},
@@ -270,11 +270,11 @@ impl EmissivePass {
 
                 if let Some(model) = game_data
                     .asset_manager
-                    .get_model_by_name(&game_object.get_model_name())
+                    .model_by_name(&game_object.model_name())
                 {
                     pass.set_bind_group(1, &model_uniform.bind_group, &[]);
                     for mesh in model.meshes.iter() {
-                        match game_object.get_mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+                        match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
                             Some(mesh_node) => {
                                 if mesh_node.rendering_mode == MeshRenderingMode::Emissive {
                                     pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));

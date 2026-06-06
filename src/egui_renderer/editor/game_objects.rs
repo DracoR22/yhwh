@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use egui::{Id, Sense, Ui, Vec2, load::SizedTexture};
 
-use crate::{asset_manager::AssetManager, common::create_info::{GameObjectCreateInfo, MeshRenderingMode}, egui_renderer::{editor::common::ChunkEditorState, ui_manager::EguiMaterial}, game::game_data::GameData, scene::Scene};
+use crate::{asset_manager::AssetManager, common::create_info::{GameObjectCreateInfo}, common::enums::MeshRenderingMode, egui_renderer::{editor::common::ChunkEditorState, ui_manager::EguiMaterial}, game::game_data::GameData, scene::Scene};
 
 pub struct GameObjects {
     //selected_id: i32,
@@ -65,7 +65,7 @@ impl GameObjects {
 
         ui.collapsing("Game Objects", |ui| {
                 for (index, game_object) in chunk.game_objects.iter_mut().enumerate() {
-                    let button = ui.button(game_object.get_model_name().to_string() + " (" + &index.to_string() + ")");
+                    let button = ui.button(game_object.model_name().to_string() + " (" + &index.to_string() + ")");
 
                     if button.clicked() {
                         state.selected_id = game_object.id as i32;
@@ -161,7 +161,7 @@ impl GameObjects {
                         );
 
                         //self.draw_meshes(game_object, game_data, &materials, &mut ui);
-                        if let Some(model) = asset_manager.get_model_by_name(game_object.get_model_name()) {
+                        if let Some(model) = asset_manager.model_by_name(game_object.model_name()) {
                             if !model.meshes.is_empty() {
                                 let selected_index =  state.selected_mesh_index_map.entry(game_object.id).or_insert(0);
 
@@ -210,8 +210,9 @@ impl GameObjects {
                                             }
 
                                             if button.clicked() {
-                                                game_object.get_mesh_nodes_mut().set_mesh_material(
+                                                game_object.mesh_nodes_mut().set_mesh_material(
                                                 &asset_manager,
+                                                &model.name,
                                                 &model.meshes[*selected_index].name,
                                                 &material.material_name,
                                                 );
@@ -228,7 +229,7 @@ impl GameObjects {
                                 ui.label("Shadows");
                                 ui.checkbox(&mut game_object.shadows, "");
                             
-                                match game_object.get_mesh_nodes_mut().get_mesh_node_by_mesh_name_mut(&model.meshes[*selected_index].name) {
+                                match game_object.mesh_nodes_mut().get_mesh_node_by_mesh_name_mut(&model.meshes[*selected_index].name) {
                                     Some(mesh_node) => {
                                         ui.label("Rendering Mode");
                                         egui::ComboBox::from_label("")
@@ -285,7 +286,7 @@ impl GameObjects {
         });
 
         if state.add_game_object_selected {    
-            let models = asset_manager.get_models();
+            let models = asset_manager.models();
                     egui::ComboBox::from_label("Select Model")
                         .selected_text(&models[state.selected_model_index].name)
                         .show_ui(ui, |ui| {

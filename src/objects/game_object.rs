@@ -1,14 +1,15 @@
-use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
-use cgmath::{Rotation3, Vector3};
+use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, types::{RenderItem, Transform}}, mesh_nodes::MeshNodes, utils::unique_id};
+use cgmath::{Rotation3, Vector2, Vector3};
 
 pub struct GameObject {
     pub model_name: String,
     pub transform: Transform,
-    pub tex_scale: cgmath::Vector2<f32>,
+    pub tex_scale: Vector2<f32>,
     pub is_selected: bool,
     pub id: usize,
     pub shadows: bool,
     mesh_nodes: MeshNodes,
+    render_items: Vec<RenderItem>
 }
 
 impl GameObject {
@@ -22,36 +23,33 @@ impl GameObject {
         Self { 
             model_name: create_info.model_name.clone(),
             transform,
-            tex_scale: cgmath::Vector2::new(create_info.tex_scale[0], create_info.tex_scale[1]),
+            tex_scale: Vector2::new(create_info.tex_scale[0], create_info.tex_scale[1]),
             is_selected: false,
             id: unique_id::next_id(),
             mesh_nodes: MeshNodes::new(&create_info.model_name.clone(), &create_info.mesh_rendering_info, asset_manager),
-            shadows: create_info.shadows
+            shadows: create_info.shadows,
+            render_items: Vec::new()
         }
     }
 
-    pub fn get_model_name(&self) -> &str {
-        &self.model_name
-    }
+    pub fn update(&mut self, asset_manager: &AssetManager) {
+        // update render items
+        self.render_items.clear();
 
-    pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {
-        let translation = cgmath::Matrix4::from_translation(self.transform.position);
-        let rotation = cgmath::Matrix4::from(
-            cgmath::Quaternion::from_angle_x(cgmath::Deg(self.transform.rotation.x))
-            * cgmath::Quaternion::from_angle_y(cgmath::Deg(self.transform.rotation.y))
-            * cgmath::Quaternion::from_angle_z(cgmath::Deg(self.transform.rotation.z))
-        );
-        let scale = cgmath::Matrix4::from_nonuniform_scale(self.transform.size.x, self.transform.size.z, self.transform.size.y);
+        let model = asset_manager.model_by_name(&self.model_name).expect(&format!("GameObject error: no model for {}", self.model_name.clone()));
+        for node in self.mesh_nodes.get_nodes().iter() {
+            let render_item = RenderItem {
+                rendering_mode: node.rendering_mode,
+                texture_scale: self.tex_scale,
+                mesh_index: node.mesh_index,
+                material_index: node.material_index,
+                model_matrix: self.model_matrix(),
+                object_id: self.id,
+                aabb: model.aabb
+            };
 
-        translation * rotation * scale
-    }
-
-    pub fn get_mesh_nodes(&self) -> &MeshNodes {
-        &self.mesh_nodes
-    }
-
-    pub fn get_mesh_nodes_mut(&mut self) -> &mut MeshNodes {
-        &mut self.mesh_nodes
+            self.render_items.push(render_item);
+        }
     }
 
     pub fn set_selected(&mut self, value: bool) {
@@ -63,12 +61,13 @@ impl GameObject {
     }
 }
 
+// Getters
 impl GameObject {
-    pub fn get_create_info(&self, asset_manager: &AssetManager) -> GameObjectCreateInfo {
+    pub fn create_info(&self, asset_manager: &AssetManager) -> GameObjectCreateInfo {
         let mut mesh_nodes_create_infos: Vec<MeshNodeCreateInfo> = Vec::new();
 
-        for mesh_node in self.get_mesh_nodes().get_mesh_nodes() {
-          if let Some((mesh, material)) = asset_manager.get_mesh_by_index(mesh_node.mesh_index).zip(asset_manager.get_material_by_index(mesh_node.material_index)) {
+        for mesh_node in self.mesh_nodes().get_nodes() {
+          if let Some((mesh, material)) = asset_manager.mesh_by_index(mesh_node.mesh_index).zip(asset_manager.material_by_index(mesh_node.material_index)) {
             let create_info = MeshNodeCreateInfo {
                 material_name: material.name.clone(),
                 mesh_name: mesh.name.clone(),
@@ -89,9 +88,37 @@ impl GameObject {
             tex_scale: self.tex_scale.into(),
             mesh_rendering_info: mesh_nodes_create_infos,
             shadows: self.shadows,
-            model_name: self.get_model_name().to_string()
+            model_name: self.model_name().to_string()
         };
 
         create_info
+    }
+
+    pub fn render_items(&self) -> &Vec<RenderItem> {
+        &self.render_items
+    }
+
+    pub fn model_name(&self) -> &str {
+        &self.model_name
+    }
+
+    pub fn model_matrix(&self) -> cgmath::Matrix4<f32> {
+        let translation = cgmath::Matrix4::from_translation(self.transform.position);
+        let rotation = cgmath::Matrix4::from(
+            cgmath::Quaternion::from_angle_x(cgmath::Deg(self.transform.rotation.x))
+            * cgmath::Quaternion::from_angle_y(cgmath::Deg(self.transform.rotation.y))
+            * cgmath::Quaternion::from_angle_z(cgmath::Deg(self.transform.rotation.z))
+        );
+        let scale = cgmath::Matrix4::from_nonuniform_scale(self.transform.size.x, self.transform.size.z, self.transform.size.y);
+
+        translation * rotation * scale
+    }
+
+    pub fn mesh_nodes(&self) -> &MeshNodes {
+        &self.mesh_nodes
+    }
+
+    pub fn mesh_nodes_mut(&mut self) -> &mut MeshNodes {
+        &mut self.mesh_nodes
     }
 }

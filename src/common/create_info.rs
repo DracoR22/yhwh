@@ -1,14 +1,6 @@
 use std::fmt;
 use serde::{Deserialize, Serialize};
-use crate::common::enums::LightType;
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MeshRenderingMode {
-    Pbr,
-    Emissive,
-    Glass,
-    Flame
-}
+use crate::common::enums::{LightType, MeshRenderingMode};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MeshNodeCreateInfo {

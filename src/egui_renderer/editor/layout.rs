@@ -149,9 +149,9 @@ impl EditorLayout {
 
                 game_data.world.for_each_chunk_mut(|chunk| {
                     for game_object in chunk.game_objects.iter_mut() {
-                        if let Some(model) = game_data.asset_manager.get_model_by_name(game_object.get_model_name()) {
+                        if let Some(model) = game_data.asset_manager.model_by_name(game_object.model_name()) {
                             if let Some(aabb) = model.aabb {
-                                let model_matrix = game_object.get_model_matrix();
+                                let model_matrix = game_object.model_matrix();
                                 let world_aabb = aabb.transform(model_matrix);
 
                                 if let Some(distance) = ray_intersects_aabb(self.ray_origin, self.ray_direction, &world_aabb) {
@@ -165,9 +165,9 @@ impl EditorLayout {
                     }
 
                     for door_object in chunk.door_objects.iter_mut() {
-                        if let Some(model) = game_data.asset_manager.get_model_by_name(&door_object.model_name) {
+                        if let Some(model) = game_data.asset_manager.model_by_name(&door_object.model_name) {
                             if let Some(aabb) = model.aabb {
-                                let model_matrix = door_object.get_model_matrix();
+                                let model_matrix = door_object.model_matrix();
                                 let world_aabb = aabb.transform(model_matrix);
 
                                 if let Some(distance) = ray_intersects_aabb(self.ray_origin, self.ray_direction, &world_aabb) {

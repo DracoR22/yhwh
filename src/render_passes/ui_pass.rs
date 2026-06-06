@@ -51,7 +51,7 @@ impl UiPass {
         for map_data in game_data.ui_map.iter() {
             let ui_element = map_data.1;
             
-            match game_data.asset_manager.get_texture_by_name(&ui_element.texture_name) {
+            match game_data.asset_manager.texture_by_name(&ui_element.texture_name) {
                 Some(texture) => {
                     let bind_group = BindGroupManager::create_multi_texture_bind_group(
                         &ctx.device,
@@ -64,7 +64,7 @@ impl UiPass {
                     });
                 },
                 None => {
-                    let default_texture = game_data.asset_manager.get_texture_by_name("Default_ALB.png").unwrap();
+                    let default_texture = game_data.asset_manager.texture_by_name("Default_ALB.png").unwrap();
                     let bind_group = BindGroupManager::create_multi_texture_bind_group(
                         &ctx.device,
                         &texture_bg_layout,

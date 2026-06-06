@@ -22,16 +22,15 @@ impl Scene {
             game_objects.push(GameObject::new(&game_object_create_info, &asset_manager));
         }
 
-        // TODO: stop doing this please!!!!
-        let glock_create_info2 = AnimatedGameObjectCreateInfo {
-            model_name: "untitled2".to_string(),
-            position: [10.0, 2.0, 10.0],
-            rotation: [0.0, 0.0, 0.0],
-            size: [0.08, 0.08, 0.08],
-            tex_scale: [1.0, 1.0],
-            loop_anim: true,
-            mesh_rendering_info: vec![]
-        };
+        // let glock_create_info2 = AnimatedGameObjectCreateInfo {
+        //     model_name: "untitled2".to_string(),
+        //     position: [10.0, 2.0, 10.0],
+        //     rotation: [0.0, 0.0, 0.0],
+        //     size: [0.08, 0.08, 0.08],
+        //     tex_scale: [1.0, 1.0],
+        //     loop_anim: true,
+        //     mesh_rendering_info: vec![]
+        // };
 
         //animated_game_objects.push(AnimatedGameObject::new(&glock_create_info, &asset_manager));
         //animated_game_objects.push(AnimatedGameObject::new(&glock_create_info2, &asset_manager));
@@ -75,7 +74,7 @@ impl Scene {
     pub fn get_create_info(&self, asset_manager: &AssetManager) -> SceneCreateInfo {
         SceneCreateInfo {
             name: self.name.clone(),
-            game_objects: self.game_objects.iter().map(|o| o.get_create_info(asset_manager)).collect(),
+            game_objects: self.game_objects.iter().map(|o| o.create_info(asset_manager)).collect(),
             door_objects: self.door_objects.iter().map(|o| o.get_create_info(asset_manager)).collect(),
             lights: self.lights.iter().map(|o| o.get_create_info()).collect(),
         }

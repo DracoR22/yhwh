@@ -2,30 +2,14 @@ use std::collections::HashMap;
 
 use cgmath::Matrix;
 use cgmath::SquareMatrix;
-use cgmath::Vector2;
 
-use crate::asset_manager::AssetManager;
 use crate::bind_group_manager::BindGroupManager;
 use crate::common::constants::MAX_LIGHTS;
 use crate::game::game_data::GameData;
-use crate::scene::Scene;
+use crate::render_core::render_data_manager::RenderDataManager;
 use crate::ssbo::SSBO;
 use crate::texture::Texture;
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, camera::{Camera, Projection}, objects::game_object::GameObject, uniform::Uniform, wgpu_context::WgpuContext};
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct AnimationUniform {
-    pub joint_matrices: [[[f32; 4]; 4]; MAX_JOINTS_PER_MESH],
-}
-
-impl AnimationUniform {
-    pub fn new() -> Self {
-      Self {
-        joint_matrices: [cgmath::Matrix4::<f32>::identity().into(); MAX_JOINTS_PER_MESH]
-      }
-    }
-}
+use crate::{camera::{Camera}, uniform::Uniform, wgpu_context::WgpuContext};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -167,7 +151,6 @@ pub struct UniformManager {
     pub camera: Uniform<CameraUniform>,
     pub models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
-    pub animations: HashMap<usize, Uniform<AnimationUniform>>,
     pub blurs: Vec<Uniform<BlurUniform>>,
     pub lights_ssbo: SSBO
 }
@@ -175,21 +158,21 @@ pub struct UniformManager {
 impl UniformManager {
     pub fn new(ctx: &WgpuContext, game_data: &GameData, shadow_texture: &Texture) -> Self {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
-      let mut animation_uniforms: HashMap<usize, Uniform<AnimationUniform>> = HashMap::new();
+      //let mut animation_uniforms: HashMap<usize, Uniform<AnimationUniform>> = HashMap::new();
 
       game_data.world.for_each_chunk(|chunk| {
-        for game_object in chunk.game_objects.iter() {
-          model_uniforms.insert(game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
-        }
+        // for game_object in chunk.game_objects.iter() {
+        //   model_uniforms.insert(game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
+        // }
 
         for animated_game_object in chunk.animated_game_objects.iter() {
           model_uniforms.insert(animated_game_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
-          animation_uniforms.insert(animated_game_object.id, Uniform::new(AnimationUniform::new(), &ctx.device));
+          //animation_uniforms.insert(animated_game_object.id, Uniform::new(AnimationUniform::new(), &ctx.device));
         }
 
-        for door_object in chunk.door_objects.iter() {
-          model_uniforms.insert(door_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
-        }
+        // for door_object in chunk.door_objects.iter() {
+        //   model_uniforms.insert(door_object.id, Uniform::new(ModelUniform::new(), &ctx.device));
+        // }
       }); 
 
       // let mut shadow_cube_maps: Vec<Uniform<ShadowCubeMapUniform>> = Vec::new();
@@ -214,7 +197,7 @@ impl UniformManager {
 
       Self {
         models: model_uniforms,
-        animations: animation_uniforms,
+        //animations: animation_uniforms,
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
         blurs,
         bind_group_layout,
@@ -227,72 +210,131 @@ impl UniformManager {
       self.models.insert(id, Uniform::new(ModelUniform::new(), &ctx.device));
     }
 
-    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_data: &GameData) {
-      game_data.world.for_each_chunk(|chunk| {
-        for animated_game_object in chunk.animated_game_objects.iter() {
-          if !self.models.contains_key(&animated_game_object.id) {
-           self.create_model(&ctx, animated_game_object.id);
-          }
-          if let Some(model_uniform) = self.models.get_mut(&animated_game_object.id) {
-            model_uniform.value_mut().update(&animated_game_object.get_model_matrix(), &animated_game_object.tex_scale);
-            model_uniform.update(&ctx.queue);
-          }
+    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_data: &GameData, render_data: &RenderDataManager) {
+      // game_data.world.for_each_chunk(|chunk| {
+      //   for animated_game_object in chunk.animated_game_objects.iter() {
+      //     if !self.models.contains_key(&animated_game_object.id) {
+      //      self.create_model(&ctx, animated_game_object.id);
+      //     }
+      //     if let Some(model_uniform) = self.models.get_mut(&animated_game_object.id) {
+      //       model_uniform.value_mut().update(&animated_game_object.model_matrix(), &animated_game_object.tex_scale);
+      //       model_uniform.update(&ctx.queue);
+      //     }
+      //   }
+
+      for render_item in render_data.render_items_pbr().iter() {
+        if !self.models.contains_key(&render_item.object_id) {
+          self.create_model(&ctx, render_item.object_id);
         }
-
-        for game_object in chunk.game_objects.iter() {
-          if !self.models.contains_key(&game_object.id) {
-            self.create_model(&ctx, game_object.id);
-          }
-
-          if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
-            model_uniform.value_mut().update(&game_object.get_model_matrix(), &game_object.tex_scale);
+          
+        if let Some(model_uniform) = self.models.get_mut(&render_item.object_id) {
+            model_uniform.value_mut().update(&render_item.model_matrix, &render_item.texture_scale);
             model_uniform.update(&ctx.queue);  
-          }
         }
+      }
 
-        let door_tex_scale = Vector2::new(1.0, 1.0);
-        for door_object in chunk.door_objects.iter() {
-          if !self.models.contains_key(&door_object.id) {
-            self.create_model(&ctx, door_object.id);
-          }
-
-          if let Some(model_uniform) = self.models.get_mut(&door_object.id) {
-            model_uniform.value_mut().update(&door_object.get_model_matrix(), &door_tex_scale);
+      for animated_render_item in render_data.render_items_animated().iter() {
+        if !self.models.contains_key(&animated_render_item.object_id) {
+          self.create_model(&ctx, animated_render_item.object_id);
+        }
+          
+        if let Some(model_uniform) = self.models.get_mut(&animated_render_item.object_id) {
+            model_uniform.value_mut().update(&animated_render_item.model_matrix, &animated_render_item.texture_scale);
             model_uniform.update(&ctx.queue);  
-          }
         }
-      });
+      }
+
+        // for game_object in chunk.game_objects.iter() {
+        //   if !self.models.contains_key(&game_object.id) {
+        //     self.create_model(&ctx, game_object.id);
+        //   }
+
+        //   if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
+        //     model_uniform.value_mut().update(&game_object.get_model_matrix(), &game_object.tex_scale);
+        //     model_uniform.update(&ctx.queue);  
+        //   }
+        // }
+
+        // let door_tex_scale = Vector2::new(1.0, 1.0);
+        // for door_object in chunk.door_objects.iter() {
+        //   if !self.models.contains_key(&door_object.id) {
+        //     self.create_model(&ctx, door_object.id);
+        //   }
+
+        //   if let Some(model_uniform) = self.models.get_mut(&door_object.id) {
+        //     model_uniform.value_mut().update(&door_object.get_model_matrix(), &door_tex_scale);
+        //     model_uniform.update(&ctx.queue);  
+        //   }
+        // }
+      // });
+    // }
+
+    // pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, game_data: &mut GameData, render_data: &mut RenderDataManager) {
+    //   for anim_data in render_data.animated_render_data().iter() {
+    //     if !self.animations.contains_key(&anim_data.object_id) {
+    //       self.create_animation(ctx, anim_data.object_id);
+    //     }
+
+    //     if let Some(animation_uniform) = self.animations.get_mut(&anim_data.object_id) {
+    //       let skin_uniform = animation_uniform.value_mut();
+    //       skin_uniform.joint_matrices = anim_data.joint_matrices.map(Into::into);
+
+    //       animation_uniform.update(&ctx.queue);
+    //     }
+    //   }
+
+      // for render_item in render_data.render_items_animated_mut().iter_mut() {
+      //   if !self.animations.contains_key(&render_item.object_id) {
+      //     self.create_animation(ctx, render_item.object_id);
+      //   }
+      //   if let Some(animation_uniform) = self.animations.get_mut(&render_item.object_id) {
+      //     let skin_uniform = animation_uniform.value_mut();
+      //     let animated_game_object = game_data.world.animated_game_object(render_item.object_id).unwrap();
+
+      //     if let Some(skin) = animated_game_object.skins.get(0) {
+      //       for (i, joint) in skin.joints().iter().enumerate() {
+      //           if i >= MAX_JOINTS_PER_MESH {
+      //               break; 
+      //           }
+
+      //           skin_uniform.joint_matrices[i] = joint.matrix().into();
+      //       }
+      //     }
+
+      //     animation_uniform.update(&ctx.queue);
+      //   }
+      // }
+
+      // TODO! CREATE A NEW UNIFORM IN RUNTIME LIKE WITH MODELS
+      // game_data.world.for_each_chunk_mut(|chunk| {
+      //     for animated_game_object in chunk.animated_game_objects.iter_mut() {
+      //       if !self.animations.contains_key(&animated_game_object.id) {
+      //         self.create_animation(ctx, animated_game_object.id);
+      //       }
+
+      //       if let Some(animation_uniform) = self.animations.get_mut(&animated_game_object.id) {
+      //         let skin_uniform = animation_uniform.value_mut();
+
+      //         if let Some(skin) = animated_game_object.skins.get(0) {
+      //             for (i, joint) in skin.joints().iter().enumerate() {
+      //                   if i >= MAX_JOINTS_PER_MESH {
+      //                      break; 
+      //                   }
+
+      //                 skin_uniform.joint_matrices[i] = joint.matrix().into();
+      //             }
+      //         }
+
+      //         animation_uniform.update(&ctx.queue);
+      //      }
+      //   }
+      // });
+
     }
 
-    pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, game_data: &mut GameData) {
-        // TODO! CREATE A NEW UNIFORM IN RUNTIME LIKE WITH MODELS
-      game_data.world.for_each_chunk_mut(|chunk| {
-          for animated_game_object in chunk.animated_game_objects.iter_mut() {
-            if let Some(animation_uniform) = self.animations.get_mut(&animated_game_object.id) {
-              animated_game_object.update(&game_data.asset_manager, game_data.delta_time.as_secs_f32());
-              let skin_uniform = animation_uniform.value_mut();
-
-              if let Some(skin) = animated_game_object.skins.get(0) {
-                  for (i, joint) in skin.joints().iter().enumerate() {
-                        if i >= MAX_JOINTS_PER_MESH {
-                           break; 
-                        }
-
-                      skin_uniform.joint_matrices[i] = joint.matrix().into();
-                  }
-              }
-
-              animation_uniform.update(&ctx.queue);
-           }
-        }
-      });
-
-      // self.animations.update(&ctx.queue);
-    }
-
-    pub fn create_animation(&mut self, ctx: &WgpuContext, id: usize) {
-      self.animations.insert(id, Uniform::new(AnimationUniform::new(), &ctx.device));
-    }
+    // pub fn create_animation(&mut self, ctx: &WgpuContext, id: usize) {
+    //   self.animations.insert(id, Uniform::new(AnimationUniform::new(), &ctx.device));
+    // }
 
     pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, game_data: &GameData, shadow_texture: &Texture) {
       let light_count = game_data.world.light_count();

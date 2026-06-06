@@ -17,14 +17,14 @@ impl SkyboxPass {
             source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/cube_map.wgsl").into()),
         });
         
-        let flipped_right = asset_manager.get_texture_by_name("SkyRight.jpg").unwrap().flip_horizontal();
-        let cubemap = CubeMap::new(&ctx.device, &ctx.queue, asset_manager.get_texture_by_name("SkyRight.jpg").unwrap().dimensions, [
+        let flipped_right = asset_manager.texture_by_name("SkyRight.jpg").unwrap().flip_horizontal();
+        let cubemap = CubeMap::new(&ctx.device, &ctx.queue, asset_manager.texture_by_name("SkyRight.jpg").unwrap().dimensions, [
             &flipped_right.pixel_data,
-            &asset_manager.get_texture_by_name("SkyLeft.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyTop.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyBottom.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyFront.jpg").unwrap().pixel_data,
-            &asset_manager.get_texture_by_name("SkyBack.jpg").unwrap().pixel_data,
+            &asset_manager.texture_by_name("SkyLeft.jpg").unwrap().pixel_data,
+            &asset_manager.texture_by_name("SkyTop.jpg").unwrap().pixel_data,
+            &asset_manager.texture_by_name("SkyBottom.jpg").unwrap().pixel_data,
+            &asset_manager.texture_by_name("SkyFront.jpg").unwrap().pixel_data,
+            &asset_manager.texture_by_name("SkyBack.jpg").unwrap().pixel_data,
         ]);
 
         let cubemap_buffers = [wgpu::VertexBufferLayout {

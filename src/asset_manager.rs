@@ -12,21 +12,23 @@ pub struct AssetManager {
     textures: Vec<Texture>,
     material_index_map: HashMap<String, usize>,
     materials: Vec<Material>,
-    mesh_index_map: HashMap<String, usize>,
+    mesh_index_map: HashMap<(String, String), usize>,
     meshes: Vec<Mesh>
 }
 
 impl AssetManager {
     pub fn new(ctx: &WgpuContext) -> Self {
         let (textures, texture_index_map) = Self::load_all_textures(&ctx);
-        let (models, model_index_map) = Self::load_models(&ctx);
+        let (mut models, model_index_map) = Self::load_models(&ctx);
 
         let mut meshes: Vec<Mesh> = Vec::new();
-        let mut mesh_index_map: HashMap<String, usize> = HashMap::new();
-        for model in models.iter() {
-            for mesh in &model.meshes {
+        let mut mesh_index_map: HashMap<(String, String), usize> = HashMap::new();
+        for model in models.iter_mut() {
+            for mesh in model.meshes.iter_mut() {
+                let global_index = meshes.len();
+                mesh.global_index = global_index;
                 meshes.push(mesh.clone());
-                mesh_index_map.insert(mesh.name.clone(), meshes.len() - 1);
+                mesh_index_map.insert((model.name.clone(), mesh.name.clone()), meshes.len() - 1);
             }
         }
 
@@ -84,7 +86,7 @@ impl AssetManager {
         (textures, texture_index_map)
     }
 
-    pub fn get_texture_by_name(&self, name: &str) -> Option<&Texture> {
+    pub fn texture_by_name(&self, name: &str) -> Option<&Texture> {
         if let Some(&index) = self.texture_index_map.get(name) {
              Some(&self.textures[index])
         } else {
@@ -93,7 +95,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_texture_by_index(&self, index: usize) -> Option<&Texture> {
+    pub fn texture_by_index(&self, index: usize) -> Option<&Texture> {
         if let Some(texture) = self.textures.get(index) {
             Some(texture)
         } else {
@@ -102,7 +104,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_texture_index_by_name(&self, name: &str) -> usize {
+    pub fn texture_index_by_name(&self, name: &str) -> usize {
         if let Some(&index) = self.texture_index_map.get(name) {
             index
         } else {
@@ -114,12 +116,12 @@ impl AssetManager {
     pub fn build_materials(&mut self, device: &wgpu::Device) {
         for (key, _data) in &self.texture_index_map {
             if key.contains("_ALB") {
-                let material_name = Self::get_texture_material_name(key);
+                let material_name = Self::texture_material_name(key);
 
                 let material = Material::new(&material_name, &device, [
-                    self.get_texture_by_name(&format!("{material_name}_ALB.png")).unwrap_or(self.get_texture_by_name("Default_ALB.png").unwrap()),
-                    self.get_texture_by_name(&format!("{material_name}_NRM.png")).unwrap_or(self.get_texture_by_name("Default_NRM.png").unwrap()),
-                    self.get_texture_by_name(&format!("{material_name}_RMA.png")).unwrap_or(self.get_texture_by_name("Default_RMA.png").unwrap())
+                    self.texture_by_name(&format!("{material_name}_ALB.png")).unwrap_or(self.texture_by_name("Default_ALB.png").unwrap()),
+                    self.texture_by_name(&format!("{material_name}_NRM.png")).unwrap_or(self.texture_by_name("Default_NRM.png").unwrap()),
+                    self.texture_by_name(&format!("{material_name}_RMA.png")).unwrap_or(self.texture_by_name("Default_RMA.png").unwrap())
                 ]);
 
                 self.materials.push(material);
@@ -128,7 +130,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_default_material(&self) -> Option<&Material> {
+    pub fn default_material(&self) -> Option<&Material> {
        if let Some(&index) = self.material_index_map.get("Default") {
              Some(&self.materials[index])
         } else {
@@ -137,7 +139,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_material_by_name(&self, name: &str) -> Option<&Material> {
+    pub fn material_by_name(&self, name: &str) -> Option<&Material> {
         if let Some(&index) = self.material_index_map.get(name) {
              Some(&self.materials[index])
         } else {
@@ -146,7 +148,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_material_by_index(&self, index: usize) -> Option<&Material> {
+    pub fn material_by_index(&self, index: usize) -> Option<&Material> {
         if let Some(material) = self.materials.get(index) {
             Some(material)
         } else {
@@ -155,7 +157,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_material_index_by_name(&self, name: &str) -> usize {
+    pub fn material_index_by_name(&self, name: &str) -> usize {
         if let Some(&index) = self.material_index_map.get(name) {
             index
         } else {
@@ -164,7 +166,7 @@ impl AssetManager {
         }
     }
 
-    fn get_texture_material_name(name: &str) -> String {
+    fn texture_material_name(name: &str) -> String {
        let path = Path::new(name);
        let mut material_name = String::new();
        let suffix = "_ALB";
@@ -178,7 +180,7 @@ impl AssetManager {
         material_name
     }
 
-    pub fn get_all_materials(&self) -> &Vec<Material> {
+    pub fn materials(&self) -> &Vec<Material> {
         &self.materials
     }
 
@@ -252,7 +254,7 @@ impl AssetManager {
         (models, model_index_map)
     }
 
-    pub fn get_model_by_name(&self, name: &str) -> Option<&Model> {
+    pub fn model_by_name(&self, name: &str) -> Option<&Model> {
         if let Some(index) = self.model_index_map.get(name) {
             self.models.get(*index)
         } else {
@@ -261,7 +263,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_model_by_name_mut(&mut self, name: &str) -> Option<&mut Model> {
+    pub fn model_by_name_mut(&mut self, name: &str) -> Option<&mut Model> {
         if let Some(index) = self.model_index_map.get(name) {
             self.models.get_mut(*index)
         } else {
@@ -270,7 +272,7 @@ impl AssetManager {
         }
     }
 
-    pub fn get_models(&self) -> &Vec<Model> {
+    pub fn models(&self) -> &Vec<Model> {
         &self.models
     }
 
@@ -291,7 +293,7 @@ impl AssetManager {
 
 // meshes
 impl AssetManager {
-    pub fn get_mesh_by_name(&self, name: &str) -> Option<&Mesh> {
+    pub fn mesh_by_name(&self, name: &str) -> Option<&Mesh> {
         for mesh in &self.meshes {
            if mesh.name == name {
             return Some(mesh)
@@ -301,7 +303,7 @@ impl AssetManager {
         return None
     }
 
-    pub fn get_mesh_by_index(&self, index: usize) -> Option<&Mesh> {
+    pub fn mesh_by_index(&self, index: usize) -> Option<&Mesh> {
         if index >= 0 && index < self.meshes.len() {
             return Some(&self.meshes[index])
         } 
@@ -309,11 +311,11 @@ impl AssetManager {
         return  None
     }
 
-    pub fn get_mesh_index_by_name(&self, name: &str) -> usize {
-          if let Some(&index) = self.mesh_index_map.get(name) {
+    pub fn mesh_index_by_name(&self, model_name: &str, mesh_name: &str) -> usize {
+          if let Some(&index) = self.mesh_index_map.get(&(model_name.to_string(), mesh_name.to_string())) {
             index
         } else {
-            println!("AssetManager::get_mesh_index_by_name() error: mesh {name} not found!");
+            println!("AssetManager::get_mesh_index_by_name() error: mesh {} not found!", mesh_name);
             0
         }
     }

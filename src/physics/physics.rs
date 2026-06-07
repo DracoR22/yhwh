@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use rapier3d::{control::KinematicCharacterController, prelude::*};
+use yhwh_core::common::{constants::FIXED_DELTA_TIME, errors::CharacterControllerError};
 
-use crate::{common::{constants::FIXED_DELTA_TIME, errors::CharacterControllerError}, utils::unique_id};
+use crate::{utils::unique_id};
 
 struct CharacterController {
     shape: SharedShape,

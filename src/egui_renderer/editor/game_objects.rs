@@ -1,8 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use egui::{Id, Sense, Ui, Vec2, load::SizedTexture};
+use yhwh_core::common::{create_info::GameObjectCreateInfo, enums::MeshRenderingMode};
 
-use crate::{asset_manager::AssetManager, common::create_info::{GameObjectCreateInfo}, common::enums::MeshRenderingMode, egui_renderer::{editor::common::ChunkEditorState, ui_manager::EguiMaterial}, game::game_data::GameData, scene::Scene};
+use crate::{asset_manager::AssetManager, egui_renderer::{editor::common::ChunkEditorState, ui_manager::EguiMaterial}, game::game_data::GameData, world::chunk::Chunk};
 
 pub struct GameObjects {
     //selected_id: i32,
@@ -44,7 +45,7 @@ impl GameObjects {
         }
     }
 
-    pub fn apply_selection(&mut self, chunk: &mut Scene) {
+    pub fn apply_selection(&mut self, chunk: &mut Chunk) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
@@ -58,7 +59,7 @@ impl GameObjects {
         }
     }
 
-    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Chunk) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
@@ -87,7 +88,7 @@ impl GameObjects {
             });
     }
 
-    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Scene, asset_manager: &AssetManager, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
+    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
             let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
                 ChunkEditorState::new()
             });
@@ -210,11 +211,16 @@ impl GameObjects {
                                             }
 
                                             if button.clicked() {
-                                                game_object.mesh_nodes_mut().set_mesh_material(
-                                                &asset_manager,
-                                                &model.name,
-                                                &model.meshes[*selected_index].name,
-                                                &material.material_name,
+                                                // game_object.mesh_nodes_mut().set_mesh_material(
+                                                //     &asset_manager,
+                                                //     &model.name,
+                                                //     &model.meshes[*selected_index].name,
+                                                //     &material.material_name,
+                                                // );
+                                                 game_object.mesh_nodes_mut().set_mesh_material_by_index(
+                                                    &asset_manager,
+                                                    model.meshes[*selected_index].global_index,
+                                                    &material.material_name,
                                                 );
                                              }
                                             }
@@ -270,7 +276,7 @@ impl GameObjects {
             self.process_marked_for_removal(chunk);
     }
 
-    pub fn process_marked_for_removal(&mut self, chunk: &mut Scene) {
+    pub fn process_marked_for_removal(&mut self, chunk: &mut Chunk) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
@@ -280,7 +286,7 @@ impl GameObjects {
         }
     }
 
-    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Scene, asset_manager: &AssetManager) {
+    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
@@ -319,7 +325,7 @@ impl GameObjects {
         }
     }
 
-    pub fn set_selected_id(&mut self, id: i32, chunk: &Scene) {
+    pub fn set_selected_id(&mut self, id: i32, chunk: &Chunk) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
@@ -328,7 +334,7 @@ impl GameObjects {
         self.should_reset_other_states = true;
     }
 
-    pub fn reset_states(&mut self, chunk: &mut Scene) {
+    pub fn reset_states(&mut self, chunk: &mut Chunk) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
@@ -340,7 +346,7 @@ impl GameObjects {
         self.scale_uniform = false;
     }
 
-    pub fn reset_other_chunks_states(&mut self, chunk: &mut Scene) {
+    pub fn reset_other_chunks_states(&mut self, chunk: &mut Chunk) {
         for data in self.chunk_states.iter_mut() {
             let chunk_name = data.0;
             let state = data.1;

@@ -1,15 +1,8 @@
 use crate::{
-    bind_group_manager::{BindGroupManager, TL},
-    common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode},
-    game::game_data::GameData,
-    pipeline_builder::PipelineBuilder,
-    renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES},
-    texture::Texture,
-    uniform_manager::UniformManager,
-    vertex::Vertex,
-    wgpu_context::WgpuContext,
+    bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext
 };
 use wgpu::util::DeviceExt;
+use yhwh_core::common::constants::SCR_RESOLUTION;
 
 pub struct EmissivePass {
     pub mask_texture: Texture,
@@ -221,7 +214,7 @@ impl EmissivePass {
         }
     }
 
-    pub fn render_mask(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData, out_color_texture: &Texture, out_depth_texture: &Texture,) {
+    pub fn render_mask(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData, render_data: &RenderDataManager, out_color_texture: &Texture, out_depth_texture: &Texture,) {
         // extract emissive meshes
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("emissive mask pass"),
@@ -258,38 +251,49 @@ impl EmissivePass {
         pass.set_pipeline(&self.mask_pipeline);
         pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
 
-        game_data.world.for_each_chunk(|chunk| {
-            for game_object in chunk.game_objects.iter() {
-                let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-                    println!(
-                        "No model bind group for object {:?}, skipping draw",
-                        game_object.id
-                    );
-                    continue;
-                };
+        for render_item in render_data.render_items_emissive().iter() {
+            let model_uniform = uniforms.models.get(&render_item.object_id).unwrap();
+            let mesh = game_data.asset_manager.mesh_by_index(render_item.mesh_index).unwrap();
 
-                if let Some(model) = game_data
-                    .asset_manager
-                    .model_by_name(&game_object.model_name())
-                {
-                    pass.set_bind_group(1, &model_uniform.bind_group, &[]);
-                    for mesh in model.meshes.iter() {
-                        match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-                            Some(mesh_node) => {
-                                if mesh_node.rendering_mode == MeshRenderingMode::Emissive {
-                                    pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                    pass.set_index_buffer(
-                                        mesh.index_buffer.slice(..),
-                                        wgpu::IndexFormat::Uint32,
-                                    );
-                                    pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                                }
-                            }
-                            None => (),
-                        }
-                    }
-                }
-            }
-        });
+            pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+
+            pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            pass.set_index_buffer(mesh.index_buffer.slice(..),  wgpu::IndexFormat::Uint32);
+            pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
+
+        // game_data.world.for_each_chunk(|chunk| {
+        //     for game_object in chunk.game_objects.iter() {
+        //         let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
+        //             println!(
+        //                 "No model bind group for object {:?}, skipping draw",
+        //                 game_object.id
+        //             );
+        //             continue;
+        //         };
+
+        //         if let Some(model) = game_data
+        //             .asset_manager
+        //             .model_by_name(&game_object.model_name())
+        //         {
+        //             pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+        //             for mesh in model.meshes.iter() {
+        //                 match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
+        //                     Some(mesh_node) => {
+        //                         if mesh_node.rendering_mode == MeshRenderingMode::Emissive {
+        //                             pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //                             pass.set_index_buffer(
+        //                                 mesh.index_buffer.slice(..),
+        //                                 wgpu::IndexFormat::Uint32,
+        //                             );
+        //                             pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //                         }
+        //                     }
+        //                     None => (),
+        //                 }
+        //             }
+        //         }
+        //     }
+        // });
     }
 }

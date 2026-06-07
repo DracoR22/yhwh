@@ -1,8 +1,9 @@
 use cgmath::*;
 use winit::{dpi::PhysicalPosition, event::{ElementState, KeyEvent, MouseScrollDelta, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
+use yhwh_core::common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use std::{f32::consts::FRAC_PI_2, time::Duration};
 
-use crate::{common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, frustum::Frustum, input::{input::Input, yhwh_keys::YHWHMouseButton}};
+use crate::{frustum::Frustum, input::{input::Input, yhwh_keys::YHWHMouseButton}};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::from_cols(

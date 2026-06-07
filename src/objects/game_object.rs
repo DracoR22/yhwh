@@ -1,5 +1,6 @@
-use crate::{asset_manager::AssetManager, common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, types::{RenderItem, Transform}}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{asset_manager::AssetManager, mesh_nodes::MeshNodes, utils::unique_id};
 use cgmath::{Rotation3, Vector2, Vector3};
+use yhwh_core::common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, types::{RenderItem, Transform}};
 
 pub struct GameObject {
     pub model_name: String,
@@ -45,6 +46,7 @@ impl GameObject {
                 material_index: node.material_index,
                 model_matrix: self.model_matrix(),
                 object_id: self.id,
+                mesh_node_id: node.id,
                 aabb: model.aabb
             };
 

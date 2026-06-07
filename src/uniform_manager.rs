@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use cgmath::Matrix;
 use cgmath::SquareMatrix;
+use yhwh_core::common::constants::MAX_LIGHTS;
 
 use crate::bind_group_manager::BindGroupManager;
-use crate::common::constants::MAX_LIGHTS;
 use crate::game::game_data::GameData;
-use crate::render_core::render_data_manager::RenderDataManager;
+use crate::renderer_core::render_data_manager::RenderDataManager;
 use crate::ssbo::SSBO;
 use crate::texture::Texture;
 use crate::{camera::{Camera}, uniform::Uniform, wgpu_context::WgpuContext};

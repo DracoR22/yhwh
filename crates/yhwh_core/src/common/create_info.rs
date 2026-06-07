@@ -61,7 +61,7 @@ pub struct CandleObjectCreateInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SceneCreateInfo {
+pub struct ChunkCreateInfo {
     pub name: String,
     pub game_objects: Vec<GameObjectCreateInfo>,
     pub door_objects: Vec<DoorObjectCreateInfo>,

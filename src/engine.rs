@@ -1,8 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{CursorGrabMode, Window}};
 use yhwh_audio::audio_manager::AudioManager;
+use yhwh_core::common::enums::GameState;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::enums::GameState, game::game_data::GameData, input::input::Input, physics::physics::Physics, render_core::render_data_manager::RenderDataManager, scene::Scene, wgpu_renderer::WgpuRenderer};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, game::game_data::GameData, input::input::Input, physics::physics::Physics, renderer_core::render_data_manager::RenderDataManager, wgpu_renderer::{FinalTexture, WgpuRenderer}};
 
 
 pub struct Engine {
@@ -108,8 +109,18 @@ impl Engine {
     }
 
     pub fn handle_dev_tools(&mut self) {
-        if self.input.keyboard.key_just_pressed(KeyCode::Digit2) {
+        if self.input.keyboard.key_just_pressed(KeyCode::F11) {
           self.wgpu_renderer.hot_load_shaders();
+        }
+
+        if self.game_data.game_state == GameState::Editor {
+            if self.input.keyboard.key_just_pressed(KeyCode::Digit1) {
+                self.wgpu_renderer.set_final_texture(FinalTexture::Lighting);
+            } else if self.input.keyboard.key_just_pressed(KeyCode::Digit2) {
+                self.wgpu_renderer.set_final_texture(FinalTexture::Albedo);
+            } else if self.input.keyboard.key_just_pressed(KeyCode::Digit3) {
+                self.wgpu_renderer.set_final_texture(FinalTexture::Normal);
+            }
         }
     }
 }

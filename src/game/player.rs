@@ -4,8 +4,9 @@ use cgmath::{Angle, Array, Basis3, EuclideanSpace, Euler, InnerSpace, Matrix3, M
 use rand::Rng;
 use winit::keyboard::KeyCode;
 use yhwh_audio::audio_manager::AudioManager;
+use yhwh_core::common::create_info::AnimatedGameObjectCreateInfo;
 
-use crate::{animation::animation::PlaybackMode, asset_manager::AssetManager, camera::{Camera, CameraController}, common::create_info::{AnimatedGameObjectCreateInfo, GameObjectCreateInfo}, game::{game_data::GameData, weapon::{WeaponAction, WeaponAnimations, WeaponInfo, WeaponManager}}, input::{input::Input, yhwh_keys::YHWHMouseButton}, objects::animated_game_object::AnimatedGameObject, scene::Scene};
+use crate::{animation::animation::PlaybackMode, asset_manager::AssetManager, camera::{Camera, CameraController}, game::{game_data::GameData, weapon::{WeaponAction, WeaponAnimations, WeaponInfo, WeaponManager}}, input::{input::Input, yhwh_keys::YHWHMouseButton}, objects::animated_game_object::AnimatedGameObject};
 
 const WOOD_FOOTSTEPS: [&str; 4] = [
     "wood1.wav",

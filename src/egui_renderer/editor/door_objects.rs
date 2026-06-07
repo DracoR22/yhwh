@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use egui::{Id, Sense, Ui, Vec2, load::SizedTexture};
+use yhwh_core::common::create_info::DoorObjectCreateInfo;
 
-use crate::{asset_manager::AssetManager, common::create_info::DoorObjectCreateInfo, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData, scene::Scene};
+use crate::{asset_manager::AssetManager, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData, world::chunk::Chunk};
 
 pub struct DoorObjects {
     selected_id: i32,
@@ -25,7 +26,7 @@ impl DoorObjects {
         }
     }
 
-    pub fn apply_selection(&mut self, chunk: &mut Scene) {
+    pub fn apply_selection(&mut self, chunk: &mut Chunk) {
         for door_object in chunk.door_objects.iter_mut() {
             if door_object.id as i32 == self.selected_id {
                 door_object.is_selected = true;
@@ -35,7 +36,7 @@ impl DoorObjects {
         }
     }
 
-    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Chunk) {
         ui.collapsing("Door Objects", |ui| {
             for (index, door_object) in chunk.door_objects.iter_mut().enumerate() {
                 let button = ui.button(door_object.model_name.to_string() + " (" + &index.to_string() + ")");
@@ -60,7 +61,7 @@ impl DoorObjects {
         });
     }
 
-    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Scene, asset_manager: &AssetManager, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
+    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
         for door_object in chunk.door_objects.iter_mut() {
             if door_object.is_selected {
                 ui.label("Position X");
@@ -205,7 +206,7 @@ impl DoorObjects {
         self.add_new(ui, chunk, asset_manager);
     }
 
-    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Scene, asset_manager: &AssetManager) {
+    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager) {
         if self.add_object_selected {
             let create_info = DoorObjectCreateInfo {
                     position: [1.0, 5.0, 1.0],

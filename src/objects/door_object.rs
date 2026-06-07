@@ -2,14 +2,14 @@ use cgmath::{Deg, Matrix4, Quaternion, Vector2, Vector3};
 use cgmath::Rotation3;
 use winit::keyboard::KeyCode;
 use yhwh_audio::audio_manager::AudioManager;
+use yhwh_core::common::create_info::{DoorObjectCreateInfo, MeshNodeCreateInfo};
+use yhwh_core::common::types::{RenderItem, Transform};
 use yhwh_core::math::aabb::Aabb;
 
 use crate::camera::Camera;
-use crate::common::create_info::DoorObjectCreateInfo;
-use crate::common::types::RenderItem;
 use crate::input::input::Input;
 use crate::utils::ray_cast::ray_intersects_aabb;
-use crate::{asset_manager::AssetManager, common::{create_info::MeshNodeCreateInfo, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{asset_manager::AssetManager, mesh_nodes::MeshNodes, utils::unique_id};
 
 pub enum DoorState {
     Opened,
@@ -73,6 +73,7 @@ impl DoorObject {
                 material_index: node.material_index,
                 model_matrix: self.model_matrix(),
                 object_id: self.id,
+                mesh_node_id: node.id,
                 aabb: model.aabb
             };
 

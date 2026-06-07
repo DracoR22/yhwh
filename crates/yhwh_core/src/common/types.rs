@@ -1,7 +1,6 @@
 use cgmath::{Matrix4, Vector2, Vector3};
-use yhwh_core::math::aabb::Aabb;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, common::enums::MeshRenderingMode};
+use crate::{common::constants::MAX_JOINTS_PER_MESH, common::enums::MeshRenderingMode, math::aabb::Aabb};
 
 pub struct Transform {
     pub position: Vector3<f32>,
@@ -32,6 +31,7 @@ pub struct RenderItem {
     pub model_matrix: Matrix4<f32>,
     
     pub object_id: usize,
+    pub mesh_node_id: usize,
     pub mesh_index: usize,
     pub material_index: usize,
 

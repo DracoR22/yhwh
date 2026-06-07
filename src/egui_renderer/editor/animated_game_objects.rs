@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use egui::{load::SizedTexture, Ui, Vec2};
 
 use crate::{
-    animation::animation::PlaybackMode, asset_manager::AssetManager, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData, objects::animated_game_object::AnimatedGameObject, scene::Scene
+    animation::animation::PlaybackMode, asset_manager::AssetManager, egui_renderer::ui_manager::EguiMaterial, game::game_data::GameData, objects::animated_game_object::AnimatedGameObject, world::chunk::Chunk
 };
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -33,7 +33,7 @@ impl AnimatedGameObjects {
         }
     }
 
-    pub fn apply_selection(&mut self, chunk: &mut Scene) {
+    pub fn apply_selection(&mut self, chunk: &mut Chunk) {
         for animated_game_object in chunk.animated_game_objects.iter_mut() {
             if animated_game_object.id as i32 == self.selected_id {
                 animated_game_object.is_selected = true;
@@ -43,7 +43,7 @@ impl AnimatedGameObjects {
         }
     }
 
-    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene, materials: &Vec<EguiMaterial>) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Chunk, materials: &Vec<EguiMaterial>) {
         ui.collapsing("Animated Game Objects", |ui| {
             for (index, animated_game_object) in
                 chunk.animated_game_objects.iter().enumerate()
@@ -66,7 +66,7 @@ impl AnimatedGameObjects {
     pub fn update(
         &mut self,
         ui: &mut Ui,
-        chunk: &mut Scene,
+        chunk: &mut Chunk,
         materials: &Vec<EguiMaterial>,
         (window_width, window_height): (u32, u32),
     ) {

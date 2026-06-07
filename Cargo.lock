@@ -3882,6 +3882,8 @@ name = "yhwh_core"
 version = "0.1.0"
 dependencies = [
  "cgmath",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -1,8 +1,7 @@
 use crate::animation::node::{Node, Nodes};
 use cgmath::SquareMatrix;
 use gltf::{Skin as GltfSkin, buffer::Data, iter::Skins as GltfSkins};
-
-pub const MAX_JOINTS_PER_MESH: usize = 512;
+use yhwh_core::common::constants::MAX_JOINTS_PER_MESH;
 
 #[derive(Clone, Debug)]
 pub struct Skin {

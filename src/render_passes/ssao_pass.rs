@@ -1,7 +1,8 @@
 use cgmath::{InnerSpace, Vector3};
 use rand::Rng;
+use yhwh_core::common::constants::SCR_RESOLUTION;
 
-use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::SCR_RESOLUTION, pipeline_builder::PipelineBuilder, render_passes::geometry_pass::GBufferTextures, texture::{Texture, TextureBuilder}, uniform::Uniform, uniform_manager::UniformManager, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, pipeline_builder::PipelineBuilder, render_passes::geometry_pass::GBufferTextures, texture::{Texture, TextureBuilder}, uniform::Uniform, uniform_manager::UniformManager, wgpu_context::WgpuContext};
 
 const KERNEL_SIZE: usize = 16;
 

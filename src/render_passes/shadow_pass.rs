@@ -1,4 +1,6 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::{MAX_LIGHTS, SHADOW_MAP_RES_SIZE}, game::game_data::GameData, pipeline_builder::PipelineBuilder, shadow_cube_map_array::ShadowCubeMapArray, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use yhwh_core::common::constants::{MAX_LIGHTS, SHADOW_MAP_RES_SIZE};
+
+use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, shadow_cube_map_array::ShadowCubeMapArray, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]

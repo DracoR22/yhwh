@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, common::{create_info::{AnimatedGameObjectCreateInfo, GameObjectCreateInfo}, types::{RenderItem, Transform}}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, mesh_nodes::MeshNodes, utils::unique_id};
 use cgmath::{Matrix4, Rotation3, SquareMatrix, Vector3};
+use yhwh_core::common::{create_info::AnimatedGameObjectCreateInfo, types::{RenderItem, Transform}};
 
 pub struct AnimatedGameObject {
     pub id: usize,
@@ -93,6 +94,7 @@ impl AnimatedGameObject {
                 material_index: node.material_index,
                 model_matrix: self.model_matrix(),
                 object_id: self.id,
+                mesh_node_id: node.id,
                 aabb: model.aabb
             };
 

@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use cgmath::{Matrix4};
+use yhwh_core::common::{create_info::MeshNodeCreateInfo, enums::MeshRenderingMode};
 
-use crate::{asset_manager::AssetManager, common::create_info::{MeshNodeCreateInfo}, common::enums::MeshRenderingMode, utils::unique_id};
+use crate::{asset_manager::AssetManager, utils::unique_id};
 
 pub struct MeshNode {
    pub id: usize,
@@ -82,6 +83,18 @@ impl MeshNodes {
 
     pub fn set_mesh_material(&mut self, asset_manager: &AssetManager, model_name: &str, mesh_name: &str, material_name: &str) {
         let mesh_index = asset_manager.mesh_index_by_name(model_name, mesh_name);
+        let material_index = asset_manager.material_index_by_name(material_name);
+
+        for info in self.nodes.iter_mut() {
+            if info.mesh_index == mesh_index {
+                info.material_index = material_index;
+                return
+            }
+        }
+    }
+
+    pub fn set_mesh_material_by_index(&mut self, asset_manager: &AssetManager, mesh_index: usize, material_name: &str) {
+        //let mesh_index = asset_manager.mesh_index_by_name(model_name, mesh_name);
         let material_index = asset_manager.material_index_by_name(material_name);
 
         for info in self.nodes.iter_mut() {

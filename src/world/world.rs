@@ -2,16 +2,17 @@ use std::{arch::naked_asm, collections::HashMap, fs::{self, File}};
 use std::io::Write;
 
 use cgmath::{Matrix4, SquareMatrix};
+use yhwh_core::common::{constants::MAX_JOINTS_PER_MESH, create_info::{AnimatedGameObjectCreateInfo, MapCreateInfo, ChunkCreateInfo}, types::AnimatedRenderData};
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, asset_manager::AssetManager, common::{create_info::{AnimatedGameObjectCreateInfo, DoorObjectCreateInfo, GameObjectCreateInfo, LightObjectCreateInfo, MapCreateInfo, SceneCreateInfo}, types::AnimatedRenderData}, frustum::Frustum, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject, light_object::LightObject}, render_core::render_data_manager::RenderDataManager, scene::Scene};
+use crate::{asset_manager::AssetManager, frustum::Frustum, objects::{animated_game_object::AnimatedGameObject, game_object::GameObject, light_object::LightObject}, renderer_core::render_data_manager::RenderDataManager, world::chunk::Chunk};
 
 pub struct World {
-    chunks: HashMap<String, Scene>
+    chunks: HashMap<String, Chunk>
 }
 
 impl World {
     pub fn new(asset_manager: &AssetManager) -> Self {
-        let mut chunks = HashMap::<String, Scene>::new();
+        let mut chunks = HashMap::<String, Chunk>::new();
 
         let map_path = "res/maps/house.json";
         let map_json = fs::read_to_string(map_path).expect("Could not load map");
@@ -20,8 +21,8 @@ impl World {
         for chunk_file in map_create_info.chunks.iter() {
             let chunk_path = format!("res/scenes/{}", chunk_file);
             let chunk_json = fs::read_to_string(chunk_path).expect("Could not load chunk");
-            let chunk_create_info: SceneCreateInfo = serde_json::from_str(&chunk_json).expect("Could not deserialize chunk");
-            let chunk = Scene::new(&chunk_create_info, asset_manager);
+            let chunk_create_info: ChunkCreateInfo = serde_json::from_str(&chunk_json).expect("Could not deserialize chunk");
+            let chunk = Chunk::new(&chunk_create_info, asset_manager);
 
             chunks.insert(chunk_file.to_string(), chunk);
         }
@@ -44,8 +45,8 @@ impl World {
         }
     }
 
-    pub fn add_chunk(&mut self, create_info: &SceneCreateInfo, asset_manager: &AssetManager) {
-        let chunk = Scene::new(&create_info, asset_manager);
+    pub fn add_chunk(&mut self, create_info: &ChunkCreateInfo, asset_manager: &AssetManager) {
+        let chunk = Chunk::new(&create_info, asset_manager);
         self.chunks.insert(chunk.file_name.clone(), chunk);
     }
 
@@ -69,7 +70,7 @@ impl World {
         }
     }
 
-    pub fn save_chunk(&self, chunk_create_info: &SceneCreateInfo) {
+    pub fn save_chunk(&self, chunk_create_info: &ChunkCreateInfo) {
         let json = serde_json::to_string_pretty(&chunk_create_info).unwrap();
 
         match File::create(String::from("res/scenes/") + &chunk_create_info.name + ".json").unwrap().write_all(json.as_bytes()) {
@@ -116,6 +117,10 @@ impl World {
                     joint_matrices
                 });
                 render_data_manager.submit_animated_render_items(animated_object.render_items());
+
+                if animated_object.is_selected {
+                    render_data_manager.submit_outlined_animated_render_items(animated_object.render_items());
+                }
             }
         }); 
     }
@@ -123,13 +128,13 @@ impl World {
 
 // iterators
 impl World {
-    pub fn for_each_chunk_mut<F: FnMut(&mut Scene)>(&mut self, mut f: F) {
+    pub fn for_each_chunk_mut<F: FnMut(&mut Chunk)>(&mut self, mut f: F) {
         for chunk in self.chunks.values_mut() {
            f(chunk)
         }
     }
 
-    pub fn for_each_chunk<F: FnMut(&Scene)>(&self, mut f: F) {
+    pub fn for_each_chunk<F: FnMut(&Chunk)>(&self, mut f: F) {
         for chunk in self.chunks.values() {
             f(chunk)
         }

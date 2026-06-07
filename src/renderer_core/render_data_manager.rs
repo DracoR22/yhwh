@@ -1,6 +1,7 @@
 use cgmath::{Matrix4, SquareMatrix};
+use yhwh_core::common::{enums::MeshRenderingMode, types::{AnimatedRenderData, RenderItem}};
 
-use crate::{common::{enums::MeshRenderingMode, types::{AnimatedRenderData, RenderItem}}, frustum::Frustum};
+use crate::{frustum::Frustum};
 
 pub struct RenderDataManager {
     animated_render_data: Vec<AnimatedRenderData>,
@@ -9,6 +10,7 @@ pub struct RenderDataManager {
     render_items_emissive: Vec<RenderItem>,
     render_items_flame: Vec<RenderItem>,
     render_items_animated: Vec<RenderItem>,
+    render_items_outlined_animated: Vec<RenderItem>,
     render_items_outlined: Vec<RenderItem>
 }
 
@@ -21,6 +23,7 @@ impl RenderDataManager {
             render_items_emissive: Vec::new(),
             render_items_flame: Vec::new(),
             render_items_animated: Vec::new(),
+            render_items_outlined_animated: Vec::new(),
             render_items_outlined: Vec::new()
         }
     }
@@ -35,9 +38,21 @@ impl RenderDataManager {
         }
     }
 
+    pub fn submit_outlined_animated_render_items(&mut self, render_items: &Vec<RenderItem>) {
+        for item in render_items.iter() {
+            self.render_items_outlined_animated.push(item.clone());
+        }
+    }
+
     pub fn submit_outlined_render_items(&mut self, render_items: &Vec<RenderItem>) {
         for item in render_items.iter() {
             self.render_items_outlined.push(item.clone());
+        }
+    }
+
+    pub fn submit_emissive_render_items(&mut self, render_items: &Vec<RenderItem>) {
+        for item in render_items.iter() {
+            self.render_items_emissive.push(item.clone());
         }
     }
 
@@ -77,7 +92,11 @@ impl RenderDataManager {
         self.animated_render_data.clear();
         self.render_items_pbr.clear();
         self.render_items_outlined.clear();
+        self.render_items_emissive.clear();
+        self.render_items_flame.clear();
+        self.render_items_glass.clear();
         self.render_items_animated.clear();
+        self.render_items_outlined_animated.clear();
     }
 }
 
@@ -87,12 +106,28 @@ impl RenderDataManager {
         &self.render_items_pbr
     }
 
-    pub fn render_items_animated(&self) -> &Vec<RenderItem> {
-        &self.render_items_animated
-    }
-
     pub fn render_items_outlined(&self) -> &Vec<RenderItem> {
         &self.render_items_outlined
+    }
+
+    pub fn render_items_emissive(&self) -> &Vec<RenderItem> {
+        &self.render_items_emissive
+    }
+
+    pub fn render_items_flame(&self) -> &Vec<RenderItem> {
+        &self.render_items_flame
+    }
+
+    pub fn render_items_glass(&self) -> &Vec<RenderItem> {
+        &self.render_items_glass
+    }
+
+     pub fn render_items_outlined_animated(&self) -> &Vec<RenderItem> {
+        &self.render_items_outlined_animated
+    }
+
+    pub fn render_items_animated(&self) -> &Vec<RenderItem> {
+        &self.render_items_animated
     }
 
     pub fn render_items_animated_mut(&mut self) -> &mut Vec<RenderItem> {

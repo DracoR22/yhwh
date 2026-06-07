@@ -4,9 +4,8 @@ use cgmath::{Vector2, Vector3, Vector4, Zero};
 use cgmath::SquareMatrix;
 use cgmath::InnerSpace;
 use egui::{ComboBox, Id, Modal, Ui};
+use yhwh_core::common::create_info::ChunkCreateInfo;
 
-use crate::asset_manager::AssetManager;
-use crate::common::create_info::SceneCreateInfo;
 use crate::egui_renderer::editor::animated_game_objects::AnimatedGameObjects;
 use crate::input::input::Input;
 use crate::input::yhwh_keys::YHWHMouseButton;
@@ -259,7 +258,7 @@ impl EditorLayout {
                 ui.add(egui::TextEdit::singleline(&mut self.new_chunk_name).hint_text(""));
 
                 if ui.button("Add").clicked() {
-                    let create_info = SceneCreateInfo {
+                    let create_info = ChunkCreateInfo {
                         name: self.new_chunk_name.clone(),
                         door_objects: Vec::new(),
                         game_objects: Vec::new(),

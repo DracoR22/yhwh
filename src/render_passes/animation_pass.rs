@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use crate::{animation::skin::MAX_JOINTS_PER_MESH, game::game_data::GameData, pipeline_builder::PipelineBuilder, render_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use yhwh_core::common::constants::MAX_JOINTS_PER_MESH;
+use crate::{game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 use cgmath::SquareMatrix;
 
 #[repr(C)]
@@ -19,6 +20,7 @@ impl AnimationUniform {
 
 pub struct AnimationPass {
     pipeline: wgpu::RenderPipeline,
+    outline_pipeline: wgpu::RenderPipeline,
     uniforms: HashMap<usize, Uniform<AnimationUniform>>,
     created_player_uniform: bool,
 }
@@ -49,18 +51,37 @@ impl AnimationPass {
         .with_depth_write()
         .build(&ctx.device);
 
+       let outline_shader_code = std::fs::read_to_string("res/shaders/solid_color_animation.wgsl").unwrap();
+       let outline_shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("solid color animation shader"),
+            source: wgpu::ShaderSource::Wgsl(outline_shader_code.into()),
+        });
+
+        let outline_pipeline = PipelineBuilder::new(
+              "animation outline pipeline",
+              &[
+                &uniforms.bind_group_layout, // camera
+                &uniforms.bind_group_layout, // model
+                &uniforms.bind_group_layout // animation
+              ],
+              &[Vertex::desc()],
+              &outline_shader_module,
+              [wgpu::TextureFormat::R8Unorm],
+          )
+          .build(&ctx.device);
+
         let animated_game_object = game_data.player.weapon_animated_game_object();
         uniforms.create_model(ctx, animated_game_object.id);
-        //uniforms.create_animation(ctx, animated_game_object.id);
 
         Self {
           pipeline,
+          outline_pipeline,
           uniforms: HashMap::new(),
           created_player_uniform: false
         }
     }
 
-    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, ctx: &WgpuContext, uniforms: &mut UniformManager, game_data: &mut GameData, render_data: &mut RenderDataManager, output_texture: &Texture, output_depth: &Texture) {
+    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, ctx: &WgpuContext, uniforms: &mut UniformManager, game_data: &mut GameData, render_data: &mut RenderDataManager, output_texture: &Texture, output_depth: &Texture, output_outline: &Texture) {
        self.submit_animation_uniforms(ctx, render_data);
        
        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -105,11 +126,49 @@ impl AnimationPass {
           pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
         }
 
-        self.draw_player_weapons(game_data, uniforms, ctx, &mut pass);
+        self.render_player_weapons(game_data, uniforms, ctx, &mut pass);
+
+        drop(pass);
+
+        self.render_outlines(encoder, game_data, render_data, uniforms, output_outline);
     }
     
+    fn render_outlines(&mut self, encoder: &mut wgpu::CommandEncoder, game_data: &GameData, render_data: &RenderDataManager, uniforms: &UniformManager, out_texture: &Texture) {
+       let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("animation outline pass"),
+            color_attachments: &[
+              Some(wgpu::RenderPassColorAttachment {
+                view: &out_texture.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            }),
+            ],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
 
-    fn draw_player_weapons(&mut self, game_data: &mut GameData, uniforms: &mut UniformManager, ctx: &WgpuContext, pass: &mut wgpu::RenderPass) {
+        pass.set_pipeline(&self.outline_pipeline);
+        pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
+
+        for render_item in render_data.render_items_outlined_animated().iter() {
+          let model_uniform = uniforms.models.get(&render_item.object_id).unwrap();
+          let animation_uniform = self.uniforms.get(&render_item.object_id).unwrap();
+          let mesh = game_data.asset_manager.mesh_by_index(render_item.mesh_index).unwrap();
+
+          pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+          pass.set_bind_group(2, &animation_uniform.bind_group, &[]);
+
+          pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+          pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+          pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
+    }
+
+    fn render_player_weapons(&mut self, game_data: &mut GameData, uniforms: &mut UniformManager, ctx: &WgpuContext, pass: &mut wgpu::RenderPass) {
         let has_weapon = game_data.player.weapon_manager.desert_eagle_info.has;
         let animated_game_object = game_data.player.weapon_animated_game_object_mut();
 

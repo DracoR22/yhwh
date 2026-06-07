@@ -1,6 +1,7 @@
 use egui::Ui;
+use yhwh_core::common::{create_info::LightObjectCreateInfo, enums::LightType};
 
-use crate::{common::{create_info::LightObjectCreateInfo, enums::LightType}, game::game_data::GameData, scene::Scene};
+use crate::{world::chunk::Chunk};
 
 pub struct Lights {
     selected_id: i32,
@@ -13,7 +14,7 @@ impl Lights {
             selected_id: -1
         }
     }
-    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Scene) {
+    pub fn list(&mut self, ui: &mut Ui, chunk: &mut Chunk) {
         ui.collapsing("Lights", |ui| {
             for (index, light) in chunk.lights.iter().enumerate() {
                 let button = ui.button("Light (".to_string() + &index.to_string() + ")");
@@ -41,7 +42,7 @@ impl Lights {
             } 
         });
     }
-    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Scene) {
+    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Chunk) {
         if self.selected_id > 0 {
             for light in chunk.lights.iter_mut() {
                 if light.id as i32 == self.selected_id {

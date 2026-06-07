@@ -1,5 +1,6 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, common::constants::SCR_RESOLUTION, pipeline_builder::PipelineBuilder, render_passes::geometry_pass::GBufferTextures, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::Texture, uniform_manager::UniformManager, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, pipeline_builder::PipelineBuilder, render_passes::geometry_pass::GBufferTextures, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::Texture, uniform_manager::UniformManager, wgpu_context::WgpuContext};
 use wgpu::util::DeviceExt;
+use yhwh_core::common::constants::SCR_RESOLUTION;
 
 pub struct LightingPass {
     pub texture: Texture,
@@ -72,17 +73,6 @@ impl LightingPass {
     }
 
     pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, ctx: &WgpuContext, uniforms: &UniformManager, gbuffer_textures: &GBufferTextures) {
-        // self.bind_group = BindGroupManager::create_multi_texture_bind_group(
-        //     &ctx.device,
-        //     &self.bind_group_layout,
-        //     &[
-        //        &gbuffer_textures.base_color,
-        //        &gbuffer_textures.normal,
-        //        &gbuffer_textures.rma,
-        //        &gbuffer_textures.world_position
-        //     ],
-        // );
-
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("lighting pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {

@@ -1,6 +1,8 @@
 // ---------------------------------------------------------------- LEGACY FORWARD LIGHTING PASS NO LONGER USED ----------------------------------------------------------------- //
 
-use crate::{asset_manager::AssetManager, common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode}, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use yhwh_core::common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode};
+
+use crate::{asset_manager::AssetManager, game::game_data::GameData, objects::game_object::GameObject, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct ScenePass {
     pbr_pipeline: wgpu::RenderPipeline,

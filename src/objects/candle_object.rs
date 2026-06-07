@@ -1,6 +1,7 @@
 use cgmath::Vector3;
+use yhwh_core::common::{create_info::CandleObjectCreateInfo, types::Transform};
 
-use crate::{asset_manager::AssetManager, common::{create_info::CandleObjectCreateInfo, types::Transform}, mesh_nodes::MeshNodes, utils::unique_id};
+use crate::{asset_manager::AssetManager, mesh_nodes::MeshNodes, utils::unique_id};
 
 pub struct CandleObject {
     pub id: usize,

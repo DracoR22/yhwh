@@ -3,8 +3,9 @@ use std::{collections::HashMap, fs};
 use cgmath::Vector2;
 use rapier3d::na::Vector;
 use yhwh_audio::audio_manager::AudioManager;
+use yhwh_core::common::enums::GameState;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, common::{create_info::SceneCreateInfo, enums::GameState}, game::{player::Player, ui::{UiElement, UiElementKind}}, input::input::Input, render_core::render_data_manager::RenderDataManager, scene::Scene, scene_manager::SceneManager, world::World};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, game::{player::Player, ui::{UiElement, UiElementKind}}, input::input::Input, renderer_core::render_data_manager::RenderDataManager, world::world::World};
 
 pub struct GameData {
     pub camera: Camera,

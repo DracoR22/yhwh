@@ -21,4 +21,4 @@ Rust and WGPU based renderer
 `WASD` movement<br>
 `f1` Toggle editor<br>
 `G` Interact<br>
-`2` Hotload shaders<br>
+`f11` Hotload shaders<br>

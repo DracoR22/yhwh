@@ -7,6 +7,8 @@ edition = "2021"
 yhwh_core = { path = "./crates/yhwh_core" }
 yhwh_audio = { path = "./crates/yhwh_audio"}
 cgmath = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 bytemuck = "1.23.2"
 egui = { version = "0.31.1", features = ["default_fonts"] }
 egui-wgpu = "0.31.1"
@@ -19,12 +21,12 @@ tobj = { version = "4.0.3", default-features = false }
 wgpu = { version = "24.0.5", default-features = false, features=["wgsl"] }
 winit = "0.30.12"
 rapier3d = { version = "0.29.0", features = [ "simd-stable" ] }
-serde = { version = "1.0.228", default-features = false, features = ["derive"] }
-serde_json = "1.0"
 rand = "0.8"
 
 [workspace.dependencies]
 cgmath = "0.18.0"
+serde = { version = "1.0.228", default-features = false, features = ["derive"] }
+serde_json = "1.0"
 
 [workspace]
 resolver = "3"

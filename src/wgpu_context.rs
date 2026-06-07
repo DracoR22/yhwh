@@ -2,7 +2,12 @@ use std::sync::Arc;
 
 use winit::window::Window;
 
-use crate::common::errors::WgpuContextError;
+#[derive(Debug)]
+pub enum WgpuContextError {
+    RequestDeviceError(wgpu::RequestDeviceError),
+    NoAdapterFound
+}
+
 
 pub struct WgpuContext {
     pub surface: wgpu::Surface<'static>,

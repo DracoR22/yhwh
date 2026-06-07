@@ -1,4 +1,4 @@
-use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, render_core::render_data_manager::RenderDataManager, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_core::render_data_manager::RenderDataManager, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, texture::{self, Texture}, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 use wgpu::util::DeviceExt;
 
 pub struct OutlinePass {
@@ -84,7 +84,7 @@ impl OutlinePass {
                 view: &self.mask_texture.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    load: wgpu::LoadOp::Load, // Animation outline pass is clearing the texture
                     store: wgpu::StoreOp::Store,
                 },
             }),
@@ -168,7 +168,11 @@ impl OutlinePass {
         self.outline_pipeline = outline_pipeline;
     }
 
-    pub fn get_outline_texture(&self) -> &Texture {
+    pub fn outline_texture(&self) -> &Texture {
         &self.outline_texture
+    }
+
+    pub fn mask_texture(&self) -> &Texture {
+        &self.mask_texture
     }
 }

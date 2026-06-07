@@ -1,4 +1,6 @@
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, common::{constants::SCR_RESOLUTION, enums::MeshRenderingMode}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use yhwh_core::common::constants::SCR_RESOLUTION;
+
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 
 pub struct GlassPass {
     pub texture: Texture,
@@ -17,13 +19,6 @@ impl GlassPass {
         let texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
 
         let glass_material = asset_manager.material_by_name("WindowsGlass").unwrap();
-
-        // let texture_bind_group_layout = BindGroupManager::create_texture_bind_group_layout(&ctx.device, [TL::Float, TL::Float, TL::Float]).unwrap();
-        // let texture_bind_group = BindGroupManager::create_multi_texture_bind_group(
-        //     &ctx.device,
-        //     &scene_bind_group_layout,
-        //     &[glass_material.bind_group_layout])
-        // .unwrap();
 
         let pipeline = PipelineBuilder::new(
             "glass pipeline",
@@ -44,7 +39,7 @@ impl GlassPass {
         }
     }
 
-    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, out_depth_texture: &Texture, game_data: &GameData) {
+    pub fn render(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager,  game_data: &GameData, render_data: &RenderDataManager, out_depth_texture: &Texture) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("scene pass"),
             color_attachments: &[
@@ -76,31 +71,16 @@ impl GlassPass {
         pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
         pass.set_bind_group(3, &uniforms.lights_ssbo.bind_group, &[]);
 
-        game_data.world.for_each_chunk(|chunk| {
-              for game_object in chunk.game_objects.iter() {
-                let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-                    println!("No model bind group for object {:?}, skipping draw", game_object.id);
-                    continue;
-                };
+        for render_item in render_data.render_items_glass().iter() {
+            let model_uniform = uniforms.models.get(&render_item.object_id).unwrap();
+            let mesh = game_data.asset_manager.mesh_by_index(render_item.mesh_index).unwrap();
 
-                pass.set_bind_group(2, &model_uniform.bind_group, &[]);
+            pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
-                if let Some(model) = game_data.asset_manager.model_by_name(game_object.model_name()) {
-                    for mesh in model.meshes.iter() {
-                        match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-                            Some(mesh_node)=> {
-                                if mesh_node.rendering_mode == MeshRenderingMode::Glass {
-                                    pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                    pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                                    pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                                }
-                            },
-                            None => ()
-                        }
-                    }
-                }
-            }
-        });
+            pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use winit::{application::ApplicationHandler, error::EventLoopError, event::{DeviceEvent, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, window::Window};
-use yhwh::{common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH}, engine::Engine};
+use yhwh::{engine::Engine};
+use yhwh_core::common::constants::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub struct App {
     engine: Option<Engine>,

@@ -65,7 +65,7 @@ impl DoorObject {
          // update render items
         self.render_items.clear();
         let model = asset_manager.model_by_name(&self.model_name).expect(&format!("GameObject error: no model for {}", self.model_name.clone()));
-        for node in self.mesh_nodes.get_nodes().iter() {
+        for node in self.mesh_nodes.nodes().iter() {
             let render_item = RenderItem {
                 rendering_mode: node.rendering_mode,
                 texture_scale: Vector2::new(1.0, 1.0),
@@ -164,7 +164,7 @@ impl DoorObject {
     pub fn get_create_info(&self, asset_manager: &AssetManager) -> DoorObjectCreateInfo {
         let mut mesh_nodes_create_infos: Vec<MeshNodeCreateInfo> = Vec::new();
 
-        for mesh_node in self.mesh_nodes().get_nodes() {
+        for mesh_node in self.mesh_nodes().nodes() {
           if let Some((mesh, material)) = asset_manager.mesh_by_index(mesh_node.mesh_index).zip(asset_manager.material_by_index(mesh_node.material_index)) {
             let create_info = MeshNodeCreateInfo {
                 material_name: material.name.clone(),

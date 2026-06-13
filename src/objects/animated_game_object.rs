@@ -86,7 +86,7 @@ impl AnimatedGameObject {
         self.render_items.clear();
 
         let model = asset_manager.model_by_name(&self.model_name).expect(&format!("AnimatedGameObject error: no model for {}", self.model_name.clone()));
-        for node in self.mesh_nodes.get_nodes().iter() {
+        for node in self.mesh_nodes.nodes().iter() {
             let render_item = RenderItem {
                 rendering_mode: node.rendering_mode,
                 texture_scale: self.tex_scale,

@@ -4,7 +4,7 @@ use cgmath::{Angle, Array, Basis3, EuclideanSpace, Euler, InnerSpace, Matrix3, M
 use rand::Rng;
 use winit::keyboard::KeyCode;
 use yhwh_audio::audio_manager::AudioManager;
-use yhwh_core::common::create_info::AnimatedGameObjectCreateInfo;
+use yhwh_core::common::{create_info::{AnimatedGameObjectCreateInfo, MeshNodeCreateInfo}, enums::MeshRenderingMode};
 
 use crate::{animation::animation::PlaybackMode, asset_manager::AssetManager, camera::{Camera, CameraController}, game::{game_data::GameData, weapon::{WeaponAction, WeaponAnimations, WeaponInfo, WeaponManager}}, input::{input::Input, yhwh_keys::YHWHMouseButton}, objects::animated_game_object::AnimatedGameObject};
 
@@ -32,6 +32,51 @@ impl<'a> Player {
         let speed = 6.0;
         let sensitivity = 0.4;
 
+        let mesh_node_info = vec![
+            MeshNodeCreateInfo {
+                mesh_name: String::from("M_Base_Skin_Sleve"),
+                material_name: String::from("Default"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+            MeshNodeCreateInfo {
+                mesh_name: String::from("M_Base_Skin_Mat"),
+                material_name: String::from("Arms"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+              MeshNodeCreateInfo {
+                mesh_name: String::from("M_DFK"),
+                material_name: String::from("Arms"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+
+            MeshNodeCreateInfo {
+                mesh_name: String::from("M_Deagle_Slide"),
+                material_name: String::from("DEagle_Frame"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+            MeshNodeCreateInfo {
+                mesh_name: String::from("M_Deagle_Frame"),
+                material_name: String::from("DEagle_Rec"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+            MeshNodeCreateInfo {
+                mesh_name: String::from("M_Deagle_Grip"),
+                material_name: String::from("DEagle_Grip"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+
+            MeshNodeCreateInfo {
+                mesh_name: String::from("Deagle_Mag"),
+                material_name: String::from("Default"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+            MeshNodeCreateInfo {
+                mesh_name: String::from("Deagle_Mag.001"),
+                material_name: String::from("Default"),
+                rendering_mode: MeshRenderingMode::Pbr
+            },
+        ];
+
         let weapon_create_info = AnimatedGameObjectCreateInfo {
             model_name: "untitled2".to_string(),
             position: [10.0, 2.0, 0.0],
@@ -39,7 +84,7 @@ impl<'a> Player {
             size: [0.1, 0.1, 0.1],
             tex_scale: [1.0, 1.0],
             loop_anim: true,
-            mesh_rendering_info: vec![]
+            mesh_rendering_info: mesh_node_info
         };
 
         //let weapon_object_id = scene.add_animated_game_object(&weapon_create_info, asset_manager);

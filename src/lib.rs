@@ -30,3 +30,4 @@ pub mod game;
 pub mod world;
 pub mod renderer_core;
 pub mod renderer_utils;
+pub mod editor;

@@ -20,7 +20,7 @@ enum RayCastHit {
 
 pub struct EditorLayout {
     game_objects_panel: GameObjects,
-    animated_game_objects: AnimatedGameObjects,
+    animated_game_objects_panel: AnimatedGameObjects,
     door_objects_panel: DoorObjects,
     lights_panel: Lights,
     ray_direction: Vector3<f32>,
@@ -38,7 +38,7 @@ impl EditorLayout {
     pub fn new() -> Self {
         Self {
             game_objects_panel: GameObjects::new(),
-            animated_game_objects: AnimatedGameObjects::new(),
+            animated_game_objects_panel: AnimatedGameObjects::new(),
             door_objects_panel: DoorObjects::new(),
             lights_panel: Lights::new(),
             ray_direction: Vector3::zero(),
@@ -94,19 +94,28 @@ impl EditorLayout {
                 game_data.world.for_each_chunk_mut(|chunk| {
                     self.game_objects_panel.update(ui, chunk, &game_data.asset_manager, materials, (window_width, window_height));
                     self.door_objects_panel.update(ui, chunk, &game_data.asset_manager, materials, (window_width, window_height));
-                    self.animated_game_objects.update(ui, chunk, materials, (window_width, window_height));
+                    self.animated_game_objects_panel.update(ui, chunk, materials, (window_width, window_height));
                     self.lights_panel.update(ui, chunk);
 
                     // reset states
                     if self.door_objects_panel.should_reset_other_states {
                         self.game_objects_panel.reset_other_chunks_states(chunk);
                         self.game_objects_panel.reset_states(chunk);
+                        self.animated_game_objects_panel.reset_states();
                         self.door_objects_panel.should_reset_other_states = false;
                     }
 
                     if self.game_objects_panel.should_reset_other_states {
+                        self.animated_game_objects_panel.reset_states();
                         self.door_objects_panel.reset_states();
                         self.game_objects_panel.should_reset_other_states = false;
+                    }
+
+                    if self.animated_game_objects_panel.should_reset_other_states {
+                        self.game_objects_panel.reset_other_chunks_states(chunk);
+                        self.game_objects_panel.reset_states(chunk);
+                        self.door_objects_panel.reset_states();
+                        self.animated_game_objects_panel.should_reset_other_states = false;
                     }
                 });
             });
@@ -122,7 +131,7 @@ impl EditorLayout {
                         ui.collapsing(chunk.file_name.clone(), |ui| {
                             self.game_objects_panel.list(ui, chunk);
                             self.door_objects_panel.list(ui, chunk);
-                            self.animated_game_objects.list(ui, chunk, materials);
+                            self.animated_game_objects_panel.list(ui, chunk, materials);
                             self.lights_panel.list(ui, chunk);
                         });
                     });
@@ -138,7 +147,7 @@ impl EditorLayout {
             game_data.world.for_each_chunk_mut(|chunk| {
                 self.game_objects_panel.apply_selection(chunk);
                 self.door_objects_panel.apply_selection(chunk);
-                 self.animated_game_objects.apply_selection(chunk);
+                 self.animated_game_objects_panel.apply_selection(chunk);
             });
 
             // mouse picking stuff

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use yhwh_core::common::constants::MAX_JOINTS_PER_MESH;
-use crate::{game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{game::game_data::GameData, pipeline_builder::PipelineBuilder, render_passes::geometry_pass::GBufferTextures, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext};
 use cgmath::SquareMatrix;
 
 #[repr(C)]
@@ -38,17 +38,23 @@ impl AnimationPass {
         let pipeline = PipelineBuilder::new(
             "animation pipeline",
             &[
-              &texture_bind_group_layout,
-              &uniforms.camera.bind_group_layout,
+              &game_data.asset_manager.default_material().unwrap().bind_group_layout, // material
+              &uniforms.bind_group_layout, // camera
               &uniforms.bind_group_layout, // model
               &uniforms.bind_group_layout // animation
             ],
             &[Vertex::desc()],
             &shader_module,
-            [wgpu::TextureFormat::Rgba16Float],
+            [
+              wgpu::TextureFormat::Rgba8UnormSrgb, // base color
+              wgpu::TextureFormat::Rgba16Float, // normal
+              wgpu::TextureFormat::Rgba8Unorm, // rma
+              wgpu::TextureFormat::Rgba16Float // world position
+            ],
         )
         .with_depth(wgpu::TextureFormat::Depth32Float)
         .with_depth_write()
+        .with_blend(wgpu::BlendState::REPLACE)
         .build(&ctx.device);
 
        let outline_shader_code = std::fs::read_to_string("res/shaders/solid_color_animation.wgsl").unwrap();
@@ -81,14 +87,38 @@ impl AnimationPass {
         }
     }
 
-    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, ctx: &WgpuContext, uniforms: &mut UniformManager, game_data: &mut GameData, render_data: &mut RenderDataManager, output_texture: &Texture, output_depth: &Texture, output_outline: &Texture) {
+    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, ctx: &WgpuContext, uniforms: &mut UniformManager, game_data: &mut GameData, render_data: &mut RenderDataManager, gbuffer_textures: &GBufferTextures, output_texture: &Texture, output_depth: &Texture, output_outline: &Texture) {
        self.submit_animation_uniforms(ctx, render_data);
        
        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("animation pass"),
             color_attachments: &[
               Some(wgpu::RenderPassColorAttachment {
-                view: &output_texture.view,
+                view: &gbuffer_textures.base_color.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+             }),
+              Some(wgpu::RenderPassColorAttachment {
+                view: &gbuffer_textures.normal.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+             }),
+              Some(wgpu::RenderPassColorAttachment {
+                view: &gbuffer_textures.rma.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+             }),
+              Some(wgpu::RenderPassColorAttachment {
+                view: &gbuffer_textures.world_position.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
@@ -97,13 +127,13 @@ impl AnimationPass {
              }),
             ],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-            view: &output_depth.view,
-            depth_ops: Some(wgpu::Operations {
-              load: wgpu::LoadOp::Load,
-              store: wgpu::StoreOp::Store,
-            }),
-            stencil_ops: None,
-            }),
+              view: &gbuffer_textures.depth.view,
+              depth_ops: Some(wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+              }),
+              stencil_ops: None,
+             }),
             occlusion_query_set: None,
             timestamp_writes: None,
         });

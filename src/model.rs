@@ -299,11 +299,17 @@ pub fn load_glb_model(device: &wgpu::Device, path: &str) -> Result<Model, ModelE
 
 fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: &wgpu::Device) {
      if let Some(mesh) = node.mesh() {
-                let mesh_name = mesh.name().map(|n| n.to_string()).unwrap_or_else(|| format!("UnNamedMesh"));
-
                 let transform_matrix = node.transform().matrix();
 
                 for primitive in mesh.primitives() {
+                    let mut mesh_name = mesh.name().map(|n| n.to_string()).unwrap_or_else(|| format!("UnNamedMesh"));
+
+                    // hack for loading desert eagle!
+                    if mesh_name.contains("SK") {
+                        mesh_name = primitive.material().name().unwrap().to_string();
+                        //println!("Mesh: {}, Node: {}, Primitive: {}", mesh_name, node.name().unwrap(), primitive.material().name().unwrap());
+                    }
+
                     let mut vertices: Vec<Vertex> = Vec::new();
                     let mut indices: Vec<u32> = Vec::new();
 
@@ -311,7 +317,7 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
 
                     let aabb = get_aabb(&primitive.bounding_box());
 
-                    // position attribute
+                    // position
                     if let Some(iter) = reader.read_positions() {
                         for position in iter {
                             vertices.push(Vertex {
@@ -326,7 +332,7 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                         }
                     }
 
-                    // normal attribute
+                    // normal
                     if let Some(iter) = reader.read_normals() {
                         let mut normal_index = 0;
 
@@ -336,7 +342,7 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                         }
                     }
 
-                    // texture coords attribute
+                    // texture coords
                     if let Some(iter) = reader.read_tex_coords(0) {
                         let mut tex_coord_index = 0;
                         
@@ -346,7 +352,7 @@ fn visit_node(node: &gltf::Node, data: &[Data], meshes: &mut Vec<Mesh>, device: 
                         }
                     }
 
-                    // tangents attribure
+                    // tangents
                     if let Some(iter) = reader.read_tangents() {
                         let mut tangent_index = 0;
 

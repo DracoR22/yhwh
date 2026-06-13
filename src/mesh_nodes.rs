@@ -105,6 +105,16 @@ impl MeshNodes {
         }
     }
 
+    pub fn node_mut(&mut self, index: usize) -> Option<&mut MeshNode> {
+        for node in self.nodes.iter_mut() {
+            if node.mesh_index == index {
+                return Some(node)
+            }
+        }
+
+        None
+    }
+
     pub fn get_mesh_node_by_mesh_name(&self, mesh_name: &str) -> Option<&MeshNode> {
         if let Some(&index) = self.nodes_index_map.get(mesh_name) {
             Some(&self.nodes[index])
@@ -122,7 +132,11 @@ impl MeshNodes {
         }
     }
 
-    pub fn get_nodes(&self) -> &Vec<MeshNode> {
+    pub fn nodes_mut(&mut self) -> &mut Vec<MeshNode> {
+        &mut self.nodes
+    }
+
+    pub fn nodes(&self) -> &Vec<MeshNode> {
         &self.nodes
     }
 }

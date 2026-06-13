@@ -215,4 +215,9 @@ impl AnimatedGameObjects {
                 animated_game_object.toggle_animation();
             }
     }
+
+    pub fn reset_states(&mut self) {
+        self.scale_uniform = true;
+        self.selected_id = -1;
+    }
 }

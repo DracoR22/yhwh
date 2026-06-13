@@ -131,11 +131,11 @@ impl WgpuRenderer {
 
         shadow_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager, &game_data);
         geometry_pass.render(&mut encoder, &self.uniform_manager, &game_data, render_data_manager);
+        animation_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager, game_data, render_data_manager, &geometry_pass.textures, &lighting_pass.texture, &geometry_pass.textures.depth, &outline_pass.mask_texture());
         ssao_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager);
         lighting_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, &geometry_pass.textures);
 
         emissive_pass.render_mask(&mut encoder, &self.uniform_manager, &game_data, &render_data_manager, &lighting_pass.texture, &geometry_pass.textures.depth);
-        animation_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager, game_data, render_data_manager, &lighting_pass.texture, &geometry_pass.textures.depth, &outline_pass.mask_texture());
         candle_flames_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, game_data, render_data_manager, &lighting_pass.texture, &emissive_pass.mask_texture, &geometry_pass.textures.depth);
         skybox_pass.render(&mut encoder, &self.uniform_manager, &lighting_pass.texture, &geometry_pass.textures.depth);
         outline_pass.render(&mut encoder, &self.uniform_manager, &game_data, &render_data_manager);

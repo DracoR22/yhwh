@@ -234,29 +234,50 @@ impl GameObjects {
 
                                 ui.label("Shadows");
                                 ui.checkbox(&mut game_object.shadows, "");
-                            
-                                match game_object.mesh_nodes_mut().get_mesh_node_by_mesh_name_mut(&model.meshes[*selected_index].name) {
-                                    Some(mesh_node) => {
-                                        ui.label("Rendering Mode");
-                                        egui::ComboBox::from_label("")
-                                            .selected_text(mesh_node.rendering_mode.to_string())
-                                            .show_ui(ui, |ui| {
-                                                if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Pbr, "Pbr").clicked() {
-                                                    mesh_node.rendering_mode = MeshRenderingMode::Pbr;
-                                                }
-                                                if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Emissive, "Emissive").clicked() {
-                                                    mesh_node.rendering_mode = MeshRenderingMode::Emissive;
-                                                }
-                                                if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Glass, "Glass").clicked() {
-                                                    mesh_node.rendering_mode = MeshRenderingMode::Glass;
-                                                }
-                                                if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Flame, "Flame").clicked() {
-                                                     mesh_node.rendering_mode = MeshRenderingMode::Flame;
-                                                }
-                                            });
-                                    },
-                                    _ => {}
+
+                                ui.label("Rendering Mode");
+                                if let Some(node) = game_object.mesh_nodes_mut().node_mut(model.meshes[*selected_index].global_index) {
+                                    egui::ComboBox::from_label("")
+                                        .selected_text(node.rendering_mode.to_string())
+                                        .show_ui(ui, |ui| {
+                                            if ui.selectable_label(node.rendering_mode == MeshRenderingMode::Pbr, "Pbr").clicked() {
+                                                node.rendering_mode = MeshRenderingMode::Pbr;
+                                            }
+                                            if ui.selectable_label(node.rendering_mode == MeshRenderingMode::Emissive, "Emissive").clicked() {
+                                                node.rendering_mode = MeshRenderingMode::Emissive;
+                                            }
+                                            if ui.selectable_label(node.rendering_mode == MeshRenderingMode::Glass, "Glass").clicked() {
+                                                node.rendering_mode = MeshRenderingMode::Glass;
+                                            }
+                                            if ui.selectable_label(node.rendering_mode == MeshRenderingMode::Flame, "Flame").clicked() {
+                                                node.rendering_mode = MeshRenderingMode::Flame;
+                                            }
+                                    });
                                 }
+                            
+                            //     match game_object.mesh_nodes_mut().get_mesh_node_by_mesh_name_mut(&model.meshes[*selected_index].name) {
+                            //         Some(mesh_node) => {
+                            //             ui.label("Rendering Mode");
+                            //             egui::ComboBox::from_label("")
+                            //                 .selected_text(mesh_node.rendering_mode.to_string())
+                            //                 .show_ui(ui, |ui| {
+                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Pbr, "Pbr").clicked() {
+                            //                         mesh_node.rendering_mode = MeshRenderingMode::Pbr;
+                            //                     }
+                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Emissive, "Emissive").clicked() {
+                            //                         mesh_node.rendering_mode = MeshRenderingMode::Emissive;
+                            //                     }
+                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Glass, "Glass").clicked() {
+                            //                         mesh_node.rendering_mode = MeshRenderingMode::Glass;
+                            //                     }
+                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Flame, "Flame").clicked() {
+                            //                          mesh_node.rendering_mode = MeshRenderingMode::Flame;
+                            //                     }
+                            //                 });
+                            //         },
+                            //         _ => {}
+                            //     }
+
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")
@@ -343,7 +364,7 @@ impl GameObjects {
         state.selected_model_index = 0;
         state.add_game_object_selected = false;
         self.material_window_open = false;
-        self.scale_uniform = false;
+        self.scale_uniform = true;
     }
 
     pub fn reset_other_chunks_states(&mut self, chunk: &mut Chunk) {

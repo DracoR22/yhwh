@@ -211,16 +211,20 @@ impl UniformManager {
     }
 
     pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_data: &GameData, render_data: &RenderDataManager) {
-      // game_data.world.for_each_chunk(|chunk| {
-      //   for animated_game_object in chunk.animated_game_objects.iter() {
-      //     if !self.models.contains_key(&animated_game_object.id) {
-      //      self.create_model(&ctx, animated_game_object.id);
-      //     }
-      //     if let Some(model_uniform) = self.models.get_mut(&animated_game_object.id) {
-      //       model_uniform.value_mut().update(&animated_game_object.model_matrix(), &animated_game_object.tex_scale);
-      //       model_uniform.update(&ctx.queue);
-      //     }
-      //   }
+      game_data.world.for_each_chunk(|chunk| {
+        for game_object in chunk.game_objects.iter() {
+          if game_object.transform.position.x == 3.0686445 {
+            if !self.models.contains_key(&game_object.id) {
+              self.create_model(&ctx, game_object.id);
+            }
+
+            if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
+                model_uniform.value_mut().update(&game_object.model_matrix(), &game_object.tex_scale);
+                model_uniform.update(&ctx.queue);  
+            }
+          }
+        }
+      });
 
       for render_item in render_data.render_items_pbr().iter() {
         if !self.models.contains_key(&render_item.object_id) {
@@ -243,93 +247,6 @@ impl UniformManager {
             model_uniform.update(&ctx.queue);  
         }
       }
-
-        // for game_object in chunk.game_objects.iter() {
-        //   if !self.models.contains_key(&game_object.id) {
-        //     self.create_model(&ctx, game_object.id);
-        //   }
-
-        //   if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
-        //     model_uniform.value_mut().update(&game_object.get_model_matrix(), &game_object.tex_scale);
-        //     model_uniform.update(&ctx.queue);  
-        //   }
-        // }
-
-        // let door_tex_scale = Vector2::new(1.0, 1.0);
-        // for door_object in chunk.door_objects.iter() {
-        //   if !self.models.contains_key(&door_object.id) {
-        //     self.create_model(&ctx, door_object.id);
-        //   }
-
-        //   if let Some(model_uniform) = self.models.get_mut(&door_object.id) {
-        //     model_uniform.value_mut().update(&door_object.get_model_matrix(), &door_tex_scale);
-        //     model_uniform.update(&ctx.queue);  
-        //   }
-        // }
-      // });
-    // }
-
-    // pub fn submit_animation_uniforms(&mut self, ctx: &WgpuContext, game_data: &mut GameData, render_data: &mut RenderDataManager) {
-    //   for anim_data in render_data.animated_render_data().iter() {
-    //     if !self.animations.contains_key(&anim_data.object_id) {
-    //       self.create_animation(ctx, anim_data.object_id);
-    //     }
-
-    //     if let Some(animation_uniform) = self.animations.get_mut(&anim_data.object_id) {
-    //       let skin_uniform = animation_uniform.value_mut();
-    //       skin_uniform.joint_matrices = anim_data.joint_matrices.map(Into::into);
-
-    //       animation_uniform.update(&ctx.queue);
-    //     }
-    //   }
-
-      // for render_item in render_data.render_items_animated_mut().iter_mut() {
-      //   if !self.animations.contains_key(&render_item.object_id) {
-      //     self.create_animation(ctx, render_item.object_id);
-      //   }
-      //   if let Some(animation_uniform) = self.animations.get_mut(&render_item.object_id) {
-      //     let skin_uniform = animation_uniform.value_mut();
-      //     let animated_game_object = game_data.world.animated_game_object(render_item.object_id).unwrap();
-
-      //     if let Some(skin) = animated_game_object.skins.get(0) {
-      //       for (i, joint) in skin.joints().iter().enumerate() {
-      //           if i >= MAX_JOINTS_PER_MESH {
-      //               break; 
-      //           }
-
-      //           skin_uniform.joint_matrices[i] = joint.matrix().into();
-      //       }
-      //     }
-
-      //     animation_uniform.update(&ctx.queue);
-      //   }
-      // }
-
-      // TODO! CREATE A NEW UNIFORM IN RUNTIME LIKE WITH MODELS
-      // game_data.world.for_each_chunk_mut(|chunk| {
-      //     for animated_game_object in chunk.animated_game_objects.iter_mut() {
-      //       if !self.animations.contains_key(&animated_game_object.id) {
-      //         self.create_animation(ctx, animated_game_object.id);
-      //       }
-
-      //       if let Some(animation_uniform) = self.animations.get_mut(&animated_game_object.id) {
-      //         let skin_uniform = animation_uniform.value_mut();
-
-      //         if let Some(skin) = animated_game_object.skins.get(0) {
-      //             for (i, joint) in skin.joints().iter().enumerate() {
-      //                   if i >= MAX_JOINTS_PER_MESH {
-      //                      break; 
-      //                   }
-
-      //                 skin_uniform.joint_matrices[i] = joint.matrix().into();
-      //             }
-      //         }
-
-      //         animation_uniform.update(&ctx.queue);
-      //      }
-      //   }
-      // });
-
     }
 
     // pub fn create_animation(&mut self, ctx: &WgpuContext, id: usize) {

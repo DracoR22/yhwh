@@ -22,10 +22,20 @@ impl AudioManager {
     pub fn load_audios(&mut self, path: &str) {
         for file in fs::read_dir(path).expect(&format!("AudioManager::load_audios() error: cannot find path{} ", path)) {
             let file_path = file.unwrap().path();
-            if let Some(file_name) = &file_path.file_name() {
-                self.loaded_audios.insert(file_name.to_string_lossy().to_string(), StaticSoundData::from_file(&file_path).unwrap());
 
-                println!("Loaded audio: {:?}", file_name);
+            if file_path.is_dir() {
+                self.load_audios(file_path.as_os_str().to_str().unwrap());
+            }
+            
+            if file_path.is_file() {
+                let key = file_path
+                        .strip_prefix(file_path.parent().unwrap())
+                        .unwrap_or(&file_path)
+                        .to_string_lossy()
+                        .to_string();
+
+                self.loaded_audios.insert(key.clone(), StaticSoundData::from_file(&file_path).unwrap());
+                println!("Loaded audio: {:?}", key.clone());
             }
         }
     }

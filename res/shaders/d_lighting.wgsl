@@ -225,8 +225,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         final_color += lighting * shadow;
     }
 
-    let ambient = 0.05 * base_color * ao * ssao;
-    final_color += ambient;
+    // let ambient = 0.05 * base_color * ao * ssao;
+    // final_color += ambient;
+   final_color *= ssao;
 
     return vec4<f32>(final_color, 1.0);
 }

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use egui::{Id, Sense, Ui, Vec2, load::SizedTexture};
 use yhwh_core::common::{create_info::GameObjectCreateInfo, enums::MeshRenderingMode};
 
-use crate::{asset_manager::AssetManager, egui_renderer::{editor::common::ChunkEditorState, ui_manager::EguiMaterial}, game::game_data::GameData, world::chunk::Chunk};
+use crate::{asset_manager::AssetManager, camera::Camera, egui_renderer::{editor::common::ChunkEditorState, ui_manager::EguiMaterial}, game::game_data::GameData, world::chunk::Chunk};
 
 pub struct GameObjects {
     //selected_id: i32,
@@ -88,7 +88,7 @@ impl GameObjects {
             });
     }
 
-    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
+    pub fn update(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager, camera: &Camera, materials: &Vec<EguiMaterial>, (window_width, window_height): (u32, u32)) {
             let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
                 ChunkEditorState::new()
             });
@@ -254,30 +254,6 @@ impl GameObjects {
                                             }
                                     });
                                 }
-                            
-                            //     match game_object.mesh_nodes_mut().get_mesh_node_by_mesh_name_mut(&model.meshes[*selected_index].name) {
-                            //         Some(mesh_node) => {
-                            //             ui.label("Rendering Mode");
-                            //             egui::ComboBox::from_label("")
-                            //                 .selected_text(mesh_node.rendering_mode.to_string())
-                            //                 .show_ui(ui, |ui| {
-                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Pbr, "Pbr").clicked() {
-                            //                         mesh_node.rendering_mode = MeshRenderingMode::Pbr;
-                            //                     }
-                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Emissive, "Emissive").clicked() {
-                            //                         mesh_node.rendering_mode = MeshRenderingMode::Emissive;
-                            //                     }
-                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Glass, "Glass").clicked() {
-                            //                         mesh_node.rendering_mode = MeshRenderingMode::Glass;
-                            //                     }
-                            //                     if ui.selectable_label(mesh_node.rendering_mode == MeshRenderingMode::Flame, "Flame").clicked() {
-                            //                          mesh_node.rendering_mode = MeshRenderingMode::Flame;
-                            //                     }
-                            //                 });
-                            //         },
-                            //         _ => {}
-                            //     }
-
                             } else {
                                 egui::ComboBox::from_label("Meshes")
                                     .selected_text("No Meshes")
@@ -293,7 +269,7 @@ impl GameObjects {
                 }
             }
 
-            self.add_new(ui, chunk, asset_manager);
+            self.add_new(ui, chunk, asset_manager, camera);
             self.process_marked_for_removal(chunk);
     }
 
@@ -307,10 +283,13 @@ impl GameObjects {
         }
     }
 
-    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager) {
+    pub fn add_new(&mut self, ui: &mut Ui, chunk: &mut Chunk, asset_manager: &AssetManager, camera: &Camera) {
         let state = self.chunk_states.entry(chunk.name.clone()).or_insert_with(|| {
             ChunkEditorState::new()
         });
+
+        let offset = 5.0;
+        let object_pos = camera.position + camera.forward() * offset;
 
         if state.add_game_object_selected {    
             let models = asset_manager.models();
@@ -328,7 +307,7 @@ impl GameObjects {
 
             let create_info = GameObjectCreateInfo {
                         model_name: models[state.selected_model_index].name.to_string(),
-                        position: [1.0, 5.0, 1.0],
+                        position: object_pos.into(),
                         rotation: [0.0, 0.0, 0.0],
                         size: [1.0, 1.0, 1.0],
                         tex_scale: [1.0, 1.0],

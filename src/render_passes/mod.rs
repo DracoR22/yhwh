@@ -11,3 +11,4 @@ pub mod geometry_pass;
 pub mod lighting_pass;
 pub mod ssao_pass;
 pub mod flame_pass;
+pub mod fire_pass;

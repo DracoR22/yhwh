@@ -1525,6 +1525,36 @@
           "rendering_mode": "Pbr"
         }
       ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        3.0686445,
+        5.0,
+        16.0
+      ],
+      "size": [
+        5.0,
+        5.0,
+        5.0
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        185.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Pbr"
+        }
+      ]
     }
   ],
   "door_objects": [
@@ -1541,7 +1571,7 @@
       ],
       "rotation": [
         0.0,
-        180.0,
+        270.0,
         0.0
       ],
       "mesh_rendering_info": [
@@ -1566,7 +1596,7 @@
         6.0
       ],
       "strength": 3.0,
-      "radius": 3.0,
+      "radius": 4.0,
       "light_type": "Point",
       "shadows": true
     },

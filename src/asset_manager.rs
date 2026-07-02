@@ -70,20 +70,38 @@ impl AssetManager {
         let mut textures = Vec::<Texture>::new();
 
         for (index, data) in receiver.iter().enumerate() {
+            if data.name.contains("Fire") {
+                AssetManager::load_fire_textures(ctx, data, index, &mut textures, &mut texture_index_map);
+            } else {
              let is_srgb = data.name.contains("_ALB");
              let texture = TextureBuilder::from_img(data.image)
              .with_srgb(is_srgb)
              .build(&ctx.device, &ctx.queue);
-            //  let is_normal_map = data.name.contains("_NRM") || data.name.contains("_RMA");
-            //  let texture = Texture::allocate_gpu_from_image(&ctx.device, &ctx.queue, &data.image, is_normal_map);
              texture_index_map.insert(data.name, index);
              textures.push(texture);
+            }
         }
 
         let duration = now.elapsed();
         println!("Loaded all textures in: {:.3?}", duration.unwrap());
 
         (textures, texture_index_map)
+    }
+
+    pub fn load_fire_textures(ctx: &WgpuContext, texture_data: TextureData, texture_index: usize, textures: &mut Vec<Texture>, texture_index_map: &mut HashMap<String, usize>) {
+        let sampler = if texture_data.name.contains("COLOR") || texture_data.name.contains("ALPHA") {
+            println!("LOADED {} WITH SAMPLER CLAMP", texture_data.name);
+            Texture::linear_sampler_clamp()
+        } else {
+            Texture::linear_sampler()
+        };
+
+        let texture = TextureBuilder::from_img(texture_data.image)
+        .with_sampler(sampler)
+        .build(&ctx.device, &ctx.queue);
+
+        texture_index_map.insert(texture_data.name, texture_index);
+        textures.push(texture);
     }
 
     pub fn texture_by_name(&self, name: &str) -> Option<&Texture> {

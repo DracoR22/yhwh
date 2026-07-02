@@ -92,7 +92,7 @@ impl EditorLayout {
            .width_range(250.0..=300.0)
            .show(&ui, |ui| {
                 game_data.world.for_each_chunk_mut(|chunk| {
-                    self.game_objects_panel.update(ui, chunk, &game_data.asset_manager, materials, (window_width, window_height));
+                    self.game_objects_panel.update(ui, chunk, &game_data.asset_manager, &game_data.camera, materials, (window_width, window_height));
                     self.door_objects_panel.update(ui, chunk, &game_data.asset_manager, materials, (window_width, window_height));
                     self.animated_game_objects_panel.update(ui, chunk, materials, (window_width, window_height));
                     self.lights_panel.update(ui, chunk);

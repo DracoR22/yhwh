@@ -25,9 +25,17 @@ pub struct WeaponAnimations {
 #[derive(PartialEq, Eq)]
 pub enum WeaponAction {
     Idle,
+    IdleToAds,
     Fire, 
     Walk,
-    InitialDraw
+    SprintStart,
+    SprintEnd,
+    Sprint,
+    InitialDraw,
+    Draw,
+    AdsIdle,
+    AdsToIdle,
+    AdsFire
 }
 
 pub struct WeaponInfo {

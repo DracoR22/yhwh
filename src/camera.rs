@@ -133,6 +133,7 @@ pub struct CameraController {
     rotate_vertical: f32,
     scroll: f32,
     speed: f32,
+    curr_speed: f32,
     sensitivity: f32,
     pub smoothed_delta: cgmath::Vector2<f64>,
     pub moving: bool
@@ -151,6 +152,7 @@ impl CameraController {
             rotate_vertical: 0.0,
             scroll: 0.0,
             speed,
+            curr_speed: 0.0,
             sensitivity,
             smoothed_delta: cgmath::Vector2::new(0.0, 0.0),
             moving: false
@@ -207,6 +209,11 @@ impl CameraController {
     }
 
     pub fn update_movement_player(&mut self, input: &Input) {
+        self.curr_speed = self.speed;
+        if input.keyboard.key_pressed(KeyCode::ShiftLeft) {
+            self.curr_speed *= 2.0;
+        }
+
         self.amount_forward  = if input.keyboard.key_pressed(KeyCode::KeyW) { 1.0 } else { 0.0 };
         self.amount_backward = if input.keyboard.key_pressed(KeyCode::KeyS) { 1.0 } else { 0.0 };
         self.amount_left     = if input.keyboard.key_pressed(KeyCode::KeyA) { 1.0 } else { 0.0 };
@@ -217,6 +224,8 @@ impl CameraController {
     }
 
     pub fn update_movement_editor(&mut self, input: &Input) {
+        self.curr_speed = self.speed;
+        
         self.amount_forward  = if input.keyboard.key_pressed(KeyCode::KeyW) { 1.0 } else { 0.0 };
         self.amount_backward = if input.keyboard.key_pressed(KeyCode::KeyS) { 1.0 } else { 0.0 };
         self.amount_left     = if input.keyboard.key_pressed(KeyCode::KeyA) { 1.0 } else { 0.0 };
@@ -255,7 +264,7 @@ impl CameraController {
         let (yaw_sin, yaw_cos) = camera.yaw.0.sin_cos();
         let forward = Vector3::new(yaw_cos, 0.0, yaw_sin).normalize();
         let right = Vector3::new(-yaw_sin, 0.0, yaw_cos).normalize();
-        camera.position += forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
+        camera.position += forward * (self.amount_forward - self.amount_backward) * self.curr_speed * dt;
         camera.position += right * (self.amount_right - self.amount_left) * self.speed * dt;
 
         // Move in/out (aka. "zoom")

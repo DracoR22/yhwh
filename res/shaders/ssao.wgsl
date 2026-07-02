@@ -91,7 +91,7 @@ fn fs_main(in: VertexOutput) -> @location(0) f32 {
 
     occlusion = 1.0 - (occlusion / f32(KERNEL_SIZE));
     
-    let strength = 16.0;
+    let strength = 3.0;
     occlusion = pow(occlusion, strength);
     
     return occlusion;

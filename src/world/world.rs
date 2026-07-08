@@ -84,10 +84,7 @@ impl World {
         
         self.for_each_chunk(|chunk| {
             for game_object in chunk.game_objects.iter() {
-                if game_object.transform.position.x == 3.0686445 {
-                    continue;
-                }
-
+                render_data_manager.submit_model_instances(game_object);
                 render_data_manager.submit_render_items(game_object.render_items(), frustum);
 
                 if game_object.is_selected {
@@ -96,6 +93,7 @@ impl World {
             }
 
             for door_object in chunk.door_objects.iter() {
+                render_data_manager.submit_model_instances(door_object);
                 render_data_manager.submit_render_items(door_object.render_items(), frustum);
 
                 if door_object.is_selected {
@@ -116,6 +114,7 @@ impl World {
                     }
                 }
 
+                render_data_manager.submit_model_instances(animated_object);
                 render_data_manager.submit_animated_render_data(AnimatedRenderData {
                     object_id: animated_object.id,
                     joint_matrices

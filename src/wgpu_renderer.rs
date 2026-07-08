@@ -112,7 +112,7 @@ impl WgpuRenderer {
         } = &mut self.render_passes;
 
         // submit uniforms
-        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &game_data, &render_data_manager);
+        self.uniform_manager.submit_model_uniforms(&self.wgpu_context, &render_data_manager);
         self.uniform_manager.submit_camera_uniforms(&self.wgpu_context, &game_data.active_camera());
         self.uniform_manager.submit_light_uniforms(&self.wgpu_context, &game_data, &shadow_pass.shadow_cube_map_array.texture);
         
@@ -141,7 +141,7 @@ impl WgpuRenderer {
 
         emissive_pass.render_mask(&mut encoder, &self.uniform_manager, &game_data, &render_data_manager, &lighting_pass.texture, &geometry_pass.textures.depth);
         flame_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, game_data, render_data_manager, &lighting_pass.texture, &emissive_pass.mask_texture, &geometry_pass.textures.depth);
-        fire_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, game_data, &lighting_pass.texture, &geometry_pass.textures.depth);
+        fire_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, &render_data_manager, game_data, &lighting_pass.texture, &geometry_pass.textures.depth);
         skybox_pass.render(&mut encoder, &self.uniform_manager, &lighting_pass.texture, &geometry_pass.textures.depth);
         outline_pass.render(&mut encoder, &self.uniform_manager, &game_data, &render_data_manager);
         emissive_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager);

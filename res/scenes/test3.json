@@ -1529,19 +1529,19 @@
     {
       "model_name": "Plane",
       "position": [
-        3.0686445,
-        5.0,
+        6.0,
+        0.0,
         16.0
       ],
       "size": [
-        5.0,
-        5.0,
-        5.0
+        2.0,
+        2.0,
+        2.0
       ],
       "rotation": [
         90.0,
         0.0,
-        185.0
+        90.0
       ],
       "tex_scale": [
         1.0,
@@ -1552,7 +1552,7 @@
         {
           "mesh_name": "Plane_Mesh",
           "material_name": "Default",
-          "rendering_mode": "Pbr"
+          "rendering_mode": "Fire"
         }
       ]
     }
@@ -1571,7 +1571,7 @@
       ],
       "rotation": [
         0.0,
-        270.0,
+        180.0,
         0.0
       ],
       "mesh_rendering_info": [

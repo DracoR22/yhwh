@@ -18,5 +18,6 @@ pub enum MeshRenderingMode {
     Pbr,
     Emissive,
     Glass,
-    Flame
+    Flame,
+    Fire
 }

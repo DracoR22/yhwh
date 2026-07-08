@@ -252,6 +252,9 @@ impl GameObjects {
                                             if ui.selectable_label(node.rendering_mode == MeshRenderingMode::Flame, "Flame").clicked() {
                                                 node.rendering_mode = MeshRenderingMode::Flame;
                                             }
+                                            if ui.selectable_label(node.rendering_mode == MeshRenderingMode::Fire, "Fire").clicked() {
+                                                node.rendering_mode = MeshRenderingMode::Fire;
+                                            }
                                     });
                                 }
                             } else {

@@ -158,7 +158,6 @@ pub struct UniformManager {
 impl UniformManager {
     pub fn new(ctx: &WgpuContext, game_data: &GameData, shadow_texture: &Texture) -> Self {
       let mut model_uniforms: HashMap<usize, Uniform<ModelUniform>> = HashMap::new();
-      //let mut animation_uniforms: HashMap<usize, Uniform<AnimationUniform>> = HashMap::new();
 
       game_data.world.for_each_chunk(|chunk| {
         // for game_object in chunk.game_objects.iter() {
@@ -210,48 +209,18 @@ impl UniformManager {
       self.models.insert(id, Uniform::new(ModelUniform::new(), &ctx.device));
     }
 
-    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, game_data: &GameData, render_data: &RenderDataManager) {
-      game_data.world.for_each_chunk(|chunk| {
-        for game_object in chunk.game_objects.iter() {
-          if game_object.transform.position.x == 3.0686445 {
-            if !self.models.contains_key(&game_object.id) {
-              self.create_model(&ctx, game_object.id);
-            }
+    pub fn submit_model_uniforms(&mut self, ctx: &WgpuContext, render_data: &RenderDataManager) {
+      for model_intance in render_data.model_instances().iter() {
+        if !self.models.contains_key(&model_intance.object_id) {
+          self.create_model(&ctx, model_intance.object_id);
+        }
 
-            if let Some(model_uniform) = self.models.get_mut(&game_object.id) {
-                model_uniform.value_mut().update(&game_object.model_matrix(), &game_object.tex_scale);
-                model_uniform.update(&ctx.queue);  
-            }
-          }
-        }
-      });
-
-      for render_item in render_data.render_items_pbr().iter() {
-        if !self.models.contains_key(&render_item.object_id) {
-          self.create_model(&ctx, render_item.object_id);
-        }
-          
-        if let Some(model_uniform) = self.models.get_mut(&render_item.object_id) {
-            model_uniform.value_mut().update(&render_item.model_matrix, &render_item.texture_scale);
-            model_uniform.update(&ctx.queue);  
-        }
-      }
-
-      for animated_render_item in render_data.render_items_animated().iter() {
-        if !self.models.contains_key(&animated_render_item.object_id) {
-          self.create_model(&ctx, animated_render_item.object_id);
-        }
-          
-        if let Some(model_uniform) = self.models.get_mut(&animated_render_item.object_id) {
-            model_uniform.value_mut().update(&animated_render_item.model_matrix, &animated_render_item.texture_scale);
-            model_uniform.update(&ctx.queue);  
+        if let Some(model_uniform) = self.models.get_mut(&model_intance.object_id) {
+          model_uniform.value_mut().update(&model_intance.model_matrix, &model_intance.texture_scale);
+          model_uniform.update(&ctx.queue);  
         }
       }
     }
-
-    // pub fn create_animation(&mut self, ctx: &WgpuContext, id: usize) {
-    //   self.animations.insert(id, Uniform::new(AnimationUniform::new(), &ctx.device));
-    // }
 
     pub fn submit_light_uniforms(&mut self, ctx: &WgpuContext, game_data: &GameData, shadow_texture: &Texture) {
       let light_count = game_data.world.light_count();

@@ -51,7 +51,7 @@ impl ShadowPass {
         let mut shadow_cube_map_uniforms: Vec<Uniform<ShadowCubeMapUniform>> = Vec::new();
         for _ in 0..MAX_LIGHTS {
             for _ in 0..6 {
-            shadow_cube_map_uniforms.push(Uniform::new(ShadowCubeMapUniform::new(), &ctx.device));
+                shadow_cube_map_uniforms.push(Uniform::new(ShadowCubeMapUniform::new(), &ctx.device));
             }
         }
 

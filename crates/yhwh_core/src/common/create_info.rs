@@ -81,6 +81,7 @@ impl fmt::Display for MeshRenderingMode {
             MeshRenderingMode::Emissive => write!(f, "Emissive"),
             MeshRenderingMode::Glass => write!(f, "Glass"),
             MeshRenderingMode::Flame => write!(f, "Flame"),
+            MeshRenderingMode::Fire => write!(f, "Fire")
         }
     }
 }

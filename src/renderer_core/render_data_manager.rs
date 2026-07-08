@@ -1,14 +1,16 @@
-use cgmath::{Matrix4, SquareMatrix};
+use cgmath::{Matrix4, SquareMatrix, Vector2};
 use yhwh_core::common::{enums::MeshRenderingMode, types::{AnimatedRenderData, RenderItem}};
 
-use crate::{frustum::Frustum};
+use crate::{frustum::Frustum, objects::game_object::GameObject, renderer_core::model_instance::{ModelInstance, ModelInstanceSource}};
 
 pub struct RenderDataManager {
+    model_instances: Vec<ModelInstance>,
     animated_render_data: Vec<AnimatedRenderData>,
     render_items_pbr: Vec<RenderItem>,
     render_items_glass: Vec<RenderItem>,
     render_items_emissive: Vec<RenderItem>,
     render_items_flame: Vec<RenderItem>,
+    render_items_fire: Vec<RenderItem>,
     render_items_animated: Vec<RenderItem>,
     render_items_outlined_animated: Vec<RenderItem>,
     render_items_outlined: Vec<RenderItem>
@@ -17,15 +19,27 @@ pub struct RenderDataManager {
 impl RenderDataManager {
     pub fn new() -> Self {
         Self {
+            model_instances: Vec::new(),
             animated_render_data: Vec::new(),
             render_items_pbr: Vec::new(),
             render_items_glass: Vec::new(),
             render_items_emissive: Vec::new(),
             render_items_flame: Vec::new(),
+            render_items_fire: Vec::new(),
             render_items_animated: Vec::new(),
             render_items_outlined_animated: Vec::new(),
             render_items_outlined: Vec::new()
         }
+    }
+
+    pub fn submit_model_instances<T: ModelInstanceSource>(&mut self, object: &T) {
+        let model_instance = ModelInstance { 
+            object_id: object.id(),
+            model_matrix: object.model_matrix(),
+            texture_scale: object.texture_scale()
+        };
+
+        self.model_instances.push(model_instance);
     }
 
     pub fn submit_animated_render_data(&mut self, render_data: AnimatedRenderData) {
@@ -84,16 +98,21 @@ impl RenderDataManager {
                 MeshRenderingMode::Flame => {
                     self.render_items_flame.push(item.clone())
                 }
+                MeshRenderingMode::Fire => {
+                    self.render_items_fire.push(item.clone());
+                }
             }
         }
     }
 
     pub fn clear(&mut self) {
+        self.model_instances.clear();
         self.animated_render_data.clear();
         self.render_items_pbr.clear();
         self.render_items_outlined.clear();
         self.render_items_emissive.clear();
         self.render_items_flame.clear();
+        self.render_items_fire.clear();
         self.render_items_glass.clear();
         self.render_items_animated.clear();
         self.render_items_outlined_animated.clear();
@@ -118,6 +137,10 @@ impl RenderDataManager {
         &self.render_items_flame
     }
 
+    pub fn render_items_fire(&self) -> &Vec<RenderItem> {
+        &self.render_items_fire
+    }
+
     pub fn render_items_glass(&self) -> &Vec<RenderItem> {
         &self.render_items_glass
     }
@@ -136,5 +159,9 @@ impl RenderDataManager {
 
     pub fn animated_render_data(&self) -> &Vec<AnimatedRenderData> {
         &self.animated_render_data
+    }
+
+    pub fn model_instances(&self) -> &Vec<ModelInstance> {
+        &self.model_instances
     }
 }

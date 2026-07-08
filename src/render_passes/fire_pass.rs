@@ -1,6 +1,6 @@
 use wgpu::CommandEncoder;
 
-use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, utils::unique_id, vertex::Vertex, wgpu_context::WgpuContext};
+use crate::{asset_manager::AssetManager, bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, utils::unique_id, vertex::Vertex, wgpu_context::WgpuContext};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -100,7 +100,7 @@ impl FirePass {
         }
     }
 
-    pub fn render(&mut self, encoder: &mut CommandEncoder, ctx: &WgpuContext, uniforms: &UniformManager, game_data: &GameData, out_color: &Texture, out_depth: &Texture) {
+    pub fn render(&mut self, encoder: &mut CommandEncoder, ctx: &WgpuContext, uniforms: &UniformManager, render_data: &RenderDataManager, game_data: &GameData, out_color: &Texture, out_depth: &Texture) {
         self.uniform.value_mut().update();
         self.uniform.update(&ctx.queue);
 
@@ -133,19 +133,29 @@ impl FirePass {
         pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
         pass.set_bind_group(2, &self.uniform.bind_group, &[]);
 
-        game_data.world.for_each_chunk(|chunk| {
-            for game_object in chunk.game_objects.iter() {
-                if game_object.transform.position.x == 3.0686445 {
-                    pass.set_bind_group(3, &uniforms.models.get(&game_object.id).unwrap().bind_group, &[]);
-                    let model = game_data.asset_manager.model_by_name(&game_object.model_name).unwrap();
-                    for mesh in model.meshes.iter() {
-                        pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                        pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                        pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-                    }
-                }
-            }
-        });
+        for render_item in render_data.render_items_fire().iter() {
+            let model_uniform = uniforms.models.get(&render_item.object_id).unwrap();
+            let mesh = game_data.asset_manager.mesh_by_index(render_item.mesh_index).unwrap();
+
+            pass.set_bind_group(3, &model_uniform.bind_group, &[]);
+            pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        }
+
+        // game_data.world.for_each_chunk(|chunk| {
+        //     for game_object in chunk.game_objects.iter() {
+        //         if game_object.transform.position.x == 3.0686445 {
+        //             pass.set_bind_group(3, &uniforms.models.get(&game_object.id).unwrap().bind_group, &[]);
+        //             let model = game_data.asset_manager.model_by_name(&game_object.model_name).unwrap();
+        //             for mesh in model.meshes.iter() {
+        //                 pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        //                 pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        //                 pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
+        //             }
+        //         }
+        //     }
+        // });
     }
 
     pub fn hotload_shader(&mut self, ctx: &WgpuContext, uniforms: &UniformManager) {

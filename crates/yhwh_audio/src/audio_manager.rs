@@ -1,17 +1,19 @@
 use std::{collections::HashMap, fs};
 
-use kira::{AudioManagerSettings, DefaultBackend, PlaySoundError, Tween, sound::static_sound::StaticSoundData};
+use kira::{AudioManagerSettings, DefaultBackend, PlaySoundError, Tween, sound::{PlaybackState, static_sound::{StaticSoundData, StaticSoundHandle}}};
 
 pub struct AudioManager {
     pub manager: kira::AudioManager,
-    pub loaded_audios: HashMap<String, StaticSoundData>
+    pub loaded_audios: HashMap<String, StaticSoundData>,
+    pub playing_audios: HashMap<String, StaticSoundHandle>
 }
 
 impl AudioManager {
     pub fn new() -> Self {
         Self {
             manager: kira::AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).expect("AudioManager::new() error: Could not create Audio Manager!!"),
-            loaded_audios: HashMap::new()
+            loaded_audios: HashMap::new(),
+            playing_audios: HashMap::new()
         }
     }
 
@@ -44,13 +46,28 @@ impl AudioManager {
         if let Some(sound_data) = self.loaded_audios.get(audio_name) {
            let mut sound = self.manager.play(sound_data.clone())?;
 
+           //sound.stop(Tween::default());
            sound.set_playback_rate(play_rate, Tween::default());
            sound.set_volume(volume, Tween::default());
+
+           self.playing_audios.insert(audio_name.to_string(), sound);
 
            Ok(())
         } else {
             println!("Can not play audio: {}", audio_name);
             Err(PlaySoundError::SoundLimitReached)
         }
+    }
+
+    pub fn is_playing(&self, audio_name: &str) -> bool {
+        if let Some(sound) = self.playing_audios.get(audio_name) {
+            if sound.state() == PlaybackState::Playing {
+                return true
+            } else {
+                return false
+            }
+        }
+
+        return false
     }
 }

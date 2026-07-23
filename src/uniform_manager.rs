@@ -123,35 +123,10 @@ impl LightUniform {
     }
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct BlurUniform {
-    pub direction: [f32; 2],
-    pub sample_distance: f32,
-    _pad: f32
-}
-
-impl BlurUniform {
-  pub fn new() -> Self {
-    Self {
-      direction: [1.0, 0.0],
-      sample_distance: 1.0,
-      _pad: 0.0
-    }
-  }
-
-  pub fn update(&mut self, direction: [f32; 2], sample_distance: f32) {
-    self.direction[0] = direction[0];
-    self.direction[1] = direction[1];
-    self.sample_distance = sample_distance;
-  }
-}
-
 pub struct UniformManager {
     pub camera: Uniform<CameraUniform>,
     pub models: HashMap<usize, Uniform<ModelUniform>>,
     pub bind_group_layout: wgpu::BindGroupLayout,
-    pub blurs: Vec<Uniform<BlurUniform>>,
     pub lights_ssbo: SSBO
 }
 
@@ -183,11 +158,11 @@ impl UniformManager {
 
       let lights_ssbo = SSBO::new((std::mem::size_of::<LightUniform>() * MAX_LIGHTS as usize) as u64, &ctx.device, shadow_texture);
 
-      let blur_passes = 4;
-      let mut blurs = Vec::new();
-      for _ in 0..blur_passes {
-        blurs.push(Uniform::new(BlurUniform::new(), &ctx.device));
-      }
+      // let blur_passes = 8;
+      // let mut blurs = Vec::new();
+      // for _ in 0..blur_passes {
+      //   blurs.push(Uniform::new(BlurUniform::new(), &ctx.device));
+      // }
 
       let bind_group_layout = BindGroupManager::create_uniform_bind_group_layout(
         &ctx.device,
@@ -198,7 +173,7 @@ impl UniformManager {
         models: model_uniforms,
         //animations: animation_uniforms,
         camera: Uniform::new(CameraUniform::new(), &ctx.device),
-        blurs,
+        // blurs,
         bind_group_layout,
         lights_ssbo,
         // shadow_cube_maps

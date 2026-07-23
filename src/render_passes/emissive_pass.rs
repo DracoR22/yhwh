@@ -1,14 +1,39 @@
 use crate::{
-    bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext
+    bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext
 };
 use wgpu::util::DeviceExt;
-use yhwh_core::common::constants::SCR_RESOLUTION;
+use yhwh_core::common::constants::{BLUR_PASSES, SCR_RESOLUTION};
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct BlurUniform {
+    pub direction: [f32; 2],
+    pub sample_distance: f32,
+    _pad: f32
+}
+
+impl BlurUniform {
+  pub fn new() -> Self {
+    Self {
+      direction: [1.0, 0.0],
+      sample_distance: 1.0,
+      _pad: 0.0
+    }
+  }
+
+  pub fn update(&mut self, direction: [f32; 2], sample_distance: f32) {
+    self.direction[0] = direction[0];
+    self.direction[1] = direction[1];
+    self.sample_distance = sample_distance;
+  }
+}
 
 pub struct EmissivePass {
     pub mask_texture: Texture,
     pub ping_texture: Texture,
     pub pong_texture: Texture,
     mask_pipeline: wgpu::RenderPipeline,
+    blur_uniforms: Vec<Uniform<BlurUniform>>,
     blur_pipeline: wgpu::RenderPipeline,
     bind_group_layout: wgpu::BindGroupLayout,
     ping_bind_group: wgpu::BindGroup,
@@ -108,8 +133,14 @@ impl EmissivePass {
         .with_depth_write()
         .build(&ctx.device);
 
+        let mut blur_uniforms = Vec::new();
+        for _ in 0..BLUR_PASSES {
+            blur_uniforms.push(Uniform::new(BlurUniform::new(), &ctx.device));
+        }
+
         Self {
             mask_pipeline,
+            blur_uniforms,
             blur_pipeline,
             mask_texture,
             ping_texture,
@@ -127,18 +158,22 @@ impl EmissivePass {
         let mut horizontal = true;
         let mut first_iteration = true;
 
-        let blur_passes = 4;
-        let sample_distance = 4.0;
+        let sample_distance = 1.0;
 
-        for i in 0..blur_passes {
+        // let Self {
+        //     blur_uniforms,
+        //     ..
+        // } = &mut self;
+
+        for i in 0..BLUR_PASSES {
             // if sample_distance < 8.0 {
             //     sample_distance = sample_distance + 1.0
             // }
 
             let direction = if horizontal { [1.0, 0.0] } else { [0.0, 1.0] };
 
-            uniforms.blurs[i].value_mut().update(direction, sample_distance);
-            uniforms.blurs[i].update(&ctx.queue);
+            self.blur_uniforms[i].value_mut().update(direction, sample_distance);
+            self.blur_uniforms[i].update(&ctx.queue);
 
             let target_texture = if horizontal {
                 &self.pong_texture
@@ -173,7 +208,7 @@ impl EmissivePass {
 
             pass.set_pipeline(&self.blur_pipeline);
             pass.set_bind_group(0, target_bind_group, &[]);
-            pass.set_bind_group(1, &uniforms.blurs[i].bind_group, &[]);
+            pass.set_bind_group(1, &self.blur_uniforms[i].bind_group, &[]);
             pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             pass.draw(0..6, 0..1);
 

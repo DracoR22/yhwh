@@ -25,6 +25,7 @@ pub enum FinalTexture {
     Lighting,
     Albedo,
     Normal,
+    Ssao
 }
 
 pub struct WgpuRenderer {
@@ -34,6 +35,10 @@ pub struct WgpuRenderer {
     ui_manager: UiManager,
     render_passes: RenderPasses,
     final_texture: FinalTexture,
+}
+
+pub enum EditorCommand {
+    SetFinalTexture(FinalTexture)
 }
 
 impl WgpuRenderer {
@@ -147,16 +152,27 @@ impl WgpuRenderer {
         emissive_pass.render(&mut encoder, &self.wgpu_context, &mut self.uniform_manager);
         glass_pass.render(&mut encoder, &self.uniform_manager, &game_data, &render_data_manager, &geometry_pass.textures.depth);
 
-        let final_texture = final_texture(&self.final_texture, geometry_pass, lighting_pass);
+        let final_texture = final_texture(&self.final_texture, geometry_pass, lighting_pass, ssao_pass);
 
         postprocess_pass.render(&mut encoder, &swapchain_view, &self.wgpu_context, &final_texture, &emissive_pass.get_final_texture(), outline_pass.outline_texture(), &glass_pass.texture);
         ui_pass.render(&self.wgpu_context, &mut encoder, &game_data, (window.inner_size().width as f32, window.inner_size().height as f32), &swapchain_view);
 
-       if game_data.game_state == GameState::Editor {
-        self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, swapchain_view, |ui| {
-          self.ui_manager.editor_layout.draw(ui, &self.ui_manager.materials, game_data, input, (window.inner_size().width, window.inner_size().height));
-        });
-       }
+        // egui
+        let mut commands = Vec::<EditorCommand>::new();
+
+        if game_data.game_state == GameState::Editor {
+            self.egui_renderer.draw(&self.wgpu_context, &mut encoder, &window, swapchain_view, |ui| {
+               self.ui_manager.editor_layout.draw(ui, &mut commands, &self.ui_manager.materials, game_data, input, (window.inner_size().width, window.inner_size().height));
+            });
+        }
+
+        for command in commands.into_iter() {
+                match command {
+                    EditorCommand::SetFinalTexture(texture) => {
+                        self.final_texture = texture;
+                    }
+                }
+        }
 
        queue.submit(std::iter::once(encoder.finish()));
        swapchain_fbo.present();

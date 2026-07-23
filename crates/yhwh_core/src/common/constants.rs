@@ -11,3 +11,5 @@ pub const SHADOW_MAP_RES_SIZE: i32 = 512;
 pub const SHADOW_MAP_NEAR_PLANE: f32 = 0.5;
 
 pub const MAX_JOINTS_PER_MESH: usize = 512;
+
+pub const BLUR_PASSES: usize = 8;

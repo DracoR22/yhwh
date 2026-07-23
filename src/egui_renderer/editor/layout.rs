@@ -10,6 +10,7 @@ use crate::egui_renderer::editor::animated_game_objects::AnimatedGameObjects;
 use crate::input::input::Input;
 use crate::input::yhwh_keys::YHWHMouseButton;
 use crate::utils::ray_cast::ray_intersects_aabb;
+use crate::wgpu_renderer::{EditorCommand, FinalTexture};
 use crate::{
     egui_renderer::{editor::{door_objects::DoorObjects, game_objects::GameObjects, lights::Lights}, ui_manager::EguiMaterial}, game::game_data::GameData
 };
@@ -31,7 +32,9 @@ pub struct EditorLayout {
     selected_map: String,
 
     add_chunk_modal: bool,
-    new_chunk_name: String
+    new_chunk_name: String,
+
+
 }
 
 impl EditorLayout {
@@ -54,15 +57,12 @@ impl EditorLayout {
     pub fn draw(
         &mut self,
         ui: &egui::Context,
+        commands: &mut Vec<EditorCommand>,
         materials: &Vec<EguiMaterial>,
         game_data: &mut GameData,
         input: &Input,
         (window_width, window_height): (u32, u32)
     ) { 
-        // game_data.world.for_each_chunk(|chunk| {
-        //     self.game_objects_panel.update_chunk_state(&chunk.name);
-        // });   
-
         egui::TopBottomPanel::top("top bar").show(ui, |ui| {
             self.save_map_modal(ui, game_data);
             self.add_chunk_modal(ui, game_data);
@@ -81,6 +81,30 @@ impl EditorLayout {
 
                     if ui.button("Add Chunk to Active Map").clicked() {
                         self.add_chunk_modal = true;
+                    }
+                });
+
+                ui.menu_button("View", |ui| {
+                    ui.set_min_width(180.0);
+
+                    if ui.button("Lighting").clicked() {
+                      commands.push(EditorCommand::SetFinalTexture(FinalTexture::Lighting));
+                      ui.close_menu();
+                    }
+
+                    if ui.button("Albedo").clicked() {
+                      commands.push(EditorCommand::SetFinalTexture(FinalTexture::Albedo));
+                      ui.close_menu();
+                    }
+
+                    if ui.button("Normal").clicked() {
+                      commands.push(EditorCommand::SetFinalTexture(FinalTexture::Normal));
+                      ui.close_menu();
+                    }
+
+                    if ui.button("SSAO").clicked() {
+                        commands.push(EditorCommand::SetFinalTexture(FinalTexture::Ssao));
+                        ui.close_menu();
                     }
                 });
             });
@@ -211,6 +235,67 @@ impl EditorLayout {
             }
 
             self.update_mouse_rays((window_width as f32, window_height as f32), game_data, input);
+    }
+
+    fn save_chunk_modal(&mut self, ui: &Ui, game_data: &GameData) {
+         let modal = Modal::new(Id::new("Save Map")).show(ui.ctx(), |ui| {
+                let chunks_path = "res/scenes";
+
+                for entry in fs::read_dir(chunks_path).expect("res/maps is missing!!") {
+                    self.map_list.clear();
+
+                    let entry = entry.unwrap();
+                    let path = entry.path();
+
+                    if path.is_file() && path.file_name().is_some() {
+                        self.map_list.push(path.file_name().unwrap().to_str().unwrap().to_string());
+                        if self.selected_map == "" {
+                            self.selected_map = path.file_name().unwrap().to_str().unwrap().to_string();
+                        }
+                    }
+                }
+
+                egui::ComboBox::from_label("")
+                    .selected_text(&self.selected_map)
+                    .show_ui(ui, |ui| {
+                        for map_name in self.map_list.iter() {
+                            if ui.selectable_label(self.selected_map == map_name.to_string(), map_name).clicked() {
+                                self.selected_map = map_name.to_string();
+                            }
+                        }
+
+                        // if no maps are loaded
+                        if ui.selectable_label(self.selected_map == "untitled_map", "untitled_map").clicked() {
+                            self.selected_map = "untitled_map".to_string();
+                        }
+                });
+
+                egui::ComboBox::from_label("")
+                    .selected_text(&self.selected_map)
+                    .show_ui(ui, |ui| {
+                        for map_name in self.map_list.iter() {
+                            if ui.selectable_label(self.selected_map == map_name.to_string(), map_name).clicked() {
+                                self.selected_map = map_name.to_string();
+                            }
+                        }
+
+                        // if no maps are loaded
+                        if ui.selectable_label(self.selected_map == "untitled_map", "untitled_map").clicked() {
+                            self.selected_map = "untitled_map".to_string();
+                        }
+                });
+
+                 ui.add(egui::TextEdit::singleline(&mut self.selected_map).hint_text(""));
+
+                 if ui.button("Save").clicked() {
+                    game_data.world.save_map(&self.selected_map, &game_data.asset_manager);
+                    self.save_map_modal = false;
+                 }
+            });
+
+            if modal.should_close() {
+                self.save_map_modal = false;
+            }
     }
 
     fn save_map_modal(&mut self, ui: &mut Ui, game_data: &GameData) {

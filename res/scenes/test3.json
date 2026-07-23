@@ -1525,36 +1525,6 @@
           "rendering_mode": "Pbr"
         }
       ]
-    },
-    {
-      "model_name": "Plane",
-      "position": [
-        6.0,
-        0.0,
-        16.0
-      ],
-      "size": [
-        2.0,
-        2.0,
-        2.0
-      ],
-      "rotation": [
-        90.0,
-        0.0,
-        90.0
-      ],
-      "tex_scale": [
-        1.0,
-        1.0
-      ],
-      "shadows": false,
-      "mesh_rendering_info": [
-        {
-          "mesh_name": "Plane_Mesh",
-          "material_name": "Default",
-          "rendering_mode": "Fire"
-        }
-      ]
     }
   ],
   "door_objects": [

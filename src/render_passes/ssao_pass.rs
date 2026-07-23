@@ -44,6 +44,7 @@ impl SSAOPass{
             4, 
             wgpu::TextureFormat::Rgba32Float
         )
+        .with_sampler(Texture::nearest_sampler())
         .build(&ctx.device, &ctx.queue);
 
         let color_shader_code = std::fs::read_to_string("res/shaders/ssao.wgsl").unwrap();

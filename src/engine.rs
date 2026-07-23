@@ -3,7 +3,7 @@ use winit::{event::{DeviceEvent, WindowEvent}, keyboard::KeyCode, window::{Curso
 use yhwh_audio::audio_manager::AudioManager;
 use yhwh_core::common::enums::GameState;
 
-use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, game::game_data::GameData, input::input::Input, physics::physics::Physics, renderer_core::render_data_manager::RenderDataManager, wgpu_renderer::{FinalTexture, WgpuRenderer}};
+use crate::{asset_manager::AssetManager, camera::{Camera, CameraController}, egui_renderer::egui_renderer::EguiRenderer, game::game_data::GameData, input::input::Input, physics::physics::Physics, renderer_core::render_data_manager::RenderDataManager, wgpu_renderer::{FinalTexture, WgpuRenderer}};
 
 
 pub struct Engine {
@@ -113,14 +113,14 @@ impl Engine {
           self.wgpu_renderer.hot_load_shaders();
         }
 
-        if self.game_data.game_state == GameState::Editor {
-            if self.input.keyboard.key_just_pressed(KeyCode::Digit1) {
-                self.wgpu_renderer.set_final_texture(FinalTexture::Lighting);
-            } else if self.input.keyboard.key_just_pressed(KeyCode::Digit2) {
-                self.wgpu_renderer.set_final_texture(FinalTexture::Albedo);
-            } else if self.input.keyboard.key_just_pressed(KeyCode::Digit3) {
-                self.wgpu_renderer.set_final_texture(FinalTexture::Normal);
-            }
-        }
+        // if self.game_data.game_state == GameState::Editor {
+        //     if self.input.keyboard.key_just_pressed(KeyCode::Digit1) {
+        //         self.wgpu_renderer.set_final_texture(FinalTexture::Lighting);
+        //     } else if self.input.keyboard.key_just_pressed(KeyCode::Digit2) {
+        //         self.wgpu_renderer.set_final_texture(FinalTexture::Albedo);
+        //     } else if self.input.keyboard.key_just_pressed(KeyCode::Digit3) {
+        //         self.wgpu_renderer.set_final_texture(FinalTexture::Normal);
+        //     }
+        // }
     }
 }

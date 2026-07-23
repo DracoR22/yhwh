@@ -1,7 +1,7 @@
 {
   "name": "house",
   "chunks": [
-    "first_hallway.json",
-    "test3.json"
+    "test3.json",
+    "first_hallway.json"
   ]
 }

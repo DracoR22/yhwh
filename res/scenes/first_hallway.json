@@ -120,8 +120,295 @@
           "rendering_mode": "Pbr"
         }
       ]
+    },
+    {
+      "model_name": "cross",
+      "position": [
+        3.3,
+        3.98943,
+        71.0
+      ],
+      "size": [
+        5.9,
+        5.9,
+        5.9
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "defaultMaterial",
+          "material_name": "Wood_Floor",
+          "rendering_mode": "Pbr"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        3.3,
+        0.0,
+        70.54
+      ],
+      "size": [
+        2.6,
+        2.6,
+        2.6
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        3.3,
+        7.8,
+        70.59
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        2.9232006,
+        6.0,
+        70.53
+      ],
+      "size": [
+        1.0,
+        1.7,
+        1.0
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        3.8,
+        7.0,
+        70.54
+      ],
+      "size": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        3.14,
+        9.5,
+        70.59
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        5.5,
+        7.0,
+        70.59
+      ],
+      "size": [
+        1.4,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        3.0,
+        4.3,
+        70.54
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Fire"
+        }
+      ]
+    },
+    {
+      "model_name": "Plane",
+      "position": [
+        20.0,
+        5.4659266,
+        55.080574
+      ],
+      "size": [
+        15.0,
+        43.0,
+        12.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        270.0
+      ],
+      "tex_scale": [
+        1.0,
+        1.0
+      ],
+      "shadows": false,
+      "mesh_rendering_info": [
+        {
+          "mesh_name": "Plane_Mesh",
+          "material_name": "Default",
+          "rendering_mode": "Pbr"
+        }
+      ]
     }
   ],
   "door_objects": [],
-  "lights": []
+  "lights": [
+    {
+      "color": [
+        1.0,
+        0.30545425,
+        0.0
+      ],
+      "position": [
+        2.0,
+        5.0,
+        64.0
+      ],
+      "strength": 15.0,
+      "radius": 1.0,
+      "light_type": "Point",
+      "shadows": true
+    }
+  ]
 }

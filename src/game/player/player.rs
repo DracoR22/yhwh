@@ -63,6 +63,15 @@ impl<'a> Player {
         self.camera_controller.update_camera(&mut self.camera, delta_time);
         self.update_audio(audio_manager, delta_time);
         self.update_weapon_logic(input, audio_manager);
+
+        let fire_pos = Point3::new(3.3, 3.98, 71.0);
+        let max_fire_distance = 40.0;
+        let near_fire_distance = self.camera.position.distance(fire_pos);
+        let playing_fire_audio = audio_manager.is_playing("fire_small1.wav");
+
+        // if near_fire_distance <= max_fire_distance && !playing_fire_audio {
+        //    let _ = audio_manager.play_audio("fire_small1.wav", 1.0, 0.0);
+        // }
     }
 
     pub fn update_audio(&mut self, audio_manager: &mut AudioManager, delta_time: Duration) {

@@ -17,11 +17,30 @@ pub struct GeometryPass {
 
 impl GeometryPass {
     pub fn new(ctx: &WgpuContext, uniforms: &UniformManager, asset_manager: &AssetManager) -> Self {
-        let base_color_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba8UnormSrgb, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-        let normal_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-        let rma_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba8Unorm, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-        let world_position_texture = Texture::create_fbo(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Rgba16Float, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT);
-        let depth_texture = Texture::create_depth_texture(&ctx.device, SCR_RESOLUTION, wgpu::TextureFormat::Depth32Float);
+        let base_color_texture = Texture::create_fbo(
+            &ctx.device, SCR_RESOLUTION,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        );
+        let normal_texture = Texture::create_fbo(
+            &ctx.device, SCR_RESOLUTION,
+            wgpu::TextureFormat::Rgba16Float,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        );
+        let rma_texture = Texture::create_fbo(
+            &ctx.device, SCR_RESOLUTION,
+            wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        );
+        let world_position_texture = Texture::create_fbo(
+            &ctx.device, SCR_RESOLUTION,
+            wgpu::TextureFormat::Rgba16Float,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        );
+        let depth_texture = Texture::create_depth_texture(
+            &ctx.device, SCR_RESOLUTION,
+            wgpu::TextureFormat::Depth32Float
+        );
 
         let shader_code = std::fs::read_to_string("res/shaders/gbuffer.wgsl").unwrap();
         let shader_module = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {

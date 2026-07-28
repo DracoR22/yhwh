@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cgmath::{Matrix4};
+use cgmath::{Matrix4, Vector4};
 use yhwh_core::common::{create_info::MeshNodeCreateInfo, enums::MeshRenderingMode};
 
 use crate::{asset_manager::AssetManager, utils::unique_id};
@@ -11,6 +11,7 @@ pub struct MeshNode {
    pub material_index: usize,
    pub rendering_mode: MeshRenderingMode,
    pub transform_matrix: Matrix4<f32>,
+   pub emissive_color: Vector4<f32>
 }
 
 pub struct MeshNodes {
@@ -24,6 +25,8 @@ impl MeshNodes {
         let mut mesh_rendering_info: Vec<MeshNode> = Vec::new();
         let mut mesh_rendering_info_index_map: HashMap<String, usize> = HashMap::new();
 
+        let emissive_color = Vector4::new(1.0, 0.5, 0.0, 1.0);
+
         if create_info.is_empty() {
             if let Some(model) = asset_manager.model_by_name(model_name) {
 
@@ -35,6 +38,7 @@ impl MeshNodes {
                  id: unique_id::next_id(),
                  mesh_index: mesh.global_index,
                  material_index,
+                 emissive_color,
                  rendering_mode: MeshRenderingMode::Pbr,
                  transform_matrix: mesh.transform_matrix
                 });
@@ -53,6 +57,7 @@ impl MeshNodes {
                         id: unique_id::next_id(),
                         mesh_index: mesh.global_index,
                         material_index,
+                        emissive_color,
                         rendering_mode: info.rendering_mode,
                         transform_matrix: mesh.transform_matrix
                 });

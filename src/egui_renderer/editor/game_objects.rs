@@ -256,6 +256,22 @@ impl GameObjects {
                                                 node.rendering_mode = MeshRenderingMode::Fire;
                                             }
                                     });
+
+                                    if node.rendering_mode == MeshRenderingMode::Emissive {
+                                        let mut emissive_color = [
+                                            node.emissive_color.x,
+                                            node.emissive_color.y,
+                                            node.emissive_color.z
+                                        ];
+
+                                        ui.label("Emissive Color");
+                                        if ui.color_edit_button_rgb(&mut emissive_color).changed() {
+                                            node.emissive_color.x = emissive_color[0];
+                                            node.emissive_color.y = emissive_color[1];
+                                            node.emissive_color.z = emissive_color[2];
+                                        }
+
+                                    }
                                 }
                             } else {
                                 egui::ComboBox::from_label("Meshes")

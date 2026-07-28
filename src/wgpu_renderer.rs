@@ -3,7 +3,7 @@ use std::{sync::Arc};
 use winit::{window::Window};
 use yhwh_core::common::enums::GameState;
 
-use crate::{egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager}, game::game_data::GameData, input::input::Input, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, fire_pass::FirePass, flame_pass::FlamePass, geometry_pass::GeometryPass, glass_pass::GlassPass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, scene_pass::ScenePass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass, ssao_pass::SSAOPass, ui_pass::UiPass}, renderer_core::render_data_manager::RenderDataManager, renderer_utils::final_texture, texture::Texture, uniform_manager::UniformManager, wgpu_context::WgpuContext};
+use crate::{egui_renderer::{egui_renderer::EguiRenderer, ui_manager::UiManager}, game::game_data::GameData, input::input::Input, render_passes::{animation_pass::AnimationPass, emissive_pass::EmissivePass, fire_pass::FirePass, flame_pass::FlamePass, geometry_pass::GeometryPass, glass_pass::GlassPass, lighting_pass::LightingPass, outline_pass::OutlinePass, postprocess_pass::PostProcessPass, shadow_pass::ShadowPass, skybox_pass::SkyboxPass, ssao_pass::SSAOPass, ui_pass::UiPass}, renderer_core::render_data_manager::RenderDataManager, renderer_utils::final_texture, texture::Texture, uniform_manager::UniformManager, wgpu_context::WgpuContext};
 
 struct RenderPasses {
     shadow_pass: ShadowPass,
@@ -64,7 +64,6 @@ impl WgpuRenderer {
         let geometry_pass = GeometryPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let ssao_pass = SSAOPass::new(&context, &geometry_pass.textures, &wgpu_uniforms);
         let lighting_pass = LightingPass::new(&context, &geometry_pass.textures, &ssao_pass.blur_texture, &wgpu_uniforms);
-        let scene_pass = ScenePass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let animation_pass = AnimationPass::new(&context, &mut wgpu_uniforms, &game_data);
         let skybox_pass = SkyboxPass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
         let outline_pass = OutlinePass::new(&context, &wgpu_uniforms);
@@ -72,7 +71,7 @@ impl WgpuRenderer {
         let glass_pass = GlassPass::new(&context, &wgpu_uniforms, &game_data.asset_manager);
         let flame_pass = FlamePass::new(&context);
         let fire_pass = FirePass::new(&context, &game_data.asset_manager, &wgpu_uniforms);
-        let postprocess_pass = PostProcessPass::new(&context, &config, &scene_pass.pbr_texture, &emissive_pass.get_final_texture(), &outline_pass.outline_texture(), &glass_pass.texture);
+        let postprocess_pass = PostProcessPass::new(&context, &config, &lighting_pass.texture, &emissive_pass.get_final_texture(), &outline_pass.outline_texture(), &glass_pass.texture);
         let ui_pass = UiPass::new(&context, &game_data, &wgpu_uniforms);
 
         return Self {
@@ -144,7 +143,7 @@ impl WgpuRenderer {
         ssao_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager);
         lighting_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, &geometry_pass.textures);
 
-        emissive_pass.render_mask(&mut encoder, &self.uniform_manager, &game_data, &render_data_manager, &lighting_pass.texture, &geometry_pass.textures.depth);
+        emissive_pass.render_mask(&self.wgpu_context, &mut encoder, &self.uniform_manager, &game_data, &render_data_manager, &lighting_pass.texture, &geometry_pass.textures.depth);
         flame_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, game_data, render_data_manager, &lighting_pass.texture, &emissive_pass.mask_texture, &geometry_pass.textures.depth);
         fire_pass.render(&mut encoder, &self.wgpu_context, &self.uniform_manager, &render_data_manager, game_data, &lighting_pass.texture, &geometry_pass.textures.depth);
         skybox_pass.render(&mut encoder, &self.uniform_manager, &lighting_pass.texture, &geometry_pass.textures.depth);

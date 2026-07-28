@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, Vector2, Vector3};
+use cgmath::{Matrix4, Vector2, Vector3, Vector4};
 
 use crate::{common::constants::MAX_JOINTS_PER_MESH, common::enums::MeshRenderingMode, math::aabb::Aabb};
 
@@ -29,6 +29,8 @@ impl Transform  {
 #[derive(Clone)]
 pub struct RenderItem {
     pub model_matrix: Matrix4<f32>,
+
+    pub emissive_color: Vector4<f32>,
     
     pub object_id: usize,
     pub mesh_node_id: usize,

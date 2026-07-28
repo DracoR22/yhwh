@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{animation::{animation::{AnimationState, Animations, PlaybackMode, load_animations}, node::Nodes, skin::{Skin, create_skins_from_gltf}}, asset_manager::AssetManager, mesh_nodes::MeshNodes, utils::unique_id};
-use cgmath::{Matrix4, Rotation3, SquareMatrix, Vector3};
+use cgmath::{Matrix4, Rotation3, SquareMatrix, Vector3, Vector4};
 use yhwh_core::common::{create_info::AnimatedGameObjectCreateInfo, types::{RenderItem, Transform}};
 
 pub struct AnimatedGameObject {
@@ -66,6 +66,8 @@ impl AnimatedGameObject {
         //     }
         // }
 
+        let emissive_color = Vector4::new(1.0, 0.5, 0.0, 1.0);
+
         Self { 
             model_name: create_info.model_name.clone(),
             transform,
@@ -89,6 +91,7 @@ impl AnimatedGameObject {
         for node in self.mesh_nodes.nodes().iter() {
             let render_item = RenderItem {
                 rendering_mode: node.rendering_mode,
+                emissive_color: node.emissive_color,
                 texture_scale: self.tex_scale,
                 mesh_index: node.mesh_index,
                 material_index: node.material_index,

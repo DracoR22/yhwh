@@ -1,4 +1,4 @@
-use cgmath::{Deg, Matrix4, Quaternion, Vector2, Vector3};
+use cgmath::{Deg, Matrix4, Quaternion, Vector2, Vector3, Vector4};
 use cgmath::Rotation3;
 use winit::keyboard::KeyCode;
 use yhwh_audio::audio_manager::AudioManager;
@@ -44,7 +44,9 @@ impl DoorObject {
 
         let mesh_nodes = MeshNodes::new(model_name, &create_info.mesh_rendering_info, asset_manager);
 
-        // let hinge_matrix = mesh_nodes.get_mesh_node_by_mesh_name("door_f_0").unwrap().transform_matrix.clone();        
+        // let hinge_matrix = mesh_nodes.get_mesh_node_by_mesh_name("door_f_0").unwrap().transform_matrix.clone();  
+
+        let emissive_color = Vector4::new(1.0, 0.5, 0.0, 1.0);      
 
         Self {
             id: unique_id::next_id(),
@@ -68,6 +70,7 @@ impl DoorObject {
         for node in self.mesh_nodes.nodes().iter() {
             let render_item = RenderItem {
                 rendering_mode: node.rendering_mode,
+                emissive_color: node.emissive_color,
                 texture_scale: Vector2::new(1.0, 1.0),
                 mesh_index: node.mesh_index,
                 material_index: node.material_index,

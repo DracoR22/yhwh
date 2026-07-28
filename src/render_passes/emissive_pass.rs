@@ -1,12 +1,15 @@
+use std::collections::HashMap;
+
 use crate::{
     bind_group_manager::{BindGroupManager, TL}, game::game_data::GameData, pipeline_builder::PipelineBuilder, renderer_common::{QUAD_VERTEX_BUFFER_LAYOUT, QUAD_VERTICES}, renderer_core::render_data_manager::RenderDataManager, texture::Texture, uniform::Uniform, uniform_manager::UniformManager, vertex::Vertex, wgpu_context::WgpuContext
 };
+use cgmath::Vector4;
 use wgpu::util::DeviceExt;
 use yhwh_core::common::constants::{BLUR_PASSES, SCR_RESOLUTION};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct BlurUniform {
+struct BlurUniform {
     pub direction: [f32; 2],
     pub sample_distance: f32,
     _pad: f32
@@ -28,16 +31,38 @@ impl BlurUniform {
   }
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct MaskUniform {
+    pub color: [f32; 4],
+    pub emissive: [f32; 4],
+}
+
+impl MaskUniform {
+    pub fn new() -> Self {
+        Self {
+            color: [1.0, 1.0, 1.0, 1.0],
+            emissive: [1.0, 0.5, 0.0, 1.0]
+        }
+    }
+
+    pub fn update(&mut self, color: Vector4<f32>, emissive: Vector4<f32>) {
+        self.color = color.into();
+        self.emissive = emissive.into();
+    }
+}
+
 pub struct EmissivePass {
     pub mask_texture: Texture,
     pub ping_texture: Texture,
     pub pong_texture: Texture,
-    mask_pipeline: wgpu::RenderPipeline,
     blur_uniforms: Vec<Uniform<BlurUniform>>,
     blur_pipeline: wgpu::RenderPipeline,
     bind_group_layout: wgpu::BindGroupLayout,
     ping_bind_group: wgpu::BindGroup,
     pong_bind_group: wgpu::BindGroup,
+    mask_uniforms: HashMap<usize, Uniform<MaskUniform>>,
+    mask_pipeline: wgpu::RenderPipeline,
     mask_bind_group: wgpu::BindGroup,
     vertex_buffer: wgpu::Buffer,
     final_is_ping: bool,
@@ -109,6 +134,11 @@ impl EmissivePass {
             &mask_texture,
         );
 
+        let mut blur_uniforms = Vec::new();
+        for _ in 0..BLUR_PASSES {
+            blur_uniforms.push(Uniform::new(BlurUniform::new(), &ctx.device));
+        }
+
         let blur_pipeline = PipelineBuilder::new(
             "blur pipeline",
             &[&bind_group_layout, &uniforms.bind_group_layout],
@@ -119,9 +149,15 @@ impl EmissivePass {
         .with_blend(wgpu::BlendState::REPLACE)
         .build(&ctx.device);
 
+        let mask_uniform = Uniform::new(MaskUniform::new(), &ctx.device);
+
         let mask_pipeline = PipelineBuilder::new(
             "emissive mask pipeline",
-            &[&uniforms.bind_group_layout, &uniforms.bind_group_layout],
+            &[
+              &uniforms.bind_group_layout, // mask
+              &uniforms.bind_group_layout, // camera
+              &uniforms.bind_group_layout // model
+            ],
             &[Vertex::desc()],
             &mask_shader_module,
             [
@@ -133,13 +169,9 @@ impl EmissivePass {
         .with_depth_write()
         .build(&ctx.device);
 
-        let mut blur_uniforms = Vec::new();
-        for _ in 0..BLUR_PASSES {
-            blur_uniforms.push(Uniform::new(BlurUniform::new(), &ctx.device));
-        }
-
         Self {
             mask_pipeline,
+            mask_uniforms: HashMap::new(),
             blur_uniforms,
             blur_pipeline,
             mask_texture,
@@ -159,11 +191,6 @@ impl EmissivePass {
         let mut first_iteration = true;
 
         let sample_distance = 1.0;
-
-        // let Self {
-        //     blur_uniforms,
-        //     ..
-        // } = &mut self;
 
         for i in 0..BLUR_PASSES {
             // if sample_distance < 8.0 {
@@ -249,8 +276,10 @@ impl EmissivePass {
         }
     }
 
-    pub fn render_mask(&self, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData, render_data: &RenderDataManager, out_color_texture: &Texture, out_depth_texture: &Texture,) {
-        // extract emissive meshes
+    pub fn render_mask(&mut self, ctx: &WgpuContext, encoder: &mut wgpu::CommandEncoder, uniforms: &UniformManager, game_data: &GameData, render_data: &RenderDataManager, out_color_texture: &Texture, out_depth_texture: &Texture) {
+        // self.mask_uniform.update(&ctx.queue);
+        // self.mask_uniform.value_mut().update(color, emissive);
+
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("emissive mask pass"),
             color_attachments: &[
@@ -284,51 +313,32 @@ impl EmissivePass {
         });
 
         pass.set_pipeline(&self.mask_pipeline);
-        pass.set_bind_group(0, &uniforms.camera.bind_group, &[]);
+        pass.set_bind_group(1, &uniforms.camera.bind_group, &[]);
 
         for render_item in render_data.render_items_emissive().iter() {
             let model_uniform = uniforms.models.get(&render_item.object_id).unwrap();
             let mesh = game_data.asset_manager.mesh_by_index(render_item.mesh_index).unwrap();
 
-            pass.set_bind_group(1, &model_uniform.bind_group, &[]);
+            if !self.mask_uniforms.contains_key(&render_item.object_id) {
+                self.create_mask_uniform(ctx, render_item.object_id);
+            }
+
+            if let Some(mask_uniform) = self.mask_uniforms.get_mut(&render_item.object_id) {
+                mask_uniform.value_mut().update(Vector4::new(1.0, 1.0, 1.0, 1.0), render_item.emissive_color);
+                mask_uniform.update(&ctx.queue);
+
+                pass.set_bind_group(0, &mask_uniform.bind_group, &[]);
+            }
+
+            pass.set_bind_group(2, &model_uniform.bind_group, &[]);
 
             pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             pass.set_index_buffer(mesh.index_buffer.slice(..),  wgpu::IndexFormat::Uint32);
             pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
         }
+    }
 
-        // game_data.world.for_each_chunk(|chunk| {
-        //     for game_object in chunk.game_objects.iter() {
-        //         let Some(model_uniform) = uniforms.models.get(&game_object.id) else {
-        //             println!(
-        //                 "No model bind group for object {:?}, skipping draw",
-        //                 game_object.id
-        //             );
-        //             continue;
-        //         };
-
-        //         if let Some(model) = game_data
-        //             .asset_manager
-        //             .model_by_name(&game_object.model_name())
-        //         {
-        //             pass.set_bind_group(1, &model_uniform.bind_group, &[]);
-        //             for mesh in model.meshes.iter() {
-        //                 match game_object.mesh_nodes().get_mesh_node_by_mesh_name(&mesh.name) {
-        //                     Some(mesh_node) => {
-        //                         if mesh_node.rendering_mode == MeshRenderingMode::Emissive {
-        //                             pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        //                             pass.set_index_buffer(
-        //                                 mesh.index_buffer.slice(..),
-        //                                 wgpu::IndexFormat::Uint32,
-        //                             );
-        //                             pass.draw_indexed(0..mesh.num_elements, 0, 0..1);
-        //                         }
-        //                     }
-        //                     None => (),
-        //                 }
-        //             }
-        //         }
-        //     }
-        // });
+    pub fn create_mask_uniform(&mut self, ctx: &WgpuContext, id: usize) {
+        self.mask_uniforms.insert(id, Uniform::new(MaskUniform::new(), &ctx.device));
     }
 }

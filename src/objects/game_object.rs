@@ -1,5 +1,5 @@
 use crate::{asset_manager::AssetManager, mesh_nodes::MeshNodes, utils::unique_id};
-use cgmath::{Rotation3, Vector2, Vector3};
+use cgmath::{Rotation3, Vector2, Vector3, Vector4};
 use yhwh_core::common::{create_info::{GameObjectCreateInfo, MeshNodeCreateInfo}, types::{RenderItem, Transform}};
 
 pub struct GameObject {
@@ -47,6 +47,7 @@ impl GameObject {
                 model_matrix: self.model_matrix(),
                 object_id: self.id,
                 mesh_node_id: node.id,
+                emissive_color: node.emissive_color,
                 aabb: model.aabb
             };
 
